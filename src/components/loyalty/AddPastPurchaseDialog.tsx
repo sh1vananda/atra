@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useTransition } from 'react';
-import { useForm, type SubmitHandler } from 'react-hook-form';
+import { useForm, type SubmitHandler, Controller } from 'react-hook-form'; // Added Controller here
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Button } from '@/components/ui/button';
@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose, DialogDescription } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2, ShoppingCart, Receipt } from 'lucide-react';
+import { Loader2, Receipt } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { User, UserMembership } from '@/types/user';
 import { useAuth } from '@/contexts/AuthContext';
@@ -73,7 +73,7 @@ export function AddPastPurchaseDialog({ user, isOpen, onOpenChange, onPurchaseAd
           throw new Error("Failed to log purchase. Please try again.");
         }
       } catch (e) {
-        console.error("Error logging past purchase:", e);
+        
         toast({
           title: "Error",
           description: e instanceof Error ? e.message : "Could not log purchase.",
@@ -174,4 +174,3 @@ export function AddPastPurchaseDialog({ user, isOpen, onOpenChange, onPurchaseAd
     </Dialog>
   );
 }
-
