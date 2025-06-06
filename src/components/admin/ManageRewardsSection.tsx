@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { PlusCircle, Edit3, Trash2, Gift, AlertTriangle } from 'lucide-react';
 import Image from 'next/image';
 import { AddRewardDialog } from './AddRewardDialog';
-import { EditRewardDialog } from './EditRewardDialog'; // To be created
+import { EditRewardDialog } from './EditRewardDialog';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import {
   AlertDialog,
@@ -25,7 +25,7 @@ import { useToast } from '@/hooks/use-toast';
 
 interface ManageRewardsSectionProps {
   business: Business | null;
-  onRewardChange: () => void; // Callback to refresh business data in parent
+  onRewardChange: () => void; 
 }
 
 export function ManageRewardsSection({ business, onRewardChange }: ManageRewardsSectionProps) {
@@ -45,9 +45,12 @@ export function ManageRewardsSection({ business, onRewardChange }: ManageRewards
     if (!business || !rewardToDelete) return;
     const success = await deleteRewardFromBusiness(business.id, rewardToDelete.id);
     if (success) {
-      onRewardChange(); // Refresh data in parent
+      onRewardChange(); 
+      toast({ title: "Reward Deleted", description: `Successfully deleted "${rewardToDelete.title}".` });
+    } else {
+      toast({ title: "Deletion Failed", description: `Could not delete "${rewardToDelete.title}".`, variant: "destructive" });
     }
-    setRewardToDelete(null); // Close confirmation dialog implicitly
+    setRewardToDelete(null); 
   };
 
   if (!business) {
@@ -89,14 +92,14 @@ export function ManageRewardsSection({ business, onRewardChange }: ManageRewards
               {rewards.map((reward) => (
                 <Card key={reward.id} className="flex flex-col">
                   <CardHeader>
-                    <div className="aspect-[16/9] w-full overflow-hidden rounded-md mb-3">
+                    <div className="aspect-[16/9] w-full overflow-hidden rounded-md mb-3 bg-muted">
                       <Image
-                        src={reward.image || `https://placehold.co/400x225.png?text=No+Image`}
+                        src={reward.image || `https://placehold.co/400x225.png?text=${encodeURIComponent(reward.title)}`}
                         alt={reward.title}
                         width={400}
                         height={225}
                         className="object-cover w-full h-full"
-                        data-ai-hint={reward.imageHint || 'reward placeholder'}
+                        data-ai-hint={reward.imageHint || reward.title.toLowerCase().split(' ').slice(0,2).join(' ')}
                       />
                     </div>
                     <CardTitle className="font-headline text-lg">{reward.title}</CardTitle>
@@ -154,7 +157,7 @@ export function ManageRewardsSection({ business, onRewardChange }: ManageRewards
           businessId={business.id}
           onRewardAdded={() => {
             setIsAddDialogOpen(false);
-            onRewardChange(); // Refresh data in parent
+            onRewardChange();
           }}
         />
       )}
@@ -167,7 +170,7 @@ export function ManageRewardsSection({ business, onRewardChange }: ManageRewards
             onRewardUpdated={() => {
                 setIsEditDialogOpen(false);
                 setRewardToEdit(null);
-                onRewardChange(); // Refresh data in parent
+                onRewardChange(); 
             }}
         />
       )}
