@@ -3,46 +3,19 @@
 
 import type { User as AuthUser } from 'firebase/auth'; // Firebase Auth user type
 import { createUserWithEmailAndPassword, onAuthStateChanged, signInWithEmailAndPassword, signOut } from 'firebase/auth';
-import { doc, setDoc, getDoc, collection, getDocs, updateDoc, arrayUnion, arrayRemove, increment, writeBatch } from 'firebase/firestore';
+import { doc, setDoc, getDoc, collection, getDocs, updateDoc, arrayUnion, query, where, writeBatch } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 import type { ReactNode } from 'react';
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { Gift, Coffee, Percent, ShoppingBag } from 'lucide-react';
 
 import { auth, db } from '@/lib/firebase';
 import type { User, MockPurchase, UserMembership } from '@/types/user';
 import type { Business } from '@/types/business';
 import { useToast } from '@/hooks/use-toast';
 
-
-// --- MOCK BUSINESSES DATABASE (REMAINS MOCK FOR NOW) ---
-export const MOCK_BUSINESSES_DB: Business[] = [
-  {
-    id: 'biz-001',
-    name: 'Loyalty Leap Cafe',
-    description: 'Your favorite neighborhood cafe with great coffee and pastries.',
-    joinCode: 'CAFE123',
-    rewards: [
-      { id: 'reward-cafe-1', title: 'Free Coffee', description: 'A complimentary cup of our house blend.', pointsCost: 100, icon: <Coffee className="h-6 w-6" />, image: 'https://placehold.co/400x300.png', imageHint: 'coffee cup', category: 'Beverages' },
-      { id: 'reward-cafe-2', title: 'Pastry Discount', description: '20% off any pastry.', pointsCost: 150, icon: <Percent className="h-6 w-6" />, image: 'https://placehold.co/400x300.png', imageHint: 'discount pastry', category: 'Food' },
-    ]
-  },
-  {
-    id: 'biz-002',
-    name: 'The Book Nook',
-    description: 'Discover your next favorite read and enjoy member perks.',
-    joinCode: 'BOOKS4U',
-    rewards: [
-      { id: 'reward-book-1', title: '$5 Off Coupon', description: 'Get $5 off any book purchase over $20.', pointsCost: 200, icon: <Gift className="h-6 w-6" />, image: 'https://placehold.co/400x300.png', imageHint: 'gift voucher', category: 'Vouchers' },
-      { id: 'reward-book-2', title: 'Exclusive Bookmark', description: 'A beautifully designed bookmark.', pointsCost: 50, icon: <ShoppingBag className="h-6 w-6" />, image: 'https://placehold.co/400x300.png', imageHint: 'bookmark design', category: 'Merchandise' },
-    ]
-  }
-];
-
-
 interface AuthContextType {
-  user: User | null; // Combines Firebase Auth data with Firestore profile
-  firebaseUser: AuthUser | null; // Raw Firebase Auth user
+  user: User | null;
+  firebaseUser: AuthUser | null;
   isAuthenticated: boolean;
   loading: boolean;
   login: (email: string, pass: string) => Promise<void>;
@@ -50,8 +23,8 @@ interface AuthContextType {
   signup: (name: string, email: string, pass: string) => Promise<void>;
   addMockPurchaseToUser: (userId: string, businessId: string, purchaseDetails: { item: string; amount: number; pointsEarned: number }) => Promise<boolean>;
   joinBusinessByCode: (businessCode: string) => Promise<{ success: boolean; message: string }>;
-  getAllMockUsers: () => Promise<User[]>; // Will now fetch from Firestore
-  getBusinessById: (businessId: string) => Business | undefined;
+  getAllMockUsers: () => Promise<User[]>;
+  getBusinessById: (businessId: string) => Promise<Business | null>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -67,15 +40,25 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (fbUser) => {
       if (fbUser) {
+        // Check if this user is potentially an admin (by checking 'admins' collection)
+        // This is to prevent regular users who happen to be admins from being stuck in customer context if they land here.
+        const adminProfileRef = doc(db, 'admins', fbUser.uid);
+        const adminProfileSnap = await getDoc(adminProfileRef);
+
+        if (adminProfileSnap.exists()) {
+            // This user is an admin. If they are on customer pages, they might be confused.
+            // For now, let customer auth context proceed, but admin context would also set its state.
+            // Ideal scenario: redirect admin to /admin/dashboard if they land on customer pages while logged in as admin.
+            // For now, just log a warning.
+            console.warn("Admin user detected in customer auth context. This might be confusing.");
+        }
+
         setFirebaseUser(fbUser);
-        // Fetch user profile from Firestore
         const userDocRef = doc(db, 'users', fbUser.uid);
         const userDocSnap = await getDoc(userDocRef);
         if (userDocSnap.exists()) {
           setUser({ id: fbUser.uid, ...userDocSnap.data() } as User);
         } else {
-          // This case should ideally not happen if signup creates the doc
-          // Or, could be a new user signing in with a social provider for the first time
           setUser(null); 
           console.warn("User document not found in Firestore for UID:", fbUser.uid);
         }
@@ -95,7 +78,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setLoading(true);
     try {
       await signInWithEmailAndPassword(auth, email, pass);
-      // onAuthStateChanged will handle fetching Firestore data and setting user state
       router.push('/loyalty');
     } catch (error: any) {
       console.error("Login failed:", error);
@@ -104,9 +86,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         description: error.message || "Invalid email or password.",
         variant: "destructive",
       });
-      setLoading(false); // Ensure loading is false on error
+      setLoading(false);
     }
-    // setLoading(false) will be handled by onAuthStateChanged listener
   };
 
   const signup = async (name: string, email: string, pass: string) => {
@@ -114,15 +95,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, pass);
       const fbUser = userCredential.user;
-      // Create user document in Firestore
       const newUserProfile: User = {
         id: fbUser.uid,
         name,
-        email: fbUser.email || email, // Use email from auth if available
+        email: fbUser.email || email,
         memberships: [],
       };
       await setDoc(doc(db, 'users', fbUser.uid), newUserProfile);
-      // onAuthStateChanged will set user state
       router.push('/loyalty');
     } catch (error: any) {
       console.error("Signup failed:", error);
@@ -131,9 +110,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         description: error.message || "Could not create account.",
         variant: "destructive",
       });
-      setLoading(false); // Ensure loading is false on error
+      setLoading(false);
     }
-     // setLoading(false) will be handled by onAuthStateChanged listener
   };
 
   const logout = async () => {
@@ -149,7 +127,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         variant: "destructive",
       });
     } finally {
-      // States will be updated by onAuthStateChanged
+        // State will be updated by onAuthStateChanged
     }
   };
 
@@ -158,7 +136,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       const userDocSnap = await getDoc(userDocRef);
       if (!userDocSnap.exists()) {
-        console.error("User not found for adding purchase:", userId);
         toast({ title: "Error", description: "User not found.", variant: "destructive" });
         return false;
       }
@@ -174,39 +151,34 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const existingMembershipIndex = userData.memberships.findIndex(m => m.businessId === businessId);
 
       if (existingMembershipIndex > -1) {
-        const oldMembership = userData.memberships[existingMembershipIndex];
-        const updatedMembership: UserMembership = {
-          ...oldMembership,
-          purchases: [newPurchase, ...oldMembership.purchases].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()),
-          pointsBalance: oldMembership.pointsBalance + purchaseDetails.pointsEarned,
-        };
+        const oldMembership = { ...userData.memberships[existingMembershipIndex] };
+        oldMembership.purchases = [newPurchase, ...(oldMembership.purchases || [])].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+        oldMembership.pointsBalance = (oldMembership.pointsBalance || 0) + purchaseDetails.pointsEarned;
+        
         updatedMemberships = userData.memberships.map((m, index) =>
-          index === existingMembershipIndex ? updatedMembership : m
+          index === existingMembershipIndex ? oldMembership : m
         );
       } else {
-        // This case should ideally be prevented by UI (admin can only add purchase for enrolled user in their business)
-        // For robustness, create membership if it doesn't exist, though this might indicate a logic flaw elsewhere.
-        const business = MOCK_BUSINESSES_DB.find(b => b.id === businessId);
-        if (!business) {
+        const businessDetails = await getBusinessById(businessId);
+        if (!businessDetails) {
           toast({ title: "Error", description: "Business not found.", variant: "destructive" });
           return false;
         }
-        const newMembership: UserMembership = {
+        const newMembershipEntry: UserMembership = {
             businessId: businessId,
-            businessName: business.name,
+            businessName: businessDetails.name,
             pointsBalance: purchaseDetails.pointsEarned,
             purchases: [newPurchase]
         };
-        updatedMemberships = [...userData.memberships, newMembership];
+        updatedMemberships = [...(userData.memberships || []), newMembershipEntry];
       }
       
       await updateDoc(userDocRef, { memberships: updatedMemberships });
 
-      // If the updated user is the currently logged-in user, refresh their local state
       if (user && user.id === userId) {
          setUser(prevUser => prevUser ? ({ ...prevUser, memberships: updatedMemberships }) : null);
       }
-      toast({ title: "Purchase Added", description: `Purchase recorded for user.`, variant: "default" });
+      toast({ title: "Purchase Added", description: `Purchase recorded.`, variant: "default" });
       return true;
 
     } catch (error: any) {
@@ -217,24 +189,25 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const joinBusinessByCode = async (businessCode: string): Promise<{ success: boolean; message: string }> => {
-    if (!firebaseUser || !user) { // Check firebaseUser for auth, user for profile
+    if (!firebaseUser || !user) {
       return { success: false, message: "You must be logged in to join a program." };
     }
 
-    const businessToJoin = MOCK_BUSINESSES_DB.find(b => b.joinCode === businessCode);
+    const businessesRef = collection(db, "businesses");
+    const q = query(businessesRef, where("joinCode", "==", businessCode.toUpperCase()));
+    const querySnapshot = await getDocs(q);
 
-    if (!businessToJoin) {
+    if (querySnapshot.empty) {
       return { success: false, message: "Invalid business code." };
     }
+    
+    const businessToJoinDoc = querySnapshot.docs[0];
+    const businessToJoin = { id: businessToJoinDoc.id, ...businessToJoinDoc.data() } as Business;
+
 
     const userDocRef = doc(db, 'users', firebaseUser.uid);
-    const userDocSnap = await getDoc(userDocRef); // Fetch fresh user data
-
-    if (!userDocSnap.exists()) {
-      return { success: false, message: "User profile not found." };
-    }
-    const currentUserData = userDocSnap.data() as User;
-
+    // It's good practice to re-fetch user data or use a transaction if data consistency is critical
+    const currentUserData = user; // Using existing state for simplicity, but re-fetch is safer in complex scenarios.
 
     const isAlreadyMember = currentUserData.memberships.some(m => m.businessId === businessToJoin.id);
     if (isAlreadyMember) {
@@ -262,10 +235,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         memberships: arrayUnion(newMembership)
       });
       
-      // Update local user state
       setUser(prevUser => prevUser ? ({
         ...prevUser,
-        memberships: [...prevUser.memberships, newMembership]
+        memberships: [...(prevUser.memberships || []), newMembership]
       }) : null);
       
       return { success: true, message: `Successfully joined ${businessToJoin.name} and received ${welcomeBonusPoints} welcome points!` };
@@ -275,8 +247,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
   
-  const getBusinessById = (businessId: string): Business | undefined => {
-    return MOCK_BUSINESSES_DB.find(b => b.id === businessId);
+  const getBusinessById = async (businessId: string): Promise<Business | null> => {
+    if (!businessId) return null;
+    const businessDocRef = doc(db, 'businesses', businessId);
+    const businessDocSnap = await getDoc(businessDocRef);
+    if (businessDocSnap.exists()) {
+      return { id: businessDocSnap.id, ...businessDocSnap.data() } as Business;
+    }
+    return null;
   };
 
   const getAllMockUsers = async (): Promise<User[]> => {
@@ -290,7 +268,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       });
       setLoading(false);
       return usersList;
-    } catch (error: any) {
+    } catch (error: any).
       console.error("Error fetching all users from Firestore:", error);
       toast({
           title: "Error Fetching Users",

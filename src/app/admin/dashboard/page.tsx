@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { UserTable } from '@/components/admin/UserTable';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth as useCustomerAuth } from '@/contexts/AuthContext'; // Renamed to avoid conflict
 import type { User } from '@/types/user'; 
 import { Users, ShoppingCart, BarChart3, Building, KeyRound, Copy } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -16,50 +16,54 @@ import type { Business } from '@/types/business';
 
 export default function AdminDashboardPage() {
   const { isAdminAuthenticated, loading: adminLoading, adminUser, getManagedBusiness } = useAdminAuth();
-  const { getAllMockUsers } = useAuth(); // This now fetches from Firestore
+  const { getAllMockUsers } = useCustomerAuth();
   const router = useRouter();
   const { toast } = useToast();
   const [users, setUsers] = useState<User[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(true);
   const [managedBusiness, setManagedBusiness] = useState<Business | null>(null);
+  const [businessName, setBusinessName] = useState<string>('Admin Dashboard');
 
-  const fetchUsersAndBusiness = useCallback(async () => {
-    setLoadingUsers(true);
-    const business = getManagedBusiness();
-    setManagedBusiness(business || null);
+  const fetchAdminData = useCallback(async () => {
+    if (isAdminAuthenticated && adminUser) {
+      setLoadingUsers(true);
+      const businessDetails = await getManagedBusiness();
+      setManagedBusiness(businessDetails);
+      setBusinessName(businessDetails?.name || 'Your Business');
 
-    if (business) {
-      const allUsersFromDb = await getAllMockUsers();
-      const enrolledUsers = allUsersFromDb.filter(user =>
-        user.memberships?.some(m => m.businessId === business.id)
-      );
-      setUsers(enrolledUsers);
+      if (businessDetails) {
+        const allUsersFromDb = await getAllMockUsers();
+        const enrolledUsers = allUsersFromDb.filter(user =>
+          user.memberships?.some(m => m.businessId === businessDetails.id)
+        );
+        setUsers(enrolledUsers);
+      } else {
+        setUsers([]);
+      }
+      setLoadingUsers(false);
     } else {
-      setUsers([]);
+      setLoadingUsers(false); // Not admin or no adminUser
     }
-    setLoadingUsers(false);
-  }, [getManagedBusiness, getAllMockUsers]);
+  }, [isAdminAuthenticated, adminUser, getManagedBusiness, getAllMockUsers]);
 
 
   useEffect(() => {
     if (!adminLoading && !isAdminAuthenticated) {
-      router.push('/admin/login');
+      router.push('/login'); // General login, then user can choose business tab
     }
   }, [adminLoading, isAdminAuthenticated, router]);
 
   useEffect(() => {
-    if (isAdminAuthenticated) {
-      fetchUsersAndBusiness();
-    }
-  }, [isAdminAuthenticated, fetchUsersAndBusiness]);
+    fetchAdminData();
+  }, [fetchAdminData]); // Runs when admin auth state changes or adminUser details are available
 
   const totalPointsInBusiness = users.reduce((total, user) => {
-    const membership = user.memberships?.find(m => m.businessId === adminUser?.businessId);
+    const membership = user.memberships?.find(m => m.businessId === managedBusiness?.id);
     return total + (membership?.pointsBalance || 0);
   }, 0);
 
   const totalTransactionsInBusiness = users.reduce((total, user) => {
-    const membership = user.memberships?.find(m => m.businessId === adminUser?.businessId);
+    const membership = user.memberships?.find(m => m.businessId === managedBusiness?.id);
     return total + (membership?.purchases?.length || 0);
   }, 0);
 
@@ -109,9 +113,9 @@ export default function AdminDashboardPage() {
       <div className="text-left pb-4 border-b border-border">
         <h1 className="text-3xl font-headline font-bold text-primary mb-1 flex items-center">
            <Building className="inline-block h-8 w-8 mr-3 align-text-bottom" />
-           {managedBusiness?.name || adminUser?.businessName || 'Admin Dashboard'}
+           {businessName}
         </h1>
-        <p className="text-lg text-muted-foreground">Welcome, {adminUser?.email}. Manage users and activity for {managedBusiness?.name || 'your business'}.</p>
+        <p className="text-lg text-muted-foreground">Welcome, {adminUser?.email}. Manage users and activity for {businessName}.</p>
       </div>
 
       {managedBusiness?.joinCode && (
@@ -145,7 +149,7 @@ export default function AdminDashboardPage() {
           <CardContent>
             {loadingUsers ? <Skeleton className="h-8 w-1/2" /> : <div className="text-2xl font-bold">{users.length}</div>}
             <p className="text-xs text-muted-foreground">
-              Users enrolled in {managedBusiness?.name || 'your business'}
+              Users enrolled in {businessName}
             </p>
           </CardContent>
         </Card>
@@ -157,7 +161,7 @@ export default function AdminDashboardPage() {
           <CardContent>
              {loadingUsers ? <Skeleton className="h-8 w-1/2" /> : <div className="text-2xl font-bold">{totalPointsInBusiness}</div>}
             <p className="text-xs text-muted-foreground">
-              Within {managedBusiness?.name || 'your business'}
+              Within {businessName}
             </p>
           </CardContent>
         </Card>
@@ -169,7 +173,7 @@ export default function AdminDashboardPage() {
           <CardContent>
             {loadingUsers ? <Skeleton className="h-8 w-1/2" /> : <div className="text-2xl font-bold">{totalTransactionsInBusiness}</div>}
             <p className="text-xs text-muted-foreground">
-              Recorded for {managedBusiness?.name || 'your business'}
+              Recorded for {businessName}
             </p>
           </CardContent>
         </Card>
@@ -177,7 +181,7 @@ export default function AdminDashboardPage() {
 
       <Card className="shadow-lg bg-card">
         <CardHeader>
-          <CardTitle className="font-headline text-2xl">User Management for {managedBusiness?.name || 'your business'}</CardTitle>
+          <CardTitle className="font-headline text-2xl">User Management for {businessName}</CardTitle>
           <CardDescription>View users, their purchase history, and add new purchases for your business.</CardDescription>
         </CardHeader>
         <CardContent>
@@ -189,7 +193,7 @@ export default function AdminDashboardPage() {
                 <Skeleton className="h-8 w-full" />
               </div>
           ) : (
-            <UserTable users={users} onUserUpdate={fetchUsersAndBusiness} businessId={adminUser?.businessId || ""} />
+            <UserTable users={users} onUserUpdate={fetchAdminData} businessId={adminUser?.businessId || ""} />
           )}
         </CardContent>
       </Card>

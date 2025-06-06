@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import { RewardCard } from '@/components/rewards/RewardCard';
@@ -18,6 +18,7 @@ export default function RewardsPage() {
   const router = useRouter();
   const [selectedBusiness, setSelectedBusiness] = useState<Business | null>(null);
   const [enrolledBusinesses, setEnrolledBusinesses] = useState<Business[]>([]);
+  const [dataLoading, setDataLoading] = useState(true);
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {
@@ -25,16 +26,28 @@ export default function RewardsPage() {
     }
   }, [loading, isAuthenticated, router]);
 
-  useEffect(() => {
+  const fetchEnrolledBusinesses = useCallback(async () => {
     if (user && user.memberships) {
-      const businesses = user.memberships
-        .map((membership: UserMembership) => getBusinessById(membership.businessId))
-        .filter((business): business is Business => business !== undefined);
-      setEnrolledBusinesses(businesses);
+      setDataLoading(true);
+      const businessesPromises = user.memberships.map(
+        (membership: UserMembership) => getBusinessById(membership.businessId)
+      );
+      const businessesResults = await Promise.all(businessesPromises);
+      setEnrolledBusinesses(businessesResults.filter((b): b is Business => b !== null));
+      setDataLoading(false);
+    } else if (!user?.memberships || user.memberships.length === 0) {
+        setDataLoading(false);
     }
   }, [user, getBusinessById]);
 
-  if (loading || !isAuthenticated || !user) {
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      fetchEnrolledBusinesses();
+    }
+  }, [isAuthenticated, user, fetchEnrolledBusinesses]);
+
+
+  if (loading || dataLoading || !isAuthenticated || !user) {
     return (
       <div className="w-full space-y-8">
         <div className="text-center border-b border-border pb-6 mb-8">
@@ -104,7 +117,7 @@ export default function RewardsPage() {
                 <div>
                   <CardTitle className="font-headline text-xl">{business.name}</CardTitle>
                   <CardDescription className="text-xs mt-1">
-                    {business.rewards.length} reward{business.rewards.length !== 1 ? 's' : ''} available
+                    {business.rewards?.length || 0} reward{business.rewards?.length !== 1 ? 's' : ''} available
                   </CardDescription>
                 </div>
               </CardHeader>

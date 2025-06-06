@@ -9,14 +9,14 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Loader2, LogIn, User, Briefcase } from 'lucide-react';
+import { Loader2, LogIn, User, Briefcase, Building } from 'lucide-react';
 import Link from 'next/link';
 
 export default function LoginPage() {
   const [customerEmail, setCustomerEmail] = useState('');
   const [customerPassword, setCustomerPassword] = useState('');
-  const [businessEmail, setBusinessEmail] = useState(''); // Removed pre-fill
-  const [businessPassword, setBusinessPassword] = useState(''); // Removed pre-fill
+  const [businessEmail, setBusinessEmail] = useState('');
+  const [businessPassword, setBusinessPassword] = useState('');
 
   const { login: customerLogin, loading: customerLoading } = useAuth();
   const { login: businessLogin, loading: businessLoading } = useAdminAuth();
@@ -100,7 +100,7 @@ export default function LoginPage() {
                   <Input
                     id="business-email"
                     type="email"
-                    placeholder="admin@example.com"
+                    placeholder="admin@yourbusiness.com"
                     value={businessEmail}
                     onChange={(e) => setBusinessEmail(e.target.value)}
                     required
@@ -128,8 +128,11 @@ export default function LoginPage() {
                   )}
                 </Button>
               </form>
-               <p className="mt-6 text-center text-xs text-muted-foreground">
-                Business portal access is for registered partners.
+               <p className="mt-4 text-center text-sm text-muted-foreground">
+                New business?{' '}
+                <Link href="/business-signup" className="font-medium text-primary hover:underline flex items-center justify-center">
+                  <Building className="mr-1 h-4 w-4" /> Register Your Business
+                </Link>
               </p>
             </TabsContent>
           </Tabs>
@@ -138,3 +141,4 @@ export default function LoginPage() {
     </div>
   );
 }
+

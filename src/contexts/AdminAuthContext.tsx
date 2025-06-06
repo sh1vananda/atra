@@ -2,11 +2,25 @@
 "use client";
 
 import type { AdminUser } from '@/types/admin';
-import type { Business } from '@/types/business'; // Import Business type
+import type { Business } from '@/types/business';
 import { useRouter } from 'next/navigation';
 import type { ReactNode } from 'react';
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { MOCK_BUSINESSES_DB } from './AuthContext'; // Assuming businesses are defined in AuthContext for now or a shared place
+import { auth, db } from '@/lib/firebase';
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from 'firebase/auth';
+import { doc, setDoc, getDoc, collection, addDoc, serverTimestamp, query, where, getDocs } from 'firebase/firestore';
+import { useToast } from '@/hooks/use-toast';
+
+// Helper function to generate a unique join code
+const generateJoinCode = (length = 6): string => {
+  const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  let result = '';
+  for (let i = 0; i < length; i++) {
+    result += characters.charAt(Math.floor(Math.random() * characters.length));
+  }
+  return result;
+};
+
 
 interface AdminAuthContextType {
   adminUser: AdminUser | null;
@@ -14,88 +28,160 @@ interface AdminAuthContextType {
   loading: boolean;
   login: (email: string, pass: string) => Promise<void>;
   logout: () => void;
-  getManagedBusiness: () => Business | undefined;
+  signupBusiness: (businessName: string, email: string, pass: string) => Promise<void>;
+  getManagedBusiness: () => Promise<Business | null>;
 }
 
 const AdminAuthContext = createContext<AdminAuthContextType | undefined>(undefined);
-
-// Mock admin credentials - typically this would be a secure check against a database
-const MOCK_ADMIN_CREDENTIALS = {
-  email: 'admin@example.com',
-  password: 'adminpass',
-  businessId: 'biz-001', // Link this admin to the first mock business
-};
 
 export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
   const [adminUser, setAdminUser] = useState<AdminUser | null>(null);
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
+  const { toast } = useToast();
 
   useEffect(() => {
-    const storedAdminUser = localStorage.getItem('loyaltyAdminUser');
-    if (storedAdminUser) {
-      try {
-        const parsedAdminUser = JSON.parse(storedAdminUser) as AdminUser;
-        const business = MOCK_BUSINESSES_DB.find(b => b.id === parsedAdminUser.businessId);
-        if (business && parsedAdminUser.email === MOCK_ADMIN_CREDENTIALS.email) { // Basic validation against mock
-          setAdminUser({ ...parsedAdminUser, businessName: business.name });
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseAdminAuthUser) => {
+      if (firebaseAdminAuthUser) {
+        // Check if this user is in our 'admins' collection
+        const adminProfileRef = doc(db, 'admins', firebaseAdminAuthUser.uid);
+        const adminProfileSnap = await getDoc(adminProfileRef);
+
+        if (adminProfileSnap.exists()) {
+          const adminProfileData = adminProfileSnap.data() as Omit<AdminUser, 'uid' | 'email'>; // email from auth
+          setAdminUser({
+            uid: firebaseAdminAuthUser.uid,
+            email: firebaseAdminAuthUser.email || '',
+            businessId: adminProfileData.businessId,
+          });
           setIsAdminAuthenticated(true);
         } else {
-            localStorage.removeItem('loyaltyAdminUser'); 
+          // This auth user is not a registered admin in our system
+          // Potentially sign them out or handle as an error
+          await signOut(auth); // Ensure non-admins are logged out
+          setAdminUser(null);
+          setIsAdminAuthenticated(false);
         }
-      } catch (e) {
-        console.error("Failed to parse stored admin user:", e);
-        localStorage.removeItem('loyaltyAdminUser');
+      } else {
+        setAdminUser(null);
+        setIsAdminAuthenticated(false);
       }
+      setLoading(false);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  const signupBusiness = async (businessName: string, email: string, pass: string) => {
+    setLoading(true);
+    try {
+      // 1. Create Firebase Auth user for the admin
+      const userCredential = await createUserWithEmailAndPassword(auth, email, pass);
+      const adminAuthUser = userCredential.user;
+
+      // 2. Generate a unique join code (ensure it's actually unique)
+      let joinCode = generateJoinCode();
+      let attempts = 0;
+      let codeExists = true;
+      while (codeExists && attempts < 10) {
+        const q = query(collection(db, "businesses"), where("joinCode", "==", joinCode));
+        const querySnapshot = await getDocs(q);
+        if (querySnapshot.empty) {
+          codeExists = false;
+        } else {
+          joinCode = generateJoinCode(); // Regenerate if exists
+        }
+        attempts++;
+      }
+      if (codeExists) throw new Error("Failed to generate a unique join code.");
+
+
+      // 3. Create the business document in Firestore
+      const businessCollectionRef = collection(db, 'businesses');
+      const newBusinessRef = await addDoc(businessCollectionRef, {
+        name: businessName,
+        description: `Welcome to ${businessName}'s loyalty program!`, // Default description
+        joinCode: joinCode,
+        rewards: [], // Start with no rewards
+        ownerUid: adminAuthUser.uid,
+        createdAt: serverTimestamp(),
+      });
+      const businessId = newBusinessRef.id;
+      // Update business doc with its own ID for convenience
+      await setDoc(doc(db, 'businesses', businessId), { id: businessId }, { merge: true });
+
+
+      // 4. Create the admin user profile in Firestore
+      const adminProfileRef = doc(db, 'admins', adminAuthUser.uid);
+      await setDoc(adminProfileRef, {
+        uid: adminAuthUser.uid,
+        email: adminAuthUser.email,
+        businessId: businessId,
+      });
+      
+      // Auth state change will pick up the new admin
+      toast({ title: "Business Registered!", description: `${businessName} is now part of Loyalty Leap.` });
+      router.push('/admin/dashboard');
+
+    } catch (error: any) {
+      console.error("Business signup failed:", error);
+      toast({
+        title: "Registration Failed",
+        description: error.message || "Could not register business.",
+        variant: "destructive",
+      });
     }
     setLoading(false);
-  }, []);
+  };
+
 
   const login = async (email: string, pass: string) => {
     setLoading(true);
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
-    if (email === MOCK_ADMIN_CREDENTIALS.email && pass === MOCK_ADMIN_CREDENTIALS.password) {
-      const business = MOCK_BUSINESSES_DB.find(b => b.id === MOCK_ADMIN_CREDENTIALS.businessId);
-      if (business) {
-        const mockAdminUser: AdminUser = { 
-          id: 'admin-user-001', 
-          email: email,
-          businessId: business.id,
-          businessName: business.name,
-        };
-        setAdminUser(mockAdminUser);
-        setIsAdminAuthenticated(true);
-        localStorage.setItem('loyaltyAdminUser', JSON.stringify(mockAdminUser));
-        router.push('/admin/dashboard');
-      } else {
-        console.error("Admin login failed: Managed business not found.");
-        // Consider toast: toast({ title: "Login Failed", description: "Admin configuration error.", variant: "destructive" });
+    try {
+      await signInWithEmailAndPassword(auth, email, pass);
+      // onAuthStateChanged will handle setting adminUser if valid admin
+      // It will also push to dashboard if admin is valid
+      // If not a valid admin, onAuthStateChanged will clear user and auth status
+      // router.push('/admin/dashboard'); // This push is now handled by onAuthStateChanged logic effectively
+    } catch (error: any) {
+      console.error("Admin login failed:", error);
+      toast({
+        title: "Login Failed",
+        description: error.message || "Invalid admin email or password.",
+        variant: "destructive",
+      });
+      setLoading(false);
+    }
+  };
+
+  const logout = async () => {
+    setLoading(true);
+    try {
+      await signOut(auth);
+      router.push('/login'); // Redirect to general login page
+    } catch (error: any) {
+        console.error("Admin logout failed:", error);
+        toast({ title: "Logout Failed", description: error.message, variant: "destructive"});
+    } finally {
+        setAdminUser(null);
+        setIsAdminAuthenticated(false);
+        setLoading(false);
+    }
+  };
+
+  const getManagedBusiness = async (): Promise<Business | null> => {
+    if (adminUser && adminUser.businessId) {
+      const businessDocRef = doc(db, 'businesses', adminUser.businessId);
+      const businessDocSnap = await getDoc(businessDocRef);
+      if (businessDocSnap.exists()) {
+        return { id: businessDocSnap.id, ...businessDocSnap.data() } as Business;
       }
-    } else {
-      console.error("Admin login failed: Invalid credentials");
-      // Consider toast: toast({ title: "Login Failed", description: "Invalid admin email or password.", variant: "destructive" });
     }
-    setLoading(false);
-  };
-
-  const logout = () => {
-    setAdminUser(null);
-    setIsAdminAuthenticated(false);
-    localStorage.removeItem('loyaltyAdminUser');
-    router.push('/admin/login'); 
-  };
-
-  const getManagedBusiness = (): Business | undefined => {
-    if (adminUser) {
-      return MOCK_BUSINESSES_DB.find(b => b.id === adminUser.businessId);
-    }
-    return undefined;
+    return null;
   };
 
   return (
-    <AdminAuthContext.Provider value={{ adminUser, isAdminAuthenticated, loading, login, logout, getManagedBusiness }}>
+    <AdminAuthContext.Provider value={{ adminUser, isAdminAuthenticated, loading, login, logout, signupBusiness, getManagedBusiness }}>
       {children}
     </AdminAuthContext.Provider>
   );
