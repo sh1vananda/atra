@@ -16,12 +16,12 @@ import type { Business } from '@/types/business';
 
 export default function AdminDashboardPage() {
   const { isAdminAuthenticated, loading: adminAuthLoading, adminUser, getManagedBusiness } = useAdminAuth();
-  const { getAllMockUsers } = useCustomerAuth();
+  const { getAllMockUsers } = useCustomerAuth(); // Using customer auth context to get all users
   const router = useRouter();
   const { toast } = useToast();
   
   const [users, setUsers] = useState<User[]>([]);
-  const [pageDataLoading, setPageDataLoading] = useState(true); // For data specific to this page
+  const [pageDataLoading, setPageDataLoading] = useState(true); 
   const [managedBusiness, setManagedBusiness] = useState<Business | null>(null);
   
   const fetchAdminPageData = useCallback(async () => {
@@ -66,17 +66,16 @@ export default function AdminDashboardPage() {
 
   useEffect(() => {
     console.log("AdminDashboard:EFFECT[adminAuthLoading, isAdminAuthenticated, adminUser]: adminAuthLoading:", adminAuthLoading, "isAdminAuthenticated:", isAdminAuthenticated, "adminUser Exists:", !!adminUser);
-    if (!adminAuthLoading) { // Only proceed when context has finished its initial loading
+    if (!adminAuthLoading) { 
       if (!isAdminAuthenticated) {
-        console.log("AdminDashboard:EFFECT: Not authenticated after initial load, redirecting to /login.");
+        console.log("AdminDashboard:EFFECT: Not authenticated after initial context load, redirecting to /login.");
         router.push('/login?redirect=/admin/dashboard');
-      } else if (adminUser) { // Authenticated and adminUser object is available
+      } else if (adminUser) { 
         console.log("AdminDashboard:EFFECT: Authenticated and adminUser present, calling fetchAdminPageData.");
         fetchAdminPageData();
       } else {
-        // This case (isAdminAuthenticated true but adminUser is null) should ideally not happen if context is correct
         console.warn("AdminDashboard:EFFECT: isAdminAuthenticated is true, but adminUser is null. This might indicate a state issue in AdminAuthContext. Not fetching page data.");
-        setPageDataLoading(false); // Ensure page loading stops
+        setPageDataLoading(false); 
       }
     }
   }, [adminAuthLoading, isAdminAuthenticated, adminUser, router, fetchAdminPageData]);
@@ -100,39 +99,21 @@ export default function AdminDashboardPage() {
     }
   };
 
-  // Initial loading state: Auth context is loading OR auth is done, user is authenticated, but page data is still loading.
-  if (adminAuthLoading || (isAdminAuthenticated && pageDataLoading && !managedBusiness && adminUser) ) {
-    console.log("AdminDashboard:RENDER: Showing SKELETON. adminAuthLoading:", adminAuthLoading, "isAdminAuthenticated:", isAdminAuthenticated, "pageDataLoading:", pageDataLoading, "managedBusinessExists:", !!managedBusiness, "adminUserExists:", !!adminUser);
+  // Initial loading: Auth context is loading OR auth is done, user is authenticated, but page data is still loading.
+  if (adminAuthLoading) {
+    console.log("AdminDashboard:RENDER: Showing SKELETON (Auth context loading).");
     return (
       <div className="w-full space-y-8 animate-pulse">
-        <div className="text-left pb-4 border-b border-border">
-            <Skeleton className="h-8 w-1/2 mb-2" />
-            <Skeleton className="h-5 w-3/4" />
-        </div>
-        <Card className="bg-accent/10 border-accent">
-          <CardHeader>
-             <Skeleton className="h-7 w-1/3 mb-1" />
-             <Skeleton className="h-4 w-2/3" />
-          </CardHeader>
-          <CardContent className="flex items-center justify-between">
-            <Skeleton className="h-10 w-1/4" />
-            <Skeleton className="h-9 w-24" />
-          </CardContent>
-        </Card>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {[1,2,3].map(i => (
-                <Card key={i}> <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"> <Skeleton className="h-5 w-2/5"/> <Skeleton className="h-4 w-4"/> </CardHeader> <CardContent> <Skeleton className="h-8 w-1/2 mb-1"/> <Skeleton className="h-3 w-3/5"/> </CardContent> </Card>
-            ))}
-        </div>
+        <div className="text-left pb-4 border-b border-border"> <Skeleton className="h-8 w-1/2 mb-2" /> <Skeleton className="h-5 w-3/4" /> </div>
+        <Card className="bg-accent/10 border-accent"> <CardHeader> <Skeleton className="h-7 w-1/3 mb-1" /> <Skeleton className="h-4 w-2/3" /> </CardHeader> <CardContent className="flex items-center justify-between"> <Skeleton className="h-10 w-1/4" /> <Skeleton className="h-9 w-24" /> </CardContent> </Card>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3"> {[1,2,3].map(i => ( <Card key={i}> <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"> <Skeleton className="h-5 w-2/5"/> <Skeleton className="h-4 w-4"/> </CardHeader> <CardContent> <Skeleton className="h-8 w-1/2 mb-1"/> <Skeleton className="h-3 w-3/5"/> </CardContent> </Card> ))} </div>
         <Card> <CardHeader> <Skeleton className="h-8 w-2/5 mb-1" /> <Skeleton className="h-4 w-3/5" /> </CardHeader> <CardContent> <Skeleton className="h-10 w-full mb-4" /> <Skeleton className="h-64 w-full" /> </CardContent> </Card>
       </div>
     );
   }
   
-  // After initial auth load from context, if not authenticated, show redirecting message.
-  // The useEffect should handle the actual redirection.
-  if (!adminAuthLoading && !isAdminAuthenticated) {
-    console.log("AdminDashboard:RENDER: Initial auth load done, NOT authenticated. Showing redirect message.");
+  if (!isAdminAuthenticated) { // Auth context loaded, but user is not authenticated admin
+    console.log("AdminDashboard:RENDER: Auth context loaded, NOT authenticated. Showing redirect message.");
     return (
         <div className="flex flex-col items-center justify-center min-h-[calc(100vh-150px)]">
             <Loader2 className="h-16 w-16 animate-spin text-primary mb-4" />
@@ -140,9 +121,23 @@ export default function AdminDashboardPage() {
         </div>
     );
   }
+
+  // At this point, adminAuthLoading is false and isAdminAuthenticated is true.
+  // Now consider pageDataLoading for the actual content.
+  if (pageDataLoading || !adminUser) { // Still loading page-specific data, or adminUser somehow not set yet
+     console.log("AdminDashboard:RENDER: Authenticated, but page data loading or adminUser not yet fully set. Showing SKELETON. pageDataLoading:", pageDataLoading, "adminUser exists:", !!adminUser);
+     return (
+      <div className="w-full space-y-8 animate-pulse">
+        <div className="text-left pb-4 border-b border-border"> <Skeleton className="h-8 w-1/2 mb-2" /> <Skeleton className="h-5 w-3/4" /> </div>
+        <Card className="bg-accent/10 border-accent"> <CardHeader> <Skeleton className="h-7 w-1/3 mb-1" /> <Skeleton className="h-4 w-2/3" /> </CardHeader> <CardContent className="flex items-center justify-between"> <Skeleton className="h-10 w-1/4" /> <Skeleton className="h-9 w-24" /> </CardContent> </Card>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3"> {[1,2,3].map(i => ( <Card key={i}> <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"> <Skeleton className="h-5 w-2/5"/> <Skeleton className="h-4 w-4"/> </CardHeader> <CardContent> <Skeleton className="h-8 w-1/2 mb-1"/> <Skeleton className="h-3 w-3/5"/> </CardContent> </Card> ))} </div>
+        <Card> <CardHeader> <Skeleton className="h-8 w-2/5 mb-1" /> <Skeleton className="h-4 w-3/5" /> </CardHeader> <CardContent> <Skeleton className="h-10 w-full mb-4" /> <Skeleton className="h-64 w-full" /> </CardContent> </Card>
+      </div>
+    );
+  }
   
-  // If authenticated, but business data couldn't be loaded after trying (and page data loading is complete)
-  if (isAdminAuthenticated && !pageDataLoading && !managedBusiness) {
+  // If authenticated, adminUser exists, page data NOT loading, but managedBusiness is NULL
+  if (!pageDataLoading && !managedBusiness) {
      console.log("AdminDashboard:RENDER: Authenticated, page data NOT loading, but managedBusiness is NULL. Showing error for missing business data.");
      return (
         <div className="w-full space-y-8 text-center py-10">
@@ -156,21 +151,8 @@ export default function AdminDashboardPage() {
         </div>
      );
   }
-  
-  // Fallback if for some reason we reach here and adminUser is null, but authenticated.
-  // This should ideally be caught by previous conditions or context logic.
-  if (isAdminAuthenticated && !adminUser) {
-      console.warn("AdminDashboard:RENDER: isAdminAuthenticated true, but adminUser is null. Showing loading/error. This indicates an issue with AdminAuthContext state propagation.");
-       return (
-        <div className="flex flex-col items-center justify-center min-h-[calc(100vh-150px)]">
-            <Loader2 className="h-16 w-16 animate-spin text-primary mb-4" />
-            <p className="text-muted-foreground">Verifying admin details...</p>
-        </div>
-    );
-  }
 
-
-  // Normal render if authenticated, adminUser, and managedBusiness are available
+  // Normal render: adminAuthLoading=false, isAdminAuthenticated=true, adminUser=exists, pageDataLoading=false, managedBusiness=exists
   console.log("AdminDashboard:RENDER: Rendering NORMAL dashboard content. AdminUser:", adminUser, "ManagedBusiness:", managedBusiness);
   return (
     <div className="w-full space-y-8">
@@ -208,4 +190,3 @@ export default function AdminDashboardPage() {
     </div>
   );
 }
-

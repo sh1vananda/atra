@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react'; // Added useEffect
 import { useAuth } from '@/contexts/AuthContext';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { Button } from '@/components/ui/button';
@@ -11,6 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Loader2, LogIn, User, Briefcase, Building } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation'; // Added useRouter, useSearchParams
 
 export default function LoginPage() {
   const [customerEmail, setCustomerEmail] = useState('');
@@ -18,18 +19,50 @@ export default function LoginPage() {
   const [businessEmail, setBusinessEmail] = useState('');
   const [businessPassword, setBusinessPassword] = useState('');
 
-  const { login: customerLogin, loading: customerLoading } = useAuth();
-  const { login: businessLogin, loading: businessLoading } = useAdminAuth();
+  const { login: customerLogin, loading: customerLoading, isAuthenticated: isCustomerAuth, loading: customerAuthLoading } = useAuth();
+  const { login: businessLogin, loading: businessLoading, isAdminAuthenticated, loading: adminAuthLoading } = useAdminAuth();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectPath = searchParams.get('redirect') || undefined;
+
+  // Redirect customer if already authenticated
+  useEffect(() => {
+    if (!customerAuthLoading && isCustomerAuth) {
+      router.push(redirectPath || '/loyalty');
+    }
+  }, [isCustomerAuth, customerAuthLoading, router, redirectPath]);
+
+  // Redirect admin if already authenticated
+  useEffect(() => {
+    if (!adminAuthLoading && isAdminAuthenticated) {
+      router.push(redirectPath || '/admin/dashboard');
+    }
+  }, [isAdminAuthenticated, adminAuthLoading, router, redirectPath]);
+
 
   const handleCustomerSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     await customerLogin(customerEmail, customerPassword);
+    // Redirection is handled by the useEffect above
   };
 
   const handleBusinessSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     await businessLogin(businessEmail, businessPassword);
+    // Redirection is handled by the useEffect above
   };
+  
+  // If either auth context is still loading initially, show a generic loading state for the page
+  // or if a redirect is imminent and user is already authenticated.
+  if (customerAuthLoading || adminAuthLoading || (!customerAuthLoading && isCustomerAuth) || (!adminAuthLoading && isAdminAuthenticated)) {
+    return (
+        <div className="flex flex-col items-center justify-center min-h-[calc(100vh-150px)]">
+            <Loader2 className="h-16 w-16 animate-spin text-primary mb-4" />
+            <p className="text-muted-foreground">Loading account status...</p>
+        </div>
+    );
+  }
+
 
   return (
     <div className="flex flex-grow flex-col items-center justify-center py-12">
