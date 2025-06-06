@@ -11,7 +11,7 @@ import { AdminAuthProvider } from '@/contexts/AdminAuthContext';
 import { usePathname } from 'next/navigation';
 
 // Metadata should be defined outside the component if it's static
-// export const metadata: Metadata = { ... }; 
+// export const metadata: Metadata = { ... };
 // However, since RootLayout is now a client component due to usePathname,
 // metadata should be handled in a parent server component or moved to specific page.tsx files.
 // For now, we'll keep it simple and you can add metadata to individual page.tsx files as needed.
@@ -27,7 +27,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
-        <title>Loyalty Leap</title> {/* Basic title, can be overridden by pages */}
+        <title>Loyalty Leap</title>{/* Basic title, can be overridden by pages */}
         <meta name="description" content="Your Digital Loyalty Platform" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
@@ -48,4 +48,3 @@ export default function RootLayout({
     </html>
   );
 }
-
