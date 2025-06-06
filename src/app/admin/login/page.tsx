@@ -20,8 +20,12 @@ export default function AdminLoginPage() {
     await login(email, password);
   };
 
+  // This page is wrapped by AdminLayout, which is inside RootLayout's <main>
+  // The RootLayout <main> provides `container mx-auto px-4 py-8 bg-muted/40` for admin routes.
+  // AdminLayout provides AdminHeader.
+  // This div will center its content within the space given after the AdminHeader.
   return (
-    <div className="flex justify-center items-center min-h-screen bg-muted">
+    <div className="flex flex-grow flex-col items-center justify-center py-12">
       <Card className="w-full max-w-md shadow-xl">
         <CardHeader className="text-center">
           <ShieldCheck className="mx-auto h-12 w-12 text-primary mb-2" />

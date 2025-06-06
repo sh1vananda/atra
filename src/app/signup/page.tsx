@@ -22,7 +22,7 @@ export default function SignupPage() {
   };
 
   return (
-    <div className="flex justify-center items-center min-h-[calc(100vh-200px)]">
+    <div className="flex flex-grow flex-col items-center justify-center py-12">
       <Card className="w-full max-w-md shadow-xl">
         <CardHeader className="text-center">
           <UserPlus className="mx-auto h-12 w-12 text-primary mb-2" />
