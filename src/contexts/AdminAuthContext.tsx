@@ -2,7 +2,7 @@
 "use client";
 
 import type { AdminUser } from '@/types/admin';
-import type { Business } from '@/types/business';
+import type { Business, Reward } from '@/types/business';
 import type { ReactNode } from 'react';
 import React, { createContext, useContext, useEffect, useState, useCallback, useMemo } from 'react';
 import { auth, db } from '@/lib/firebase';
@@ -27,6 +27,9 @@ interface AdminAuthContextType {
   logout: () => Promise<void>;
   signupBusiness: (businessName: string, email: string, pass: string) => Promise<{success: boolean; message?: string}>;
   getManagedBusiness: () => Promise<Business | null>;
+  addRewardToBusiness: (businessId: string, rewardData: Omit<Reward, 'id'>) => Promise<boolean>;
+  updateRewardInBusiness: (businessId: string, updatedReward: Reward) => Promise<boolean>;
+  deleteRewardFromBusiness: (businessId: string, rewardId: string) => Promise<boolean>;
 }
 
 const AdminAuthContext = createContext<AdminAuthContextType | undefined>(undefined);
@@ -52,7 +55,7 @@ export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
               console.log(`AdminAuthContext:EVENT: Admin profile FOUND for UID: ${firebaseAuthUser.uid} with businessId: ${adminProfileData.businessId}`);
               setAdminUser({
                 uid: firebaseAuthUser.uid,
-                email: firebaseAuthUser.email || '', // email from auth is more reliable
+                email: firebaseAuthUser.email || '',
                 businessId: adminProfileData.businessId,
               });
               setIsAdminAuthenticated(true);
@@ -60,7 +63,6 @@ export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
               console.warn(`AdminAuthContext:EVENT: Admin profile for ${firebaseAuthUser.uid} MISSING or has invalid businessId. Clearing admin state.`);
               setAdminUser(null);
               setIsAdminAuthenticated(false);
-              // No toast here, could be a regular user trying to access admin paths.
             }
           } else {
             console.log(`AdminAuthContext:EVENT: No admin profile found for UID: ${firebaseAuthUser.uid}. This user is NOT an app admin.`);
@@ -73,12 +75,14 @@ export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
           setIsAdminAuthenticated(false);
           toast({ title: "Profile Error", description: "Could not fetch admin profile data.", variant: "destructive" });
         } finally {
+          console.log("AdminAuthContext:EVENT: Finished processing onAuthStateChanged. Setting loading to false.");
           setLoading(false);
         }
       } else {
         console.log("AdminAuthContext:EVENT: No Firebase user (signed out). Clearing admin state.");
         setAdminUser(null);
         setIsAdminAuthenticated(false);
+        console.log("AdminAuthContext:EVENT: Finished processing onAuthStateChanged (no user). Setting loading to false.");
         setLoading(false);
       }
     });
@@ -86,14 +90,15 @@ export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
       console.log("AdminAuthContext:EFFECT: Unsubscribing from onAuthStateChanged.");
       unsubscribe();
     };
-  }, [toast]);
+  }, []); // Empty dependency array for onAuthStateChanged setup
 
   const login = useCallback(async (email: string, pass: string) => {
     console.log("AdminAuthContext:ACTION:login: Attempt for email:", email);
     setLoading(true);
     try {
       await signInWithEmailAndPassword(auth, email, pass);
-      // onAuthStateChanged will handle setting user state and navigation.
+      console.log(`AdminAuthContext:ACTION:login: Firebase signInWithEmailAndPassword successful for ${email}`);
+      // onAuthStateChanged will handle setting user state and primary loading=false.
     } catch (error: any) {
       console.error("AdminAuthContext:ACTION:login: Firebase signInWithEmailAndPassword failed:", error);
       let errorMessage = "Invalid admin email or password.";
@@ -109,7 +114,7 @@ export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
         }
       }
       toast({ title: "Login Failed", description: errorMessage, variant: "destructive" });
-      setLoading(false); // Ensure loading is false if login itself fails
+      setLoading(false); 
     }
   }, [toast]);
 
@@ -139,23 +144,21 @@ export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
         name: businessName,
         description: `Welcome to ${businessName}'s loyalty program!`,
         joinCode: joinCode,
-        rewards: [], // Start with empty rewards
+        rewards: [], 
         ownerUid: fbAdminAuthUser.uid,
         createdAt: serverTimestamp(),
-        id: '' // Placeholder, will be updated
+        id: '' 
       });
       newBusinessId = businessDocRef.id;
       await updateDoc(doc(db, 'businesses', newBusinessId), { id: newBusinessId });
 
       await setDoc(doc(db, 'admins', fbAdminAuthUser.uid), {
-        email: email, // Store email in admin profile for consistency
+        email: email, 
         businessId: newBusinessId,
       });
       
       toast({ title: "Business Registered!", description: `${businessName} is now part of ATRA.` });
-      // onAuthStateChanged will handle setting admin state and loading.
-      // UI (LoginPage) will handle redirection.
-      setLoading(false); // May be set by onAuthStateChanged, but good to ensure.
+      // onAuthStateChanged will handle loading.
       return { success: true };
     } catch (error: any) {
       console.error("AdminAuthContext:ACTION:signupBusiness: FAILED:", error);
@@ -172,7 +175,6 @@ export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
       }
       toast({ title: "Registration Failed", description: errorMessage, variant: "destructive" });
 
-      // Rollback efforts
       if (fbAdminAuthUser) {
         if (newBusinessId) {
           try { await deleteDoc(doc(db, 'businesses', newBusinessId)); }
@@ -189,11 +191,10 @@ export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
   const logout = useCallback(async () => {
     const currentAdminEmail = adminUser?.email;
     console.log("AdminAuthContext:ACTION:logout: Attempt for admin:", currentAdminEmail);
-    // setLoading(true); // onAuthStateChanged will handle this
     try {
       await signOut(auth);
       toast({ title: "Logged Out", description: `Admin ${currentAdminEmail || ''} logged out.`});
-      // State will be cleared by onAuthStateChanged.
+      // State will be cleared by onAuthStateChanged, which also sets loading = false.
     } catch (error: any) {
       console.error("AdminAuthContext:ACTION:logout: Failed:", error);
       toast({ title: "Logout Failed", description: error.message || "Could not log out.", variant: "destructive"});
@@ -201,17 +202,21 @@ export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
   }, [toast, adminUser?.email]);
 
   const getManagedBusiness = useCallback(async (): Promise<Business | null> => {
-    // This function now uses the locally stored adminUser.businessId
-    // It's assumed adminUser is populated correctly by onAuthStateChanged
+    console.log(`AdminAuthContext:ACTION:getManagedBusiness called. adminUser:`, adminUser);
     if (!adminUser?.businessId) {
-      console.warn("AdminAuthContext:getManagedBusiness: No businessId found on adminUser.");
+      console.warn("AdminAuthContext:getManagedBusiness: No businessId found on adminUser or adminUser is null.");
+      if (isAdminAuthenticated && !loading && adminUser && !adminUser.businessId) {
+        // This condition indicates an admin is logged in but their profile is missing critical data
+        toast({ title: "Profile Incomplete", description: "Admin profile is missing business information.", variant: "destructive" });
+      }
       return null;
     }
-    console.log(`AdminAuthContext:getManagedBusiness: Fetching business: ${adminUser.businessId}`);
+    console.log(`AdminAuthContext:ACTION:getManagedBusiness: Fetching business: ${adminUser.businessId}`);
     const businessDocRef = doc(db, 'businesses', adminUser.businessId);
     try {
       const businessDocSnap = await getDoc(businessDocRef);
       if (businessDocSnap.exists()) {
+        console.log(`AdminAuthContext:ACTION:getManagedBusiness: Business data FOUND: ${adminUser.businessId}`);
         return { id: businessDocSnap.id, ...businessDocSnap.data() } as Business;
       }
       toast({ title: "Error", description: "Managed business data not found.", variant: "destructive" });
@@ -220,7 +225,94 @@ export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
       toast({ title: "Fetch Error", description: `Could not fetch business details: ${error.message || 'Unknown error'}.`, variant: "destructive" });
       return null;
     }
-  }, [adminUser?.businessId, toast]);
+  }, [adminUser, isAdminAuthenticated, loading, toast]);
+
+
+  const addRewardToBusiness = useCallback(async (businessId: string, rewardData: Omit<Reward, 'id'>): Promise<boolean> => {
+    if (!businessId) {
+        toast({ title: "Error", description: "Business ID is missing.", variant: "destructive" });
+        return false;
+    }
+    const businessDocRef = doc(db, 'businesses', businessId);
+    try {
+        const businessSnap = await getDoc(businessDocRef);
+        if (!businessSnap.exists()) {
+            toast({ title: "Error", description: "Business not found.", variant: "destructive" });
+            return false;
+        }
+        const businessData = businessSnap.data() as Business;
+        const newRewardId = doc(collection(db, '_temp_ids_')).id; // Generate a unique ID
+        const newReward: Reward = {
+            id: newRewardId,
+            ...rewardData
+        };
+        const updatedRewards = [...(businessData.rewards || []), newReward];
+        await updateDoc(businessDocRef, { rewards: updatedRewards });
+        toast({ title: "Reward Added", description: `${rewardData.title} has been added successfully.`});
+        return true;
+    } catch (error: any) {
+        console.error("Error adding reward:", error);
+        toast({ title: "Error Adding Reward", description: error.message || "Could not add reward.", variant: "destructive" });
+        return false;
+    }
+  }, [toast]);
+
+  const updateRewardInBusiness = useCallback(async (businessId: string, updatedReward: Reward): Promise<boolean> => {
+    if (!businessId || !updatedReward.id) {
+        toast({ title: "Error", description: "Business ID or Reward ID is missing.", variant: "destructive" });
+        return false;
+    }
+    const businessDocRef = doc(db, 'businesses', businessId);
+    try {
+        const businessSnap = await getDoc(businessDocRef);
+        if (!businessSnap.exists()) {
+            toast({ title: "Error", description: "Business not found.", variant: "destructive" });
+            return false;
+        }
+        const businessData = businessSnap.data() as Business;
+        const rewardIndex = (businessData.rewards || []).findIndex(r => r.id === updatedReward.id);
+        if (rewardIndex === -1) {
+            toast({ title: "Error", description: "Reward not found to update.", variant: "destructive" });
+            return false;
+        }
+        const updatedRewards = [...(businessData.rewards || [])];
+        updatedRewards[rewardIndex] = updatedReward;
+        
+        await updateDoc(businessDocRef, { rewards: updatedRewards });
+        toast({ title: "Reward Updated", description: `${updatedReward.title} has been updated successfully.`});
+        return true;
+    } catch (error: any) {
+        console.error("Error updating reward:", error);
+        toast({ title: "Error Updating Reward", description: error.message || "Could not update reward.", variant: "destructive" });
+        return false;
+    }
+  }, [toast]);
+
+  const deleteRewardFromBusiness = useCallback(async (businessId: string, rewardId: string): Promise<boolean> => {
+    if (!businessId || !rewardId) {
+        toast({ title: "Error", description: "Business ID or Reward ID is missing for deletion.", variant: "destructive" });
+        return false;
+    }
+    const businessDocRef = doc(db, 'businesses', businessId);
+    try {
+        const businessSnap = await getDoc(businessDocRef);
+        if (!businessSnap.exists()) {
+            toast({ title: "Error", description: "Business not found.", variant: "destructive" });
+            return false;
+        }
+        const businessData = businessSnap.data() as Business;
+        const updatedRewards = (businessData.rewards || []).filter(r => r.id !== rewardId);
+        
+        await updateDoc(businessDocRef, { rewards: updatedRewards });
+        toast({ title: "Reward Deleted", description: `The reward has been deleted successfully.`});
+        return true;
+    } catch (error: any) {
+        console.error("Error deleting reward:", error);
+        toast({ title: "Error Deleting Reward", description: error.message || "Could not delete reward.", variant: "destructive" });
+        return false;
+    }
+  }, [toast]);
+
 
   const contextValue = useMemo(() => ({
     adminUser,
@@ -229,8 +321,11 @@ export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
     login,
     logout,
     signupBusiness,
-    getManagedBusiness
-  }), [adminUser, isAdminAuthenticated, loading, login, logout, signupBusiness, getManagedBusiness]);
+    getManagedBusiness,
+    addRewardToBusiness,
+    updateRewardInBusiness,
+    deleteRewardFromBusiness,
+  }), [adminUser, isAdminAuthenticated, loading, login, logout, signupBusiness, getManagedBusiness, addRewardToBusiness, updateRewardInBusiness, deleteRewardFromBusiness]);
 
   return <AdminAuthContext.Provider value={contextValue}>{children}</AdminAuthContext.Provider>;
 };
