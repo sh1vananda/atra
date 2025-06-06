@@ -10,6 +10,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { usePathname } from 'next/navigation';
 import { useTheme } from "next-themes";
 import { useEffect, useState } from 'react';
+import { cn } from '@/lib/utils';
 
 export function Header() {
   const pathname = usePathname();
@@ -21,36 +22,35 @@ export function Header() {
 
   useEffect(() => setMounted(true), []);
 
-  const loading = customerLoading || adminLoading;
-  const isAdminRoute = mounted ? pathname.startsWith('/admin') : false;
-
+  const combinedLoading = customerLoading || adminLoading;
+  
+  // Values for the main render, determined after mounting
   let titleText = "Loyalty Leap";
-  let titleHref = "/"; 
+  let titleHref = "/";
+  let displayIcon = <Award className="h-7 w-7 sm:h-8 sm:w-8" />;
+  let currentAdminRoute = false;
 
   if (mounted) {
-    if (isAdminRoute) {
+    currentAdminRoute = pathname.startsWith('/admin');
+    if (currentAdminRoute) {
+      displayIcon = <Building className="h-7 w-7 sm:h-8 sm:w-8" />;
       titleText = adminUser?.businessName ? `${adminUser.businessName} Portal` : "Admin Portal";
       titleHref = isAdminAuthenticated ? "/admin/dashboard" : "/admin/login";
     } else if (isCustomerAuth) {
+      displayIcon = <Award className="h-7 w-7 sm:h-8 sm:w-8" />;
       titleText = "Loyalty Leap";
       // If logged in as customer, title link goes to their loyalty page, unless they are on the homepage
       titleHref = pathname === "/" ? "/" : "/loyalty";
     } else {
+      // Logged out, customer routes
+      displayIcon = <Award className="h-7 w-7 sm:h-8 sm:w-8" />;
       titleText = "Loyalty Leap";
       titleHref = "/";
     }
   }
 
-
-  const handleAdminLogout = () => {
-    adminLogout();
-  };
-
-  const handleCustomerLogout = () => {
-    customerLogout();
-  };
-
   if (!mounted) {
+    // Skeleton rendered on server and initial client render
     return (
       <header className="bg-card border-b border-border shadow-sm sticky top-0 z-50">
         <div className="w-full px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
@@ -67,29 +67,30 @@ export function Header() {
     );
   }
 
+  // Full header content, rendered after client-side mount
   return (
     <header className="bg-card border-b border-border shadow-sm sticky top-0 z-50">
       <div className="w-full px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
         <Link href={titleHref} className="flex items-center gap-2 text-primary hover:opacity-80 transition-opacity">
-          {isAdminRoute ? <Building className="h-7 w-7 sm:h-8 sm:w-8" /> : <Award className="h-7 w-7 sm:h-8 sm:w-8" />}
+          {displayIcon}
           <h1 className="text-xl sm:text-2xl font-headline font-semibold">{titleText}</h1>
         </Link>
         <nav className="flex items-center gap-1 sm:gap-2">
-          {loading ? (
+          {combinedLoading ? (
             <>
               <Skeleton className="h-9 w-24 rounded-md" />
               <Skeleton className="h-9 w-20 rounded-md" />
             </>
-          ) : isAdminRoute ? (
+          ) : currentAdminRoute ? ( // Use the 'currentAdminRoute' calculated when mounted
             isAdminAuthenticated ? (
               <>
-                <Button variant="ghost" asChild className={pathname === "/admin/dashboard" ? "bg-secondary" : ""}>
+                <Button variant="ghost" asChild className={cn(pathname === "/admin/dashboard" && "bg-secondary")}>
                   <Link href="/admin/dashboard">
                     <LayoutDashboard className="h-5 w-5 sm:mr-1" />
                     <span className="hidden sm:inline">Dashboard</span>
                   </Link>
                 </Button>
-                <Button variant="outline" onClick={handleAdminLogout} aria-label="Logout">
+                <Button variant="outline" onClick={adminLogout} aria-label="Logout">
                   <LogOut className="h-5 w-5 sm:mr-1" />
                   <span className="hidden sm:inline">Logout</span>
                 </Button>
@@ -104,37 +105,37 @@ export function Header() {
           ) : (
             isCustomerAuth ? (
               <>
-                <Button variant="ghost" size="sm" asChild className={pathname === "/loyalty" ? "bg-accent text-accent-foreground" : ""}>
+                <Button variant="ghost" size="sm" asChild className={cn(pathname === "/loyalty" ? "bg-accent text-accent-foreground" : "")}>
                   <Link href="/loyalty"><ShoppingBag className="h-4 w-4 mr-1 sm:mr-2"/>Loyalty</Link>
                 </Button>
-                <Button variant="ghost" size="sm" asChild className={pathname === "/rewards" ? "bg-accent text-accent-foreground" : ""}>
+                <Button variant="ghost" size="sm" asChild className={cn(pathname === "/rewards" ? "bg-accent text-accent-foreground" : "")}>
                   <Link href="/rewards"><Star className="h-4 w-4 mr-1 sm:mr-2"/>Rewards</Link>
                 </Button>
-                <Button variant="ghost" size="sm" asChild className={pathname === "/history" ? "bg-accent text-accent-foreground" : ""}>
+                <Button variant="ghost" size="sm" asChild className={cn(pathname === "/history" ? "bg-accent text-accent-foreground" : "")}>
                   <Link href="/history"><HistoryIcon className="h-4 w-4 mr-1 sm:mr-2"/>History</Link>
                 </Button>
-                <Button variant="ghost" size="sm" asChild className={pathname === "/offers" ? "bg-accent text-accent-foreground" : ""}>
+                <Button variant="ghost" size="sm" asChild className={cn(pathname === "/offers" ? "bg-accent text-accent-foreground" : "")}>
                   <Link href="/offers"><OffersIcon className="h-4 w-4 mr-1 sm:mr-2"/>Offers</Link>
                 </Button>
-                <Button variant="ghost" size="icon" asChild className={pathname === "/profile" ? "bg-accent text-accent-foreground rounded-full" : "rounded-full"}>
+                <Button variant="ghost" size="icon" asChild className={cn(pathname === "/profile" ? "bg-accent text-accent-foreground rounded-full" : "rounded-full")}>
                   <Link href="/profile" aria-label="Profile">
                     <UserCircle className="h-5 w-5" />
                   </Link>
                 </Button>
-                <Button variant="outline" size="sm" onClick={handleCustomerLogout} aria-label="Logout">
+                <Button variant="outline" size="sm" onClick={customerLogout} aria-label="Logout">
                   <LogOut className="h-5 w-5 sm:mr-1" />
                   <span className="hidden sm:inline">Logout</span>
                 </Button>
               </>
             ) : (
               <>
-                <Button variant="ghost" asChild className={pathname === "/login" ? "bg-secondary" : ""}>
+                <Button variant="ghost" asChild className={cn(pathname === "/login" && "bg-secondary")}>
                   <Link href="/login">
                     <LogIn className="h-5 w-5 sm:mr-1" />
                     <span className="hidden sm:inline">Login</span>
                   </Link>
                 </Button>
-                <Button variant="default" asChild className={`${pathname === "/signup" ? "bg-primary/80" : "bg-primary"} hover:bg-primary/90`}>
+                <Button variant="default" asChild className={cn(pathname === "/signup" ? "bg-primary/80" : "bg-primary", "hover:bg-primary/90")}>
                   <Link href="/signup">
                     <UserPlus className="h-5 w-5 sm:mr-1" />
                     <span className="hidden sm:inline">Sign Up</span>
@@ -159,3 +160,5 @@ export function Header() {
     </header>
   );
 }
+
+  
