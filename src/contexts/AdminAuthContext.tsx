@@ -57,33 +57,37 @@ export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
               });
               setIsAdminAuthenticated(true);
             } else {
+              // Admin profile exists but is incomplete (missing businessId)
               setAdminUser(null);
               setIsAdminAuthenticated(false);
             }
           } else {
+            // This Firebase user is not an admin
             setAdminUser(null);
             setIsAdminAuthenticated(false);
           }
         } catch (error) {
           setAdminUser(null);
           setIsAdminAuthenticated(false);
-          toast({ title: "Profile Error", description: "Could not fetch admin profile data.", variant: "destructive" });
+          toast({ title: "Profile Error", description: "Could not fetch admin profile.", variant: "destructive" });
         } finally {
           setLoading(false);
         }
       } else {
+        // No Firebase user (signed out)
         setAdminUser(null);
         setIsAdminAuthenticated(false);
         setLoading(false);
       }
     });
     return () => unsubscribe();
-  }, [toast]);
+  }, [toast]); // toast is stable
 
   const login = useCallback(async (email: string, pass: string) => {
     setLoading(true);
     try {
       await signInWithEmailAndPassword(auth, email, pass);
+      // onAuthStateChanged will handle setting admin state and primary loading=false.
     } catch (error: any) {
       let errorMessage = "Invalid admin email or password.";
        if (error.code) {
@@ -121,7 +125,7 @@ export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
         joinCode = generateJoinCode();
         attempts++;
       }
-      if (attempts >= 10) throw new Error("Failed to generate a unique join code after multiple attempts.");
+      if (attempts >= 10) throw new Error("Failed to generate a unique join code.");
 
       const businessDocRef = await addDoc(businessesColRef, {
         name: businessName,
@@ -139,7 +143,7 @@ export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
         businessId: newBusinessId,
       });
       
-      toast({ title: "Business Registered!", description: `${businessName} is now part of ATRA.` });
+      toast({ title: "Business Registered!", description: `${businessName} is now part of ATRA.`, variant: "default" });
       return { success: true };
     } catch (error: any) {
       let errorMessage = "Could not register business.";
@@ -188,7 +192,7 @@ export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
       if (businessDocSnap.exists()) {
         return { id: businessDocSnap.id, ...businessDocSnap.data() } as Business;
       }
-      toast({ title: "Error", description: "Managed business data not found in database.", variant: "destructive" });
+      toast({ title: "Error", description: "Managed business data not found.", variant: "destructive" });
       return null;
     } catch (error: any) {
       toast({ title: "Fetch Error", description: `Could not fetch business details: ${error.message || 'Unknown error'}.`, variant: "destructive" });
@@ -216,11 +220,11 @@ export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
             description: rewardData.description,
             pointsCost: rewardData.pointsCost,
             category: rewardData.category,
-            icon: rewardData.icon || '', // Ensure icon is not undefined
+            icon: rewardData.icon || '', 
         };
         const updatedRewards = [...(businessData.rewards || []), newReward];
         await updateDoc(businessDocRef, { rewards: updatedRewards });
-        toast({ title: "Reward Added", description: `${newReward.title} has been added successfully.`});
+        toast({ title: "Reward Added", description: `${newReward.title} has been added.`, variant: "default"});
         return true;
     } catch (error: any) {
         toast({ title: "Error Adding Reward", description: error.message || "Could not add reward.", variant: "destructive" });
@@ -247,14 +251,13 @@ export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
             return false;
         }
         const updatedRewardsList = [...(businessData.rewards || [])];
-        // Ensure optional fields are handled to avoid 'undefined'
         updatedRewardsList[rewardIndex] = {
             ...updatedReward,
             icon: updatedReward.icon || '',
         };
         
         await updateDoc(businessDocRef, { rewards: updatedRewardsList });
-        toast({ title: "Reward Updated", description: `${updatedReward.title} has been updated successfully.`});
+        toast({ title: "Reward Updated", description: `${updatedReward.title} has been updated.`, variant: "default"});
         return true;
     } catch (error: any) {
         toast({ title: "Error Updating Reward", description: error.message || "Could not update reward.", variant: "destructive" });

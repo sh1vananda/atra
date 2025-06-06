@@ -6,9 +6,11 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import { HistoryListItem, type HistoryEntry } from '@/components/history/HistoryListItem';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { ScrollText, Info } from 'lucide-react';
+import { ScrollText, Info, ShoppingBag } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { MockPurchase, UserMembership } from '@/types/user';
+import { Button } from '@/components/ui/button';
+import Link from 'next/link';
 
 function mapPurchaseToHistoryEntry(purchase: MockPurchase, businessName: string): HistoryEntry {
   return {
@@ -77,18 +79,18 @@ export default function HistoryPage() {
   const sortedHistory = allHistoryEntries.sort((a, b) => b.date.getTime() - a.date.getTime());
 
   return (
-    <div className="w-full space-y-8">
+    <div className="w-full space-y-10 sm:space-y-12">
        <div className="text-center border-b border-border pb-6 mb-8">
-        <h1 className="text-4xl font-headline font-bold text-primary mb-2">Your Activity</h1>
-        <p className="text-lg text-muted-foreground">A record of your points earned and rewards redeemed across all programs.</p>
+        <h1 className="text-3xl sm:text-4xl font-headline font-bold text-primary mb-2">Your Activity</h1>
+        <p className="text-lg text-muted-foreground max-w-2xl mx-auto">A record of your points earned and rewards redeemed across all programs.</p>
       </div>
-      <Card className="shadow-lg bg-card">
-        <CardHeader className="flex flex-row items-center justify-between">
+      <Card className="shadow-xl bg-card">
+        <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <div>
-            <CardTitle className="font-headline text-2xl">Transaction History</CardTitle>
+            <CardTitle className="font-headline text-2xl sm:text-3xl">Transaction History</CardTitle>
             <CardDescription>View your recent activity below.</CardDescription>
           </div>
-          <ScrollText className="h-8 w-8 text-primary"/>
+          <ScrollText className="h-8 w-8 text-primary self-start sm:self-center"/>
         </CardHeader>
         <CardContent>
           {sortedHistory.length > 0 ? (
@@ -98,10 +100,13 @@ export default function HistoryPage() {
               ))}
             </ul>
           ) : (
-            <div className="text-center py-12">
-              <Info className="h-12 w-12 mx-auto text-primary mb-4" />
+            <div className="text-center py-10 sm:py-16">
+              <ShoppingBag className="h-16 w-16 mx-auto text-primary mb-4 opacity-70" />
               <p className="text-xl font-semibold text-muted-foreground">No history yet.</p>
-              <p className="text-muted-foreground">Start earning points or make a purchase to see your activity here!</p>
+              <p className="text-muted-foreground mt-1">Start earning points or make a purchase to see your activity here!</p>
+              <Button asChild className="mt-6">
+                <Link href="/loyalty">Explore Loyalty Programs</Link>
+              </Button>
             </div>
           )}
         </CardContent>

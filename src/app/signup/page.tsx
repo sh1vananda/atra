@@ -25,7 +25,7 @@ export default function SignupPage() {
   const [adminPassword, setAdminPassword] = useState('');
 
   const { signup: customerSignup, loading: customerLoading } = useAuth();
-  const { signupBusiness, loading: businessLoading } = useAdminAuth() as any; // Cast as any if signupBusiness might not exist
+  const { signupBusiness, loading: businessLoading } = useAdminAuth();
   const { toast } = useToast();
 
   const handleCustomerSubmit = async (e: React.FormEvent) => {
@@ -35,32 +35,24 @@ export default function SignupPage() {
 
   const handleBusinessSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!signupBusiness) {
-        toast({
-            title: "Feature not fully implemented",
-            description: "Business signup function is not available in the admin context.",
-            variant: "destructive",
-        });
-        return;
-    }
     await signupBusiness(businessName, adminEmail, adminPassword);
   };
 
   return (
-    <div className="flex flex-grow flex-col items-center justify-center py-12">
+    <div className="flex flex-grow flex-col items-center justify-center py-8 sm:py-12">
       <Card className="w-full max-w-md shadow-xl">
         <CardHeader className="text-center">
-          <UserPlus className="mx-auto h-12 w-12 text-primary mb-2" />
+          <UserPlus className="mx-auto h-10 w-10 sm:h-12 sm:w-12 text-primary mb-2" />
           <CardTitle className="font-headline text-3xl">Create an Account</CardTitle>
           <CardDescription>Join ATRA as a customer or register your business.</CardDescription>
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="customer" className="w-full">
             <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="customer">
+              <TabsTrigger value="customer" className="text-sm sm:text-base">
                 <UserPlus className="mr-2 h-4 w-4" /> Customer
               </TabsTrigger>
-              <TabsTrigger value="business">
+              <TabsTrigger value="business" className="text-sm sm:text-base">
                 <Briefcase className="mr-2 h-4 w-4" /> Business
               </TabsTrigger>
             </TabsList>
@@ -76,6 +68,7 @@ export default function SignupPage() {
                     value={customerName}
                     onChange={(e) => setCustomerName(e.target.value)}
                     required
+                    disabled={customerLoading}
                   />
                 </div>
                 <div className="space-y-2">
@@ -87,6 +80,7 @@ export default function SignupPage() {
                     value={customerEmail}
                     onChange={(e) => setCustomerEmail(e.target.value)}
                     required
+                    disabled={customerLoading}
                   />
                 </div>
                 <div className="space-y-2">
@@ -94,13 +88,14 @@ export default function SignupPage() {
                   <Input
                     id="customer-password"
                     type="password"
-                    placeholder="Create a strong password"
+                    placeholder="Create a strong password (min. 6 characters)"
                     value={customerPassword}
                     onChange={(e) => setCustomerPassword(e.target.value)}
                     required
+                    disabled={customerLoading}
                   />
                 </div>
-                <Button type="submit" disabled={customerLoading} className="w-full bg-primary hover:bg-primary/90">
+                <Button type="submit" disabled={customerLoading} className="w-full bg-primary hover:bg-primary/90 text-base py-3">
                   {customerLoading ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -124,6 +119,7 @@ export default function SignupPage() {
                     value={businessName}
                     onChange={(e) => setBusinessName(e.target.value)}
                     required
+                    disabled={businessLoading}
                   />
                 </div>
                 <div className="space-y-2">
@@ -135,6 +131,7 @@ export default function SignupPage() {
                     value={adminEmail}
                     onChange={(e) => setAdminEmail(e.target.value)}
                     required
+                    disabled={businessLoading}
                   />
                 </div>
                 <div className="space-y-2">
@@ -142,13 +139,14 @@ export default function SignupPage() {
                   <Input
                     id="adminPassword"
                     type="password"
-                    placeholder="Create a strong password"
+                    placeholder="Create a strong password (min. 6 characters)"
                     value={adminPassword}
                     onChange={(e) => setAdminPassword(e.target.value)}
                     required
+                    disabled={businessLoading}
                   />
                 </div>
-                <Button type="submit" disabled={businessLoading} className="w-full bg-primary hover:bg-primary/90">
+                <Button type="submit" disabled={businessLoading} className="w-full bg-primary hover:bg-primary/90 text-base py-3">
                   {businessLoading ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />

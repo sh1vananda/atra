@@ -1,19 +1,19 @@
 
 "use client";
 
-import { useEffect, useState, useTransition } from 'react';
+import { useEffect, useState, useTransition, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
-import { QrCode, Edit3, Star, Briefcase, User, Info, KeyRound, Loader2, Receipt } from 'lucide-react';
+import { QrCode, Star, Briefcase, User, Info, KeyRound, Loader2, Receipt, ShoppingBag } from 'lucide-react';
 import Image from 'next/image';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { UserMembership } from '@/types/user';
 import { useToast } from '@/hooks/use-toast';
-import { AddPastPurchaseDialog } from '@/components/loyalty/AddPastPurchaseDialog'; // New Dialog
+import { AddPastPurchaseDialog } from '@/components/loyalty/AddPastPurchaseDialog';
 
 function LoyaltyBusinessCard({ membership, userId }: { membership: UserMembership, userId: string }) {
   const pointsToNextReward = 500; // This can be dynamic per business later
@@ -21,10 +21,10 @@ function LoyaltyBusinessCard({ membership, userId }: { membership: UserMembershi
   const pointsNeededForNext = Math.max(0, pointsToNextReward - membership.pointsBalance);
 
   return (
-    <Card className="shadow-lg w-full bg-card transform hover:shadow-xl transition-shadow duration-300">
+    <Card className="shadow-lg w-full bg-card transform hover:shadow-xl transition-shadow duration-300 ease-in-out hover:-translate-y-1">
       <CardHeader>
         <div className="flex items-center justify-between">
-          <CardTitle className="font-headline text-2xl flex items-center gap-2">
+          <CardTitle className="font-headline text-xl sm:text-2xl flex items-center gap-2">
             <Briefcase className="h-7 w-7 text-primary" />
             {membership.businessName}
           </CardTitle>
@@ -34,7 +34,7 @@ function LoyaltyBusinessCard({ membership, userId }: { membership: UserMembershi
       </CardHeader>
       <CardContent className="space-y-6">
         <div className="text-center">
-          <p className="text-5xl font-bold text-primary">{membership.pointsBalance}</p>
+          <p className="text-4xl sm:text-5xl font-bold text-primary">{membership.pointsBalance}</p>
           <p className="text-muted-foreground">Points</p>
         </div>
         
@@ -43,27 +43,27 @@ function LoyaltyBusinessCard({ membership, userId }: { membership: UserMembershi
             <span>Progress to next reward</span>
             <span>{membership.pointsBalance} / {pointsToNextReward}</span>
           </div>
-          <div className="w-full bg-muted rounded-full h-4 overflow-hidden">
+          <div className="w-full bg-muted rounded-full h-3 sm:h-4 overflow-hidden shadow-inner">
             <div
-              className="bg-accent h-4 rounded-full transition-all duration-500 ease-out"
+              className="bg-accent h-full rounded-full transition-all duration-500 ease-out"
               style={{ width: `${progress}%` }}
             />
           </div>
-           <p className="text-xs text-muted-foreground mt-1 text-center">
+           <p className="text-xs text-muted-foreground mt-1.5 text-center">
              {pointsNeededForNext > 0 ? `You are ${pointsNeededForNext} points away from your next reward!` : "You've reached the next reward tier!"}
            </p>
         </div>
 
-        <div className="aspect-[16/10] w-full max-w-md mx-auto bg-gradient-to-br from-primary to-blue-700 rounded-xl shadow-2xl p-6 flex flex-col justify-between text-primary-foreground">
+        <div className="aspect-[16/10] w-full max-w-sm mx-auto bg-gradient-to-br from-primary to-blue-700 rounded-xl shadow-2xl p-4 sm:p-6 flex flex-col justify-between text-primary-foreground">
           <div>
-            <div className="flex justify-between items-center">
-              <h3 className="text-xl font-semibold font-headline">{membership.businessName} Card</h3>
-              <Star className="h-10 w-10 text-yellow-300 fill-yellow-300 opacity-50" />
+            <div className="flex justify-between items-start">
+              <h3 className="text-lg sm:text-xl font-semibold font-headline">{membership.businessName} Card</h3>
+              <Star className="h-8 w-8 sm:h-10 sm:w-10 text-yellow-300 fill-yellow-300 opacity-50" />
             </div>
-            <p className="text-sm opacity-80">Member ID: {userId.slice(-6).toUpperCase()} (for {membership.businessName})</p>
+            <p className="text-xs sm:text-sm opacity-80">Member ID: {userId.slice(-6).toUpperCase()}</p>
           </div>
-          <div className="text-right">
-            <p className="text-3xl font-bold">{membership.pointsBalance} PTS</p>
+          <div className="text-right mt-auto">
+            <p className="text-2xl sm:text-3xl font-bold">{membership.pointsBalance} PTS</p>
           </div>
         </div>
       </CardContent>
@@ -73,7 +73,7 @@ function LoyaltyBusinessCard({ membership, userId }: { membership: UserMembershi
 
 
 export default function LoyaltyPage() {
-  const { user, isAuthenticated, loading, joinBusinessByCode, addMockPurchaseToUser } = useAuth();
+  const { user, isAuthenticated, loading, joinBusinessByCode } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
   const [businessCode, setBusinessCode] = useState('');
@@ -81,14 +81,12 @@ export default function LoyaltyPage() {
   const [isAddPurchaseDialogOpen, setIsAddPurchaseDialogOpen] = useState(false);
 
   useEffect(() => {
-    console.log(`LoyaltyPage:EFFECT[authCheck]: loading: ${loading}, isAuthenticated: ${isAuthenticated}`);
     if (!loading && !isAuthenticated) {
-      console.log("LoyaltyPage:EFFECT[authCheck]: Not authenticated and not loading, redirecting to /login?redirect=/loyalty");
       router.push('/login?redirect=/loyalty');
     }
   }, [loading, isAuthenticated, router]);
 
-  const handleJoinBusiness = async () => {
+  const handleJoinBusiness = useCallback(async () => {
     if (!businessCode.trim()) {
       toast({
         title: "Error",
@@ -103,7 +101,7 @@ export default function LoyaltyPage() {
         toast({
           title: "Success!",
           description: result.message,
-          variant: "default",
+          variant: "default", // Green background
         });
         setBusinessCode(''); 
       } else {
@@ -114,18 +112,14 @@ export default function LoyaltyPage() {
         });
       }
     });
-  };
+  }, [businessCode, joinBusinessByCode, toast, startJoiningTransition]);
   
-  const handlePurchaseAdded = () => {
-    // The addMockPurchaseToUser in AuthContext should update the user state,
-    // causing a re-render of this page with updated points.
-    // No specific action needed here other than closing the dialog, which is handled by the dialog itself.
-    console.log("LoyaltyPage: Purchase added, user state should update from context.");
-  };
+  const handlePurchaseAdded = useCallback(() => {
+    // AuthContext update should re-render this page
+  }, []);
 
 
   if (loading || !isAuthenticated || !user) {
-    console.log(`LoyaltyPage:RENDER: Showing skeleton. loading: ${loading}, isAuthenticated: ${isAuthenticated}, user exists: ${!!user}`);
     return (
       <div className="w-full space-y-8">
         <div className="text-left mb-6 pb-4 border-b">
@@ -152,7 +146,7 @@ export default function LoyaltyPage() {
                   <Skeleton className="h-4 w-full rounded-full" />
                   <Skeleton className="h-3 w-1/2 mx-auto mt-1" />
                 </div>
-                <Skeleton className="aspect-[16/10] w-full max-w-md mx-auto rounded-xl" />
+                <Skeleton className="aspect-[16/10] w-full max-w-sm mx-auto rounded-xl" />
               </CardContent>
             </Card>
           ))}
@@ -174,63 +168,66 @@ export default function LoyaltyPage() {
     );
   }
 
-  console.log(`LoyaltyPage:RENDER: Rendering normal content. User: ${user?.name}`);
   const memberships = user.memberships || [];
 
   return (
     <>
-    <div className="w-full space-y-12">
+    <div className="w-full space-y-10 sm:space-y-12">
       <div className="text-left pb-4 border-b border-border">
-        <h1 className="text-3xl font-headline font-bold text-primary mb-1 flex items-center">
+        <h1 className="text-3xl sm:text-4xl font-headline font-bold text-primary mb-1 flex items-center">
           <User className="inline-block h-8 w-8 mr-3 align-text-bottom" /> 
           Welcome back, {user.name}!
         </h1>
-        <p className="text-lg text-muted-foreground">Here are your loyalty cards. Track your points and progress with each business.</p>
+        <p className="text-lg text-muted-foreground">Here are your loyalty cards. Track your points and progress.</p>
       </div>
 
       {memberships.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8 items-start">
           {memberships.map((membership) => (
             <LoyaltyBusinessCard key={membership.businessId} membership={membership} userId={user.id} />
           ))}
         </div>
       ) : (
-        <Card className="shadow-lg text-center py-12 bg-card">
+        <Card className="shadow-lg text-center py-10 sm:py-12 bg-card">
           <CardHeader>
-            <Info className="h-12 w-12 mx-auto text-primary mb-3" />
-            <CardTitle className="font-headline text-2xl">No Loyalty Programs Joined Yet</CardTitle>
+            <ShoppingBag className="h-16 w-16 mx-auto text-primary mb-4 opacity-70" />
+            <CardTitle className="font-headline text-2xl sm:text-3xl">No Loyalty Programs Joined</CardTitle>
           </CardHeader>
           <CardContent>
-            <CardDescription className="text-lg mb-4">Join a program using a business code below or explore businesses to start earning rewards!</CardDescription>
+            <CardDescription className="text-lg mb-6">Join a program using a business code below to start earning rewards!</CardDescription>
+            {/* Button to scroll to join section or directly link to it if it's far */}
+            <Button onClick={() => document.getElementById('join-program-section')?.scrollIntoView({ behavior: 'smooth' })} variant="default" size="lg">
+                Join a Program
+            </Button>
           </CardContent>
         </Card>
       )}
 
-      <Card className="mt-8 shadow-lg bg-card">
+      <Card className="mt-8 shadow-xl bg-card" id="join-program-section">
         <CardHeader>
-          <CardTitle className="font-headline text-2xl flex items-center gap-2">
-            <KeyRound className="h-6 w-6 text-primary" />
+          <CardTitle className="font-headline text-2xl sm:text-3xl flex items-center gap-2">
+            <KeyRound className="h-7 w-7 text-primary" />
             Join a New Loyalty Program
           </CardTitle>
-          <CardDescription>Enter the unique code provided by a business to enroll in their loyalty program.</CardDescription>
+          <CardDescription>Enter the unique code provided by a business to enroll.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div>
-            <Label htmlFor="business-code">Business Code</Label>
+            <Label htmlFor="business-code" className="text-base">Business Code</Label>
             <Input 
               id="business-code" 
               placeholder="e.g., CAFE123" 
               value={businessCode}
               onChange={(e) => setBusinessCode(e.target.value.toUpperCase())} 
-              className="mt-1"
+              className="mt-1 text-base py-3 px-4"
             />
           </div>
         </CardContent>
         <CardFooter>
-          <Button onClick={handleJoinBusiness} disabled={isJoining || !businessCode.trim()} className="bg-primary hover:bg-primary/90">
+          <Button onClick={handleJoinBusiness} disabled={isJoining || !businessCode.trim()} className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-base py-3 px-6">
             {isJoining ? (
               <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
                 Joining...
               </>
             ) : (
@@ -241,27 +238,27 @@ export default function LoyaltyPage() {
       </Card>
 
 
-      <Card className="mt-12 shadow-lg bg-card">
+      <Card className="mt-10 sm:mt-12 shadow-xl bg-card">
         <CardHeader>
-          <CardTitle className="font-headline text-2xl">Earn More Points</CardTitle>
+          <CardTitle className="font-headline text-2xl sm:text-3xl">Earn More Points</CardTitle>
           <CardDescription>Use your universal QR code or log a past purchase if you forgot to scan.</CardDescription>
         </CardHeader>
-        <CardContent className="grid md:grid-cols-2 gap-6">
-          <div className="space-y-4 p-6 border rounded-lg bg-background text-center">
+        <CardContent className="grid md:grid-cols-2 gap-6 sm:gap-8">
+          <div className="space-y-4 p-6 border rounded-lg bg-muted/50 text-center shadow-sm hover:shadow-md transition-shadow">
             <QrCode className="h-16 w-16 mx-auto text-primary" />
             <h3 className="text-xl font-semibold">Your Universal QR Code</h3>
-            <p className="text-muted-foreground">Present this QR code at any participating business to identify yourself.</p>
+            <p className="text-muted-foreground">Present this at participating businesses.</p>
             <div className="bg-white p-2 rounded-md inline-block shadow-md">
-              <Image src={`https://placehold.co/150x150.png?text=${user.id.slice(-6).toUpperCase()}`} alt="QR Code Placeholder" width={150} height={150} data-ai-hint="QR code user" />
+              <Image src={`https://placehold.co/150x150.png?text=${user.id.slice(-6).toUpperCase()}`} alt="QR Code Placeholder" width={150} height={150} data-ai-hint="QR code user"/>
             </div>
             <Button className="w-full mt-2" variant="outline" onClick={() => toast({ title: "Feature Coming Soon", description: "Displaying a larger QR code is planned!"})}>
               Show My QR Code
             </Button>
           </div>
-          <div className="space-y-4 p-6 border rounded-lg bg-background flex flex-col items-center justify-center">
+          <div className="space-y-4 p-6 border rounded-lg bg-muted/50 flex flex-col items-center justify-center shadow-sm hover:shadow-md transition-shadow">
             <Receipt className="h-16 w-16 mx-auto text-primary mb-4" />
             <h3 className="text-xl font-semibold text-center">Log a Past Purchase</h3>
-            <p className="text-muted-foreground text-sm text-center mb-3">Forgot to scan? Add details from a past purchase for an enrolled business.</p>
+            <p className="text-muted-foreground text-sm text-center mb-3">Forgot to scan? Add details for an enrolled business.</p>
             <Button 
                 onClick={() => {
                     if (memberships.length > 0) {
@@ -269,7 +266,7 @@ export default function LoyaltyPage() {
                     } else {
                         toast({
                             title: "No Memberships",
-                            description: "You need to join a loyalty program first before logging a purchase.",
+                            description: "Join a loyalty program first before logging a purchase.",
                             variant: "default"
                         });
                     }
@@ -278,7 +275,7 @@ export default function LoyaltyPage() {
             >
                 Log Purchase
             </Button>
-            <p className="text-xs text-muted-foreground text-center mt-2">Points will be added to your account after verification (mocked for now).</p>
+            <p className="text-xs text-muted-foreground text-center mt-2">Points added after verification (mocked).</p>
           </div>
         </CardContent>
       </Card>
