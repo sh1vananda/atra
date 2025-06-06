@@ -8,11 +8,12 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
-import { QrCode, Edit3, Star, Briefcase, User, Info, KeyRound, Loader2 } from 'lucide-react';
+import { QrCode, Edit3, Star, Briefcase, User, Info, KeyRound, Loader2, Receipt } from 'lucide-react';
 import Image from 'next/image';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { UserMembership } from '@/types/user';
 import { useToast } from '@/hooks/use-toast';
+import { AddPastPurchaseDialog } from '@/components/loyalty/AddPastPurchaseDialog'; // New Dialog
 
 function LoyaltyBusinessCard({ membership, userId }: { membership: UserMembership, userId: string }) {
   const pointsToNextReward = 500; // This can be dynamic per business later
@@ -72,11 +73,12 @@ function LoyaltyBusinessCard({ membership, userId }: { membership: UserMembershi
 
 
 export default function LoyaltyPage() {
-  const { user, isAuthenticated, loading, joinBusinessByCode } = useAuth();
+  const { user, isAuthenticated, loading, joinBusinessByCode, addMockPurchaseToUser } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
   const [businessCode, setBusinessCode] = useState('');
-  const [isJoining, startTransition] = useTransition();
+  const [isJoining, startJoiningTransition] = useTransition();
+  const [isAddPurchaseDialogOpen, setIsAddPurchaseDialogOpen] = useState(false);
 
   useEffect(() => {
     console.log(`LoyaltyPage:EFFECT[authCheck]: loading: ${loading}, isAuthenticated: ${isAuthenticated}`);
@@ -95,7 +97,7 @@ export default function LoyaltyPage() {
       });
       return;
     }
-    startTransition(async () => {
+    startJoiningTransition(async () => {
       const result = await joinBusinessByCode(businessCode.trim().toUpperCase());
       if (result.success) {
         toast({
@@ -103,7 +105,7 @@ export default function LoyaltyPage() {
           description: result.message,
           variant: "default",
         });
-        setBusinessCode(''); // Clear input on success
+        setBusinessCode(''); 
       } else {
         toast({
           title: "Join Failed",
@@ -113,6 +115,14 @@ export default function LoyaltyPage() {
       }
     });
   };
+  
+  const handlePurchaseAdded = () => {
+    // The addMockPurchaseToUser in AuthContext should update the user state,
+    // causing a re-render of this page with updated points.
+    // No specific action needed here other than closing the dialog, which is handled by the dialog itself.
+    console.log("LoyaltyPage: Purchase added, user state should update from context.");
+  };
+
 
   if (loading || !isAuthenticated || !user) {
     console.log(`LoyaltyPage:RENDER: Showing skeleton. loading: ${loading}, isAuthenticated: ${isAuthenticated}, user exists: ${!!user}`);
@@ -168,6 +178,7 @@ export default function LoyaltyPage() {
   const memberships = user.memberships || [];
 
   return (
+    <>
     <div className="w-full space-y-12">
       <div className="text-left pb-4 border-b border-border">
         <h1 className="text-3xl font-headline font-bold text-primary mb-1 flex items-center">
@@ -191,7 +202,6 @@ export default function LoyaltyPage() {
           </CardHeader>
           <CardContent>
             <CardDescription className="text-lg mb-4">Join a program using a business code below or explore businesses to start earning rewards!</CardDescription>
-            {/* <Button variant="default">Find Businesses (Coming Soon)</Button> */}
           </CardContent>
         </Card>
       )}
@@ -234,7 +244,7 @@ export default function LoyaltyPage() {
       <Card className="mt-12 shadow-lg bg-card">
         <CardHeader>
           <CardTitle className="font-headline text-2xl">Earn More Points</CardTitle>
-          <CardDescription>Use your universal QR code at checkout or enter a purchase code manually (feature coming soon for specific businesses).</CardDescription>
+          <CardDescription>Use your universal QR code or log a past purchase if you forgot to scan.</CardDescription>
         </CardHeader>
         <CardContent className="grid md:grid-cols-2 gap-6">
           <div className="space-y-4 p-6 border rounded-lg bg-background text-center">
@@ -244,23 +254,43 @@ export default function LoyaltyPage() {
             <div className="bg-white p-2 rounded-md inline-block shadow-md">
               <Image src={`https://placehold.co/150x150.png?text=${user.id.slice(-6).toUpperCase()}`} alt="QR Code Placeholder" width={150} height={150} data-ai-hint="QR code user" />
             </div>
-            <Button className="w-full mt-2" variant="outline">
+            <Button className="w-full mt-2" variant="outline" onClick={() => toast({ title: "Feature Coming Soon", description: "Displaying a larger QR code is planned!"})}>
               Show My QR Code
             </Button>
           </div>
-          <div className="space-y-4 p-6 border rounded-lg bg-background">
-            <Edit3 className="h-12 w-12 mx-auto text-primary md:mx-0" />
-            <h3 className="text-xl font-semibold">Enter Purchase Code Manually</h3>
-            <p className="text-muted-foreground text-sm mb-2">Functionality to enter codes for specific businesses is under development.</p>
-            <div className="space-y-2">
-              <Label htmlFor="manual-code">Enter your purchase code:</Label>
-              <Input id="manual-code" placeholder="e.g., XYZ123ABC" disabled />
-            </div>
-            <Button className="w-full bg-primary hover:bg-primary/90" disabled>Submit Code</Button>
-            <p className="text-xs text-muted-foreground text-center">Code can be found on your receipt.</p>
+          <div className="space-y-4 p-6 border rounded-lg bg-background flex flex-col items-center justify-center">
+            <Receipt className="h-16 w-16 mx-auto text-primary mb-4" />
+            <h3 className="text-xl font-semibold text-center">Log a Past Purchase</h3>
+            <p className="text-muted-foreground text-sm text-center mb-3">Forgot to scan? Add details from a past purchase for an enrolled business.</p>
+            <Button 
+                onClick={() => {
+                    if (memberships.length > 0) {
+                        setIsAddPurchaseDialogOpen(true);
+                    } else {
+                        toast({
+                            title: "No Memberships",
+                            description: "You need to join a loyalty program first before logging a purchase.",
+                            variant: "default"
+                        });
+                    }
+                }}
+                className="w-full bg-primary hover:bg-primary/90"
+            >
+                Log Purchase
+            </Button>
+            <p className="text-xs text-muted-foreground text-center mt-2">Points will be added to your account after verification (mocked for now).</p>
           </div>
         </CardContent>
       </Card>
     </div>
+    {isAddPurchaseDialogOpen && user && (
+        <AddPastPurchaseDialog
+            user={user}
+            isOpen={isAddPurchaseDialogOpen}
+            onOpenChange={setIsAddPurchaseDialogOpen}
+            onPurchaseAdded={handlePurchaseAdded}
+        />
+    )}
+    </>
   );
 }

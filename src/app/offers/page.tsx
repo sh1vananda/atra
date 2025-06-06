@@ -4,9 +4,8 @@
 import { useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
-import { PersonalizedOfferForm } from '@/components/offers/PersonalizedOfferForm';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
-import { Sparkles } from 'lucide-react';
+import { HardHat, Sparkles } from 'lucide-react'; // Using HardHat for maintenance
 import { Skeleton } from '@/components/ui/skeleton';
 
 export default function OffersPage() {
@@ -35,20 +34,10 @@ export default function OffersPage() {
             <Skeleton className="h-8 w-8" />
           </CardHeader>
           <CardContent>
-            <div className="space-y-6">
-              <div className="space-y-2">
-                <Skeleton className="h-4 w-20" />
-                <Skeleton className="h-10 w-full" />
-              </div>
-              <div className="space-y-2">
-                <Skeleton className="h-4 w-32" />
-                <Skeleton className="h-20 w-full" />
-              </div>
-              <div className="space-y-2">
-                <Skeleton className="h-4 w-24" />
-                <Skeleton className="h-16 w-full" />
-              </div>
-              <Skeleton className="h-10 w-full" />
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+              <Skeleton className="h-12 w-12 rounded-full mb-4"/>
+              <Skeleton className="h-6 w-1/2 mb-2"/>
+              <Skeleton className="h-4 w-3/4"/>
             </div>
           </CardContent>
         </Card>
@@ -65,15 +54,21 @@ export default function OffersPage() {
       <Card className="shadow-lg bg-card">
         <CardHeader className="flex flex-row items-center justify-between">
           <div>
-            <CardTitle className="font-headline text-2xl">Generate Your Offer</CardTitle>
+            <CardTitle className="font-headline text-2xl">Feature Under Maintenance</CardTitle>
             <CardDescription>
-              Tell us a bit about your preferences and purchase history to receive a personalized offer.
+              We're working hard to bring you exciting personalized offers.
             </CardDescription>
           </div>
-          <Sparkles className="h-8 w-8 text-primary" />
+          <Sparkles className="h-8 w-8 text-primary/50" />
         </CardHeader>
         <CardContent>
-          <PersonalizedOfferForm />
+          <div className="flex flex-col items-center justify-center py-12 text-center">
+            <HardHat className="h-20 w-20 text-primary/70 mb-6" />
+            <p className="text-xl font-semibold text-foreground mb-2">This feature is currently unavailable.</p>
+            <p className="text-muted-foreground max-w-md">
+              Our team is making some improvements to the personalized offers engine. Please check back soon!
+            </p>
+          </div>
         </CardContent>
       </Card>
     </div>
