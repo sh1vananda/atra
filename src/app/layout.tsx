@@ -22,7 +22,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
-        <title>Loyalty Leap</title> {/* Basic title, can be overridden by pages */}
+        <title>Loyalty Leap</title>{/* Basic title, can be overridden by pages */}
         <meta name="description" content="Your Digital Loyalty Platform" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
