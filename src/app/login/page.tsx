@@ -23,44 +23,47 @@ export default function LoginPage() {
   const { login: businessLogin, loading: adminAuthLoading, isAdminAuthenticated } = useAdminAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const redirectPath = searchParams.get('redirect') || undefined;
 
-  // Redirect customer if already authenticated
+  const isCheckingAuth = customerAuthLoading || adminAuthLoading;
+
+  // Effect for customer redirection
   useEffect(() => {
-    console.log(`LoginPage:EFFECT[customerAuth]: customerAuthLoading: ${customerAuthLoading}, isCustomerAuth: ${isCustomerAuth}, redirectPath: ${redirectPath}`);
+    const redirectPath = searchParams.get('redirect');
+    console.log(`LoginPage:EFFECT[customerAuth]: customerAuthLoading: ${customerAuthLoading}, isCustomerAuth: ${isCustomerAuth}, redirect: ${redirectPath}`);
     if (!customerAuthLoading && isCustomerAuth) {
-      const targetPath = redirectPath || '/loyalty';
-      console.log(`LoginPage:EFFECT[customerAuth]: Redirecting customer to ${targetPath}`);
+      const targetPath = redirectPath && redirectPath.startsWith('/') ? redirectPath : '/loyalty';
+      console.log(`LoginPage:EFFECT[customerAuth]: Redirecting authenticated customer to ${targetPath}`);
       router.push(targetPath);
     }
-  }, [isCustomerAuth, customerAuthLoading, router, redirectPath]);
+  }, [isCustomerAuth, customerAuthLoading, router, searchParams]);
 
-  // Redirect admin if already authenticated
+  // Effect for admin redirection
   useEffect(() => {
-    console.log(`LoginPage:EFFECT[adminAuth]: adminAuthLoading: ${adminAuthLoading}, isAdminAuthenticated: ${isAdminAuthenticated}, redirectPath: ${redirectPath}`);
+    const redirectPath = searchParams.get('redirect');
+    console.log(`LoginPage:EFFECT[adminAuth]: adminAuthLoading: ${adminAuthLoading}, isAdminAuthenticated: ${isAdminAuthenticated}, redirect: ${redirectPath}`);
     if (!adminAuthLoading && isAdminAuthenticated) {
-      const targetPath = redirectPath || '/admin/dashboard';
-      console.log(`LoginPage:EFFECT[adminAuth]: Redirecting admin to ${targetPath}`);
+      const targetPath = redirectPath && redirectPath.startsWith('/admin') ? redirectPath : '/admin/dashboard';
+      console.log(`LoginPage:EFFECT[adminAuth]: Redirecting authenticated admin to ${targetPath}`);
       router.push(targetPath);
     }
-  }, [isAdminAuthenticated, adminAuthLoading, router, redirectPath]);
-
+  }, [isAdminAuthenticated, adminAuthLoading, router, searchParams]);
 
   const handleCustomerSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     await customerLogin(customerEmail, customerPassword);
-    // Redirection is handled by the useEffect above
+    // Redirection handled by useEffect
   };
 
   const handleBusinessSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     await businessLogin(businessEmail, businessPassword);
-    // Redirection is handled by the useEffect above
+    // Redirection handled by useEffect
   };
   
-  // Show loader if either context is initially loading, or if a redirect is imminent due to already being authenticated
-  if (customerAuthLoading || adminAuthLoading || (!customerAuthLoading && isCustomerAuth) || (!adminAuthLoading && isAdminAuthenticated)) {
-    console.log(`LoginPage:RENDER: Showing loader. customerAuthLoading: ${customerAuthLoading}, adminAuthLoading: ${adminAuthLoading}, isCustomerAuth: ${isCustomerAuth}, isAdminAuthenticated: ${isAdminAuthenticated}`);
+  if (isCheckingAuth && (!isCustomerAuth && !isAdminAuthenticated)) {
+    // Show loader only if actively checking auth AND user is not already authenticated
+    // (to prevent loader flashing if already authenticated and about to redirect)
+    console.log(`LoginPage:RENDER: Showing main loader. customerAuthLoading: ${customerAuthLoading}, adminAuthLoading: ${adminAuthLoading}`);
     return (
         <div className="flex flex-col items-center justify-center min-h-[calc(100vh-150px)]">
             <Loader2 className="h-16 w-16 animate-spin text-primary mb-4" />
@@ -69,6 +72,17 @@ export default function LoginPage() {
     );
   }
 
+  // If already authenticated (and not loading), redirection useEffects should handle it.
+  // This prevents rendering the form briefly before redirecting.
+  if ((!customerAuthLoading && isCustomerAuth) || (!adminAuthLoading && isAdminAuthenticated)) {
+    console.log(`LoginPage:RENDER: Authenticated, waiting for redirect effect. isCustomerAuth: ${isCustomerAuth}, isAdminAuthenticated: ${isAdminAuthenticated}`);
+     return (
+        <div className="flex flex-col items-center justify-center min-h-[calc(100vh-150px)]">
+            <Loader2 className="h-16 w-16 animate-spin text-primary mb-4" />
+            <p className="text-muted-foreground">Redirecting...</p>
+        </div>
+    );
+  }
 
   return (
     <div className="flex flex-grow flex-col items-center justify-center py-12">
@@ -100,6 +114,7 @@ export default function LoginPage() {
                     value={customerEmail}
                     onChange={(e) => setCustomerEmail(e.target.value)}
                     required
+                    disabled={customerAuthLoading}
                   />
                 </div>
                 <div className="space-y-2">
@@ -111,6 +126,7 @@ export default function LoginPage() {
                     value={customerPassword}
                     onChange={(e) => setCustomerPassword(e.target.value)}
                     required
+                    disabled={customerAuthLoading}
                   />
                 </div>
                 <Button type="submit" disabled={customerAuthLoading} className="w-full bg-primary hover:bg-primary/90">
@@ -143,6 +159,7 @@ export default function LoginPage() {
                     value={businessEmail}
                     onChange={(e) => setBusinessEmail(e.target.value)}
                     required
+                    disabled={adminAuthLoading}
                   />
                 </div>
                 <div className="space-y-2">
@@ -154,6 +171,7 @@ export default function LoginPage() {
                     value={businessPassword}
                     onChange={(e) => setBusinessPassword(e.target.value)}
                     required
+                    disabled={adminAuthLoading}
                   />
                 </div>
                 <Button type="submit" disabled={adminAuthLoading} className="w-full bg-primary hover:bg-primary/90">
