@@ -16,21 +16,21 @@ import type { Business } from '@/types/business';
 
 export default function AdminDashboardPage() {
   const { isAdminAuthenticated, loading: adminLoading, adminUser, getManagedBusiness } = useAdminAuth();
-  const { getAllMockUsers } = useAuth();
+  const { getAllMockUsers } = useAuth(); // This now fetches from Firestore
   const router = useRouter();
   const { toast } = useToast();
   const [users, setUsers] = useState<User[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(true);
   const [managedBusiness, setManagedBusiness] = useState<Business | null>(null);
 
-  const fetchUsersAndBusiness = useCallback(() => {
+  const fetchUsersAndBusiness = useCallback(async () => {
     setLoadingUsers(true);
     const business = getManagedBusiness();
     setManagedBusiness(business || null);
 
     if (business) {
-      const allUsers = getAllMockUsers();
-      const enrolledUsers = allUsers.filter(user =>
+      const allUsersFromDb = await getAllMockUsers();
+      const enrolledUsers = allUsersFromDb.filter(user =>
         user.memberships?.some(m => m.businessId === business.id)
       );
       setUsers(enrolledUsers);
@@ -111,7 +111,7 @@ export default function AdminDashboardPage() {
            <Building className="inline-block h-8 w-8 mr-3 align-text-bottom" />
            {managedBusiness?.name || adminUser?.businessName || 'Admin Dashboard'}
         </h1>
-        <p className="text-lg text-muted-foreground">Welcome, {adminUser?.email}. Manage users and activity for your business.</p>
+        <p className="text-lg text-muted-foreground">Welcome, {adminUser?.email}. Manage users and activity for {managedBusiness?.name || 'your business'}.</p>
       </div>
 
       {managedBusiness?.joinCode && (

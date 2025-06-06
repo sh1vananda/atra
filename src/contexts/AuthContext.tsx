@@ -1,14 +1,21 @@
 
 "use client";
 
-import type { User, MockPurchase, UserMembership } from '@/types/user';
-import type { Business, Reward } from '@/types/business';
+import type { User as AuthUser } from 'firebase/auth'; // Firebase Auth user type
+import { createUserWithEmailAndPassword, onAuthStateChanged, signInWithEmailAndPassword, signOut } from 'firebase/auth';
+import { doc, setDoc, getDoc, collection, getDocs, updateDoc, arrayUnion, arrayRemove, increment, writeBatch } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 import type { ReactNode } from 'react';
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { Gift, Coffee, Percent, ShoppingBag } from 'lucide-react'; // For mock rewards
+import { Gift, Coffee, Percent, ShoppingBag } from 'lucide-react';
 
-// --- MOCK BUSINESSES DATABASE ---
+import { auth, db } from '@/lib/firebase';
+import type { User, MockPurchase, UserMembership } from '@/types/user';
+import type { Business } from '@/types/business';
+import { useToast } from '@/hooks/use-toast';
+
+
+// --- MOCK BUSINESSES DATABASE (REMAINS MOCK FOR NOW) ---
 export const MOCK_BUSINESSES_DB: Business[] = [
   {
     id: 'biz-001',
@@ -32,45 +39,10 @@ export const MOCK_BUSINESSES_DB: Business[] = [
   }
 ];
 
-// --- MOCK USERS DATABASE ---
-let MOCK_USERS_DB: { [email: string]: User } = {
-  'loyal@example.com': {
-    id: 'mock-user-id-123',
-    name: 'Loyal Customer',
-    email: 'loyal@example.com',
-    memberships: [
-      {
-        businessId: 'biz-001',
-        businessName: 'Loyalty Leap Cafe',
-        pointsBalance: 120,
-        purchases: [
-          { id: 'p1', item: 'Latte', amount: 4.50, date: new Date('2024-07-20T10:30:00Z').toISOString(), pointsEarned: 20 },
-          { id: 'p2', item: 'Croissant', amount: 3.00, date: new Date('2024-07-15T09:15:00Z').toISOString(), pointsEarned: 15 },
-        ]
-      },
-      {
-        businessId: 'biz-002',
-        businessName: 'The Book Nook',
-        pointsBalance: 75,
-        purchases: [
-          { id: 'p5', item: 'Fantasy Novel', amount: 18.00, date: new Date('2024-07-21T14:00:00Z').toISOString(), pointsEarned: 30 },
-        ]
-      }
-    ]
-  },
-  'user@example.com': {
-    id: 'usr-test-001',
-    name: 'Test User',
-    email: 'user@example.com',
-    memberships: [
-      // Initially, Test User is not a member of Loyalty Leap Cafe by default for testing join functionality.
-      // They can join it via the joinCode CAFE123.
-    ]
-  }
-};
 
 interface AuthContextType {
-  user: User | null;
+  user: User | null; // Combines Firebase Auth data with Firestore profile
+  firebaseUser: AuthUser | null; // Raw Firebase Auth user
   isAuthenticated: boolean;
   loading: boolean;
   login: (email: string, pass: string) => Promise<void>;
@@ -78,7 +50,7 @@ interface AuthContextType {
   signup: (name: string, email: string, pass: string) => Promise<void>;
   addMockPurchaseToUser: (userId: string, businessId: string, purchaseDetails: { item: string; amount: number; pointsEarned: number }) => Promise<boolean>;
   joinBusinessByCode: (businessCode: string) => Promise<{ success: boolean; message: string }>;
-  getAllMockUsers: () => User[];
+  getAllMockUsers: () => Promise<User[]>; // Will now fetch from Firestore
   getBusinessById: (businessId: string) => Business | undefined;
 }
 
@@ -86,141 +58,166 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [firebaseUser, setFirebaseUser] = useState<AuthUser | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
+  const { toast } = useToast();
 
   useEffect(() => {
-    const storedUser = localStorage.getItem('loyaltyUser');
-    if (storedUser) {
-      try {
-        const parsedUser = JSON.parse(storedUser) as User;
-        const dbUser = Object.values(MOCK_USERS_DB).find(u => u.id === parsedUser.id);
-        if (dbUser) {
-          setUser(dbUser); 
+    const unsubscribe = onAuthStateChanged(auth, async (fbUser) => {
+      if (fbUser) {
+        setFirebaseUser(fbUser);
+        // Fetch user profile from Firestore
+        const userDocRef = doc(db, 'users', fbUser.uid);
+        const userDocSnap = await getDoc(userDocRef);
+        if (userDocSnap.exists()) {
+          setUser({ id: fbUser.uid, ...userDocSnap.data() } as User);
         } else {
-          setUser(parsedUser); 
+          // This case should ideally not happen if signup creates the doc
+          // Or, could be a new user signing in with a social provider for the first time
+          setUser(null); 
+          console.warn("User document not found in Firestore for UID:", fbUser.uid);
         }
         setIsAuthenticated(true);
-      } catch (e) {
-        console.error("Failed to parse stored user:", e);
-        localStorage.removeItem('loyaltyUser');
+      } else {
+        setFirebaseUser(null);
+        setUser(null);
+        setIsAuthenticated(false);
       }
-    }
-    setLoading(false);
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
   }, []);
 
   const login = async (email: string, pass: string) => {
     setLoading(true);
-    await new Promise(resolve => setTimeout(resolve, 500));
-
-    let foundUser: User | null = null;
-    // Stricter login: only specific test accounts
-    if (email === 'user@example.com' && pass === 'password123') {
-      foundUser = MOCK_USERS_DB['user@example.com'];
-    } else if (email === 'loyal@example.com' && pass === 'password123') {
-      foundUser = MOCK_USERS_DB['loyal@example.com'];
+    try {
+      await signInWithEmailAndPassword(auth, email, pass);
+      // onAuthStateChanged will handle fetching Firestore data and setting user state
+      router.push('/loyalty');
+    } catch (error: any) {
+      console.error("Login failed:", error);
+      toast({
+        title: "Login Failed",
+        description: error.message || "Invalid email or password.",
+        variant: "destructive",
+      });
+      setLoading(false); // Ensure loading is false on error
     }
-
-    if (foundUser) {
-      setUser(foundUser);
-      setIsAuthenticated(true);
-      localStorage.setItem('loyaltyUser', JSON.stringify(foundUser));
-      router.push('/loyalty'); 
-    } else {
-      console.error("Login failed: Invalid credentials for customer account.");
-      // Consider adding toast for failed login:
-      // toast({ title: "Login Failed", description: "Invalid email or password.", variant: "destructive" });
-    }
-    setLoading(false);
+    // setLoading(false) will be handled by onAuthStateChanged listener
   };
 
   const signup = async (name: string, email: string, pass: string) => {
     setLoading(true);
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
-    if (MOCK_USERS_DB[email]) {
-        console.error("Signup failed: Email already exists.");
-        // Consider adding toast for failed signup:
-        // toast({ title: "Signup Failed", description: "This email is already registered.", variant: "destructive" });
-        setLoading(false);
-        return;
+    try {
+      const userCredential = await createUserWithEmailAndPassword(auth, email, pass);
+      const fbUser = userCredential.user;
+      // Create user document in Firestore
+      const newUserProfile: User = {
+        id: fbUser.uid,
+        name,
+        email: fbUser.email || email, // Use email from auth if available
+        memberships: [],
+      };
+      await setDoc(doc(db, 'users', fbUser.uid), newUserProfile);
+      // onAuthStateChanged will set user state
+      router.push('/loyalty');
+    } catch (error: any) {
+      console.error("Signup failed:", error);
+      toast({
+        title: "Signup Failed",
+        description: error.message || "Could not create account.",
+        variant: "destructive",
+      });
+      setLoading(false); // Ensure loading is false on error
     }
-
-    const newUser: User = { 
-      id: `mock-user-${Date.now()}`, 
-      name, 
-      email,
-      memberships: []
-    };
-    
-    MOCK_USERS_DB[email] = newUser; 
-    
-    setUser(newUser);
-    setIsAuthenticated(true);
-    localStorage.setItem('loyaltyUser', JSON.stringify(newUser));
-    setLoading(false);
-    router.push('/loyalty'); 
+     // setLoading(false) will be handled by onAuthStateChanged listener
   };
 
-  const logout = () => {
-    setUser(null);
-    setIsAuthenticated(false);
-    localStorage.removeItem('loyaltyUser');
-    router.push('/login');
+  const logout = async () => {
+    setLoading(true);
+    try {
+      await signOut(auth);
+      router.push('/login');
+    } catch (error: any) {
+      console.error("Logout failed:", error);
+      toast({
+        title: "Logout Failed",
+        description: error.message || "Could not log out.",
+        variant: "destructive",
+      });
+    } finally {
+      // States will be updated by onAuthStateChanged
+    }
   };
 
   const addMockPurchaseToUser = async (userId: string, businessId: string, purchaseDetails: { item: string; amount: number; pointsEarned: number }): Promise<boolean> => {
-    const targetUserArray = Object.values(MOCK_USERS_DB);
-    const userIndex = targetUserArray.findIndex(u => u.id === userId);
+    const userDocRef = doc(db, 'users', userId);
+    try {
+      const userDocSnap = await getDoc(userDocRef);
+      if (!userDocSnap.exists()) {
+        console.error("User not found for adding purchase:", userId);
+        toast({ title: "Error", description: "User not found.", variant: "destructive" });
+        return false;
+      }
 
-    if (userIndex === -1) {
-      console.error("User not found for adding purchase:", userId);
-      return false;
-    }
-    const targetUser = targetUserArray[userIndex];
-
-    const newPurchase: MockPurchase = {
-      id: `p-${Date.now()}-${Math.random().toString(36).substring(7)}`,
-      date: new Date().toISOString(),
-      ...purchaseDetails,
-    };
-
-    let updatedMemberships: UserMembership[];
-    const existingMembershipIndex = targetUser.memberships.findIndex(m => m.businessId === businessId);
-
-    if (existingMembershipIndex > -1) {
-      const oldMembership = targetUser.memberships[existingMembershipIndex];
-      const updatedMembership: UserMembership = {
-        ...oldMembership,
-        purchases: [...oldMembership.purchases, newPurchase].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()), // Keep purchases sorted
-        pointsBalance: oldMembership.pointsBalance + purchaseDetails.pointsEarned,
+      const userData = userDocSnap.data() as User;
+      const newPurchase: MockPurchase = {
+        id: `p-${Date.now()}-${Math.random().toString(36).substring(7)}`,
+        date: new Date().toISOString(),
+        ...purchaseDetails,
       };
-      updatedMemberships = targetUser.memberships.map((m, index) =>
-        index === existingMembershipIndex ? updatedMembership : m
-      );
-    } else {
-      console.error("Cannot add purchase: User is not a member of this business.", businessId);
+
+      let updatedMemberships: UserMembership[];
+      const existingMembershipIndex = userData.memberships.findIndex(m => m.businessId === businessId);
+
+      if (existingMembershipIndex > -1) {
+        const oldMembership = userData.memberships[existingMembershipIndex];
+        const updatedMembership: UserMembership = {
+          ...oldMembership,
+          purchases: [newPurchase, ...oldMembership.purchases].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()),
+          pointsBalance: oldMembership.pointsBalance + purchaseDetails.pointsEarned,
+        };
+        updatedMemberships = userData.memberships.map((m, index) =>
+          index === existingMembershipIndex ? updatedMembership : m
+        );
+      } else {
+        // This case should ideally be prevented by UI (admin can only add purchase for enrolled user in their business)
+        // For robustness, create membership if it doesn't exist, though this might indicate a logic flaw elsewhere.
+        const business = MOCK_BUSINESSES_DB.find(b => b.id === businessId);
+        if (!business) {
+          toast({ title: "Error", description: "Business not found.", variant: "destructive" });
+          return false;
+        }
+        const newMembership: UserMembership = {
+            businessId: businessId,
+            businessName: business.name,
+            pointsBalance: purchaseDetails.pointsEarned,
+            purchases: [newPurchase]
+        };
+        updatedMemberships = [...userData.memberships, newMembership];
+      }
+      
+      await updateDoc(userDocRef, { memberships: updatedMemberships });
+
+      // If the updated user is the currently logged-in user, refresh their local state
+      if (user && user.id === userId) {
+         setUser(prevUser => prevUser ? ({ ...prevUser, memberships: updatedMemberships }) : null);
+      }
+      toast({ title: "Purchase Added", description: `Purchase recorded for user.`, variant: "default" });
+      return true;
+
+    } catch (error: any) {
+      console.error("Error adding purchase to Firestore:", error);
+      toast({ title: "Error", description: `Failed to add purchase: ${error.message}`, variant: "destructive" });
       return false;
     }
-    
-    const updatedUser: User = {
-      ...targetUser,
-      memberships: [...updatedMemberships], // Create new array for immutability
-    };
-
-    MOCK_USERS_DB[targetUser.email] = updatedUser;
-
-    if (user && user.id === userId) {
-      const newlyUpdatedUser = JSON.parse(JSON.stringify(updatedUser));
-      setUser(newlyUpdatedUser);
-      localStorage.setItem('loyaltyUser', JSON.stringify(newlyUpdatedUser));
-    }
-    return true;
   };
 
   const joinBusinessByCode = async (businessCode: string): Promise<{ success: boolean; message: string }> => {
-    if (!user) {
+    if (!firebaseUser || !user) { // Check firebaseUser for auth, user for profile
       return { success: false, message: "You must be logged in to join a program." };
     }
 
@@ -230,7 +227,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       return { success: false, message: "Invalid business code." };
     }
 
-    const isAlreadyMember = user.memberships.some(m => m.businessId === businessToJoin.id);
+    const userDocRef = doc(db, 'users', firebaseUser.uid);
+    const userDocSnap = await getDoc(userDocRef); // Fetch fresh user data
+
+    if (!userDocSnap.exists()) {
+      return { success: false, message: "User profile not found." };
+    }
+    const currentUserData = userDocSnap.data() as User;
+
+
+    const isAlreadyMember = currentUserData.memberships.some(m => m.businessId === businessToJoin.id);
     if (isAlreadyMember) {
       return { success: false, message: `You are already a member of ${businessToJoin.name}.` };
     }
@@ -251,31 +257,53 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       ],
     };
 
-    const updatedMemberships = [...user.memberships, newMembership];
-    const updatedUser: User = {
-      ...user,
-      memberships: [...updatedMemberships], // Ensure new array for immutability
-    };
-
-    MOCK_USERS_DB[user.email] = updatedUser; 
-    
-    const newlyUpdatedUser = JSON.parse(JSON.stringify(updatedUser)); 
-    setUser(newlyUpdatedUser);
-    localStorage.setItem('loyaltyUser', JSON.stringify(newlyUpdatedUser));
-    
-    return { success: true, message: `Successfully joined ${businessToJoin.name} and received ${welcomeBonusPoints} welcome points!` };
+    try {
+      await updateDoc(userDocRef, {
+        memberships: arrayUnion(newMembership)
+      });
+      
+      // Update local user state
+      setUser(prevUser => prevUser ? ({
+        ...prevUser,
+        memberships: [...prevUser.memberships, newMembership]
+      }) : null);
+      
+      return { success: true, message: `Successfully joined ${businessToJoin.name} and received ${welcomeBonusPoints} welcome points!` };
+    } catch (error: any) {
+      console.error("Error joining business in Firestore:", error);
+      return { success: false, message: `Failed to join program: ${error.message}` };
+    }
   };
   
   const getBusinessById = (businessId: string): Business | undefined => {
     return MOCK_BUSINESSES_DB.find(b => b.id === businessId);
   };
 
-  const getAllMockUsers = (): User[] => {
-    return Object.values(MOCK_USERS_DB);
+  const getAllMockUsers = async (): Promise<User[]> => {
+    setLoading(true);
+    try {
+      const usersCollectionRef = collection(db, 'users');
+      const querySnapshot = await getDocs(usersCollectionRef);
+      const usersList: User[] = [];
+      querySnapshot.forEach((docSnap) => {
+        usersList.push({ id: docSnap.id, ...docSnap.data() } as User);
+      });
+      setLoading(false);
+      return usersList;
+    } catch (error: any) {
+      console.error("Error fetching all users from Firestore:", error);
+      toast({
+          title: "Error Fetching Users",
+          description: error.message || "Could not load user data.",
+          variant: "destructive",
+      });
+      setLoading(false);
+      return [];
+    }
   };
 
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated, loading, login, logout, signup, addMockPurchaseToUser, joinBusinessByCode, getAllMockUsers, getBusinessById }}>
+    <AuthContext.Provider value={{ user, firebaseUser, isAuthenticated, loading, login, logout, signup, addMockPurchaseToUser, joinBusinessByCode, getAllMockUsers, getBusinessById }}>
       {children}
     </AuthContext.Provider>
   );
