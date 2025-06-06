@@ -1,0 +1,60 @@
+// src/ai/flows/generate-personalized-offer.ts
+'use server';
+
+/**
+ * @fileOverview Generates personalized offers and recommendations for users based on their purchase history and preferences.
+ *
+ * - generatePersonalizedOffer - A function that generates personalized offers.
+ * - PersonalizedOfferInput - The input type for the generatePersonalizedOffer function.
+ * - PersonalizedOfferOutput - The return type for the generatePersonalizedOffer function.
+ */
+
+import {ai} from '@/ai/genkit';
+import {z} from 'genkit';
+
+const PersonalizedOfferInputSchema = z.object({
+  userId: z.string().describe('The ID of the user to generate an offer for.'),
+  purchaseHistory: z.string().describe('The purchase history of the user.'),
+  preferences: z.string().describe('The preferences of the user.'),
+});
+
+export type PersonalizedOfferInput = z.infer<typeof PersonalizedOfferInputSchema>;
+
+const PersonalizedOfferOutputSchema = z.object({
+  offer: z.string().describe('The personalized offer for the user.'),
+  reasoning: z.string().describe('The reasoning behind the offer.'),
+});
+
+export type PersonalizedOfferOutput = z.infer<typeof PersonalizedOfferOutputSchema>;
+
+export async function generatePersonalizedOffer(input: PersonalizedOfferInput): Promise<PersonalizedOfferOutput> {
+  return generatePersonalizedOfferFlow(input);
+}
+
+const personalizedOfferPrompt = ai.definePrompt({
+  name: 'personalizedOfferPrompt',
+  input: {schema: PersonalizedOfferInputSchema},
+  output: {schema: PersonalizedOfferOutputSchema},
+  prompt: `You are an expert marketing assistant that specializes in generating personalized offers for users based on their purchase history and preferences.
+
+  Generate a personalized offer for the user with the following information:
+
+  User ID: {{{userId}}}
+  Purchase History: {{{purchaseHistory}}}
+  Preferences: {{{preferences}}}
+
+  Explain the reasoning behind the offer.
+  `,
+});
+
+const generatePersonalizedOfferFlow = ai.defineFlow(
+  {
+    name: 'generatePersonalizedOfferFlow',
+    inputSchema: PersonalizedOfferInputSchema,
+    outputSchema: PersonalizedOfferOutputSchema,
+  },
+  async input => {
+    const {output} = await personalizedOfferPrompt(input);
+    return output!;
+  }
+);
