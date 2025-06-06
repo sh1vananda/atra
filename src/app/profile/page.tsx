@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { User as UserIcon, Mail, ShieldCheck, LogOut } from 'lucide-react';
+import { User as UserIcon, Mail, ShieldCheck, LogOut, Gift } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -16,7 +16,7 @@ export default function ProfilePage() {
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {
-      router.push('/login');
+      router.push('/login?redirect=/profile');
     }
   }, [loading, isAuthenticated, router]);
 
@@ -50,8 +50,11 @@ export default function ProfilePage() {
   }
 
   const getInitials = (name: string) => {
+    if (!name) return "??";
     return name.split(' ').map(n => n[0]).join('').toUpperCase();
   }
+  
+  const totalPoints = user.mockPurchases?.reduce((sum, p) => sum + p.pointsEarned, 0) || 0;
 
   return (
     <div className="space-y-8">
@@ -77,6 +80,10 @@ export default function ProfilePage() {
           <div className="flex items-center space-x-3 p-3 bg-secondary/30 rounded-md">
             <Mail className="h-5 w-5 text-primary" />
             <p><span className="font-medium">Email:</span> {user.email}</p>
+          </div>
+          <div className="flex items-center space-x-3 p-3 bg-secondary/30 rounded-md">
+            <Gift className="h-5 w-5 text-primary" />
+            <p><span className="font-medium">Total Points (Mock):</span> {totalPoints}</p>
           </div>
            <div className="flex items-center space-x-3 p-3 bg-green-100 dark:bg-green-900/30 border border-green-300 dark:border-green-700 rounded-md">
             <ShieldCheck className="h-5 w-5 text-green-600 dark:text-green-400" />
