@@ -29,8 +29,9 @@ export default function LoginPage() {
   useEffect(() => {
     console.log(`LoginPage:EFFECT[customerAuth]: customerAuthLoading: ${customerAuthLoading}, isCustomerAuth: ${isCustomerAuth}, redirectPath: ${redirectPath}`);
     if (!customerAuthLoading && isCustomerAuth) {
-      console.log(`LoginPage:EFFECT[customerAuth]: Redirecting customer to ${redirectPath || '/loyalty'}`);
-      router.push(redirectPath || '/loyalty');
+      const targetPath = redirectPath || '/loyalty';
+      console.log(`LoginPage:EFFECT[customerAuth]: Redirecting customer to ${targetPath}`);
+      router.push(targetPath);
     }
   }, [isCustomerAuth, customerAuthLoading, router, redirectPath]);
 
@@ -38,8 +39,9 @@ export default function LoginPage() {
   useEffect(() => {
     console.log(`LoginPage:EFFECT[adminAuth]: adminAuthLoading: ${adminAuthLoading}, isAdminAuthenticated: ${isAdminAuthenticated}, redirectPath: ${redirectPath}`);
     if (!adminAuthLoading && isAdminAuthenticated) {
-      console.log(`LoginPage:EFFECT[adminAuth]: Redirecting admin to ${redirectPath || '/admin/dashboard'}`);
-      router.push(redirectPath || '/admin/dashboard');
+      const targetPath = redirectPath || '/admin/dashboard';
+      console.log(`LoginPage:EFFECT[adminAuth]: Redirecting admin to ${targetPath}`);
+      router.push(targetPath);
     }
   }, [isAdminAuthenticated, adminAuthLoading, router, redirectPath]);
 
@@ -56,6 +58,7 @@ export default function LoginPage() {
     // Redirection is handled by the useEffect above
   };
   
+  // Show loader if either context is initially loading, or if a redirect is imminent due to already being authenticated
   if (customerAuthLoading || adminAuthLoading || (!customerAuthLoading && isCustomerAuth) || (!adminAuthLoading && isAdminAuthenticated)) {
     console.log(`LoginPage:RENDER: Showing loader. customerAuthLoading: ${customerAuthLoading}, adminAuthLoading: ${adminAuthLoading}, isCustomerAuth: ${isCustomerAuth}, isAdminAuthenticated: ${isAdminAuthenticated}`);
     return (
@@ -110,8 +113,8 @@ export default function LoginPage() {
                     required
                   />
                 </div>
-                <Button type="submit" disabled={customerLoading} className="w-full bg-primary hover:bg-primary/90">
-                  {customerLoading ? (
+                <Button type="submit" disabled={customerAuthLoading} className="w-full bg-primary hover:bg-primary/90">
+                  {customerAuthLoading ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                       Logging in...
@@ -153,8 +156,8 @@ export default function LoginPage() {
                     required
                   />
                 </div>
-                <Button type="submit" disabled={businessLoading} className="w-full bg-primary hover:bg-primary/90">
-                  {businessLoading ? (
+                <Button type="submit" disabled={adminAuthLoading} className="w-full bg-primary hover:bg-primary/90">
+                  {adminAuthLoading ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                       Logging in...
