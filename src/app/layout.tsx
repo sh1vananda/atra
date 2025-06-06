@@ -9,6 +9,7 @@ import { AuthProvider } from '@/contexts/AuthContext';
 import { AdminAuthProvider } from '@/contexts/AdminAuthContext';
 import { usePathname } from 'next/navigation';
 import { useState, useEffect } from 'react';
+import { ThemeProvider } from "next-themes";
 
 export default function RootLayout({
   children,
@@ -22,24 +23,16 @@ export default function RootLayout({
     setHasMounted(true);
   }, []);
 
-  // Determine isAdminRoute. For SSR & pre-hydration, assume a default (e.g., false or based on a non-hook value if possible).
-  // After hydration, use actual pathname.
-  // Defaulting to `false` ensures server and initial client render for `isAdminRoute` are consistent.
   const isAdminRoute = hasMounted ? pathname.startsWith('/admin') : false;
 
-  // Determine main className based on isAdminRoute.
-  // For SSR and initial client render, it will use `isAdminRoute = false`.
   const mainClassName = `flex-grow container mx-auto px-4 py-8 ${
     isAdminRoute ? 'bg-muted/40' : 'bg-background'
   }`;
   
-  // Determine if Footer should be shown.
-  // For SSR & pre-hydration, if isAdminRoute defaults to false, footer will be shown.
-  // After hydration, it uses the client-derived isAdminRoute.
-  const showFooter = hasMounted ? !isAdminRoute : true; // If not mounted, assume not admin route, show footer.
+  const showFooter = hasMounted ? !isAdminRoute : true;
 
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <head>
         <title>Loyalty Leap</title>
         <meta name="description" content="Your Digital Loyalty Platform" />
@@ -48,17 +41,23 @@ export default function RootLayout({
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
       </head>
       <body className="font-body antialiased flex flex-col min-h-screen bg-muted/40">
-        <AdminAuthProvider>
-          <AuthProvider>
-            <Header /> {/* Unified Header */}
-            <main className={mainClassName}>
-              {children}
-            </main>
-            {/* Conditionally render Footer ensuring consistency */}
-            {showFooter && <Footer />}
-            <Toaster />
-          </AuthProvider>
-        </AdminAuthProvider>
+        <ThemeProvider
+            attribute="class"
+            defaultTheme="system"
+            enableSystem
+            disableTransitionOnChange
+          >
+          <AdminAuthProvider>
+            <AuthProvider>
+              <Header />
+              <main className={mainClassName}>
+                {children}
+              </main>
+              {showFooter && <Footer />}
+              <Toaster />
+            </AuthProvider>
+          </AdminAuthProvider>
+        </ThemeProvider>
       </body>
     </html>
   );
