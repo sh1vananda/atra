@@ -1,18 +1,18 @@
 
 "use client";
 
-import { useEffect, useState, useTransition } from 'react'; // Added useState and useTransition
+import { useEffect, useState, useTransition } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
-import { QrCode, Edit3, Star, Briefcase, User, Info, KeyRound, Loader2 } from 'lucide-react'; // Added KeyRound, Loader2
+import { QrCode, Edit3, Star, Briefcase, User, Info, KeyRound, Loader2 } from 'lucide-react';
 import Image from 'next/image';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { UserMembership } from '@/types/user';
-import { useToast } from '@/hooks/use-toast'; // Added useToast
+import { useToast } from '@/hooks/use-toast';
 
 function LoyaltyBusinessCard({ membership, userId }: { membership: UserMembership, userId: string }) {
   const pointsToNextReward = 500; // This can be dynamic per business later
@@ -79,7 +79,9 @@ export default function LoyaltyPage() {
   const [isJoining, startTransition] = useTransition();
 
   useEffect(() => {
+    console.log(`LoyaltyPage:EFFECT[authCheck]: loading: ${loading}, isAuthenticated: ${isAuthenticated}`);
     if (!loading && !isAuthenticated) {
+      console.log("LoyaltyPage:EFFECT[authCheck]: Not authenticated and not loading, redirecting to /login?redirect=/loyalty");
       router.push('/login?redirect=/loyalty');
     }
   }, [loading, isAuthenticated, router]);
@@ -113,6 +115,7 @@ export default function LoyaltyPage() {
   };
 
   if (loading || !isAuthenticated || !user) {
+    console.log(`LoyaltyPage:RENDER: Showing skeleton. loading: ${loading}, isAuthenticated: ${isAuthenticated}, user exists: ${!!user}`);
     return (
       <div className="w-full space-y-8">
         <div className="text-left mb-6 pb-4 border-b">
@@ -161,6 +164,7 @@ export default function LoyaltyPage() {
     );
   }
 
+  console.log(`LoyaltyPage:RENDER: Rendering normal content. User: ${user?.name}`);
   const memberships = user.memberships || [];
 
   return (

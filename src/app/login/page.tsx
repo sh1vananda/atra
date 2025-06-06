@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect } from 'react'; // Added useEffect
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { Button } from '@/components/ui/button';
@@ -11,7 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Loader2, LogIn, User, Briefcase, Building } from 'lucide-react';
 import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation'; // Added useRouter, useSearchParams
+import { useRouter, useSearchParams } from 'next/navigation';
 
 export default function LoginPage() {
   const [customerEmail, setCustomerEmail] = useState('');
@@ -19,22 +19,26 @@ export default function LoginPage() {
   const [businessEmail, setBusinessEmail] = useState('');
   const [businessPassword, setBusinessPassword] = useState('');
 
-  const { login: customerLogin, loading: customerLoading, isAuthenticated: isCustomerAuth, loading: customerAuthLoading } = useAuth();
-  const { login: businessLogin, loading: businessLoading, isAdminAuthenticated, loading: adminAuthLoading } = useAdminAuth();
+  const { login: customerLogin, loading: customerAuthLoading, isAuthenticated: isCustomerAuth } = useAuth();
+  const { login: businessLogin, loading: adminAuthLoading, isAdminAuthenticated } = useAdminAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirectPath = searchParams.get('redirect') || undefined;
 
   // Redirect customer if already authenticated
   useEffect(() => {
+    console.log(`LoginPage:EFFECT[customerAuth]: customerAuthLoading: ${customerAuthLoading}, isCustomerAuth: ${isCustomerAuth}, redirectPath: ${redirectPath}`);
     if (!customerAuthLoading && isCustomerAuth) {
+      console.log(`LoginPage:EFFECT[customerAuth]: Redirecting customer to ${redirectPath || '/loyalty'}`);
       router.push(redirectPath || '/loyalty');
     }
   }, [isCustomerAuth, customerAuthLoading, router, redirectPath]);
 
   // Redirect admin if already authenticated
   useEffect(() => {
+    console.log(`LoginPage:EFFECT[adminAuth]: adminAuthLoading: ${adminAuthLoading}, isAdminAuthenticated: ${isAdminAuthenticated}, redirectPath: ${redirectPath}`);
     if (!adminAuthLoading && isAdminAuthenticated) {
+      console.log(`LoginPage:EFFECT[adminAuth]: Redirecting admin to ${redirectPath || '/admin/dashboard'}`);
       router.push(redirectPath || '/admin/dashboard');
     }
   }, [isAdminAuthenticated, adminAuthLoading, router, redirectPath]);
@@ -52,9 +56,8 @@ export default function LoginPage() {
     // Redirection is handled by the useEffect above
   };
   
-  // If either auth context is still loading initially, show a generic loading state for the page
-  // or if a redirect is imminent and user is already authenticated.
   if (customerAuthLoading || adminAuthLoading || (!customerAuthLoading && isCustomerAuth) || (!adminAuthLoading && isAdminAuthenticated)) {
+    console.log(`LoginPage:RENDER: Showing loader. customerAuthLoading: ${customerAuthLoading}, adminAuthLoading: ${adminAuthLoading}, isCustomerAuth: ${isCustomerAuth}, isAdminAuthenticated: ${isAdminAuthenticated}`);
     return (
         <div className="flex flex-col items-center justify-center min-h-[calc(100vh-150px)]">
             <Loader2 className="h-16 w-16 animate-spin text-primary mb-4" />
