@@ -14,6 +14,7 @@ export const MOCK_BUSINESSES_DB: Business[] = [
     id: 'biz-001',
     name: 'Loyalty Leap Cafe',
     description: 'Your favorite neighborhood cafe with great coffee and pastries.',
+    joinCode: 'CAFE123',
     rewards: [
       { id: 'reward-cafe-1', title: 'Free Coffee', description: 'A complimentary cup of our house blend.', pointsCost: 100, icon: <Coffee className="h-6 w-6" />, image: 'https://placehold.co/400x300.png', imageHint: 'coffee cup', category: 'Beverages' },
       { id: 'reward-cafe-2', title: 'Pastry Discount', description: '20% off any pastry.', pointsCost: 150, icon: <Percent className="h-6 w-6" />, image: 'https://placehold.co/400x300.png', imageHint: 'discount pastry', category: 'Food' },
@@ -23,6 +24,7 @@ export const MOCK_BUSINESSES_DB: Business[] = [
     id: 'biz-002',
     name: 'The Book Nook',
     description: 'Discover your next favorite read and enjoy member perks.',
+    joinCode: 'BOOKS4U',
     rewards: [
       { id: 'reward-book-1', title: '$5 Off Coupon', description: 'Get $5 off any book purchase over $20.', pointsCost: 200, icon: <Gift className="h-6 w-6" />, image: 'https://placehold.co/400x300.png', imageHint: 'gift voucher', category: 'Vouchers' },
       { id: 'reward-book-2', title: 'Exclusive Bookmark', description: 'A beautifully designed bookmark.', pointsCost: 50, icon: <ShoppingBag className="h-6 w-6" />, image: 'https://placehold.co/400x300.png', imageHint: 'bookmark design', category: 'Merchandise' },
@@ -61,14 +63,8 @@ let MOCK_USERS_DB: { [email: string]: User } = {
     name: 'Test User',
     email: 'user@example.com',
     memberships: [
-      {
-        businessId: 'biz-001',
-        businessName: 'Loyalty Leap Cafe',
-        pointsBalance: 50, // Welcome bonus
-        purchases: [
-          { id: 'p3', item: 'Welcome Bonus', amount: 0, date: new Date('2024-07-22T12:00:00Z').toISOString(), pointsEarned: 50 },
-        ]
-      }
+      // Initially, Test User is not a member of Loyalty Leap Cafe by default for testing join functionality.
+      // They can join it via the joinCode CAFE123.
     ]
   }
 };
@@ -81,6 +77,7 @@ interface AuthContextType {
   logout: () => void;
   signup: (name: string, email: string, pass: string) => Promise<void>;
   addMockPurchaseToUser: (userId: string, businessId: string, purchaseDetails: { item: string; amount: number; pointsEarned: number }) => Promise<boolean>;
+  joinBusinessByCode: (businessCode: string) => Promise<{ success: boolean; message: string }>;
   getAllMockUsers: () => User[];
   getBusinessById: (businessId: string) => Business | undefined;
 }
@@ -102,6 +99,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (dbUser) {
           setUser(dbUser); 
         } else {
+          // If user from localStorage isn't in our current mock DB (e.g., after a DB reset/change),
+          // we might treat them as logged out or try to re-validate/re-create.
+          // For this mock, we'll just use the localStorage version if not in DB.
           setUser(parsedUser); 
         }
         setIsAuthenticated(true);
@@ -118,12 +118,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     await new Promise(resolve => setTimeout(resolve, 500));
 
     let foundUser: User | null = null;
+    // Prioritize direct matches for test accounts
     if (email === 'user@example.com' && pass === 'password123') {
       foundUser = MOCK_USERS_DB['user@example.com'];
-    } else if (email === 'loyal@example.com' && pass === 'password123') { // Added for easier testing
+    } else if (email === 'loyal@example.com' && pass === 'password123') {
       foundUser = MOCK_USERS_DB['loyal@example.com'];
     }
-     else if (MOCK_USERS_DB[email]) { // Fallback for any mock user by email
+     else if (MOCK_USERS_DB[email]) { // Fallback for any mock user by email (assuming password check is skipped for other mocks)
         foundUser = MOCK_USERS_DB[email];
     }
 
@@ -135,7 +136,7 @@ localStorage.setItem('loyaltyUser', JSON.stringify(foundUser));
       router.push('/loyalty'); 
     } else {
       console.error("Login failed: Invalid credentials");
-      alert("Login failed: Invalid credentials. Test with user@example.com or loyal@example.com (pass: password123).");
+      // alert("Login failed: Invalid credentials. Test with user@example.com or loyal@example.com (pass: password123).");
     }
     setLoading(false);
   };
@@ -145,7 +146,7 @@ localStorage.setItem('loyaltyUser', JSON.stringify(foundUser));
     await new Promise(resolve => setTimeout(resolve, 500));
     
     if (MOCK_USERS_DB[email]) {
-        alert("Signup failed: Email already exists.");
+        // alert("Signup failed: Email already exists.");
         setLoading(false);
         return;
     }
@@ -154,18 +155,9 @@ localStorage.setItem('loyaltyUser', JSON.stringify(foundUser));
       id: `mock-user-${Date.now()}`, 
       name, 
       email,
-      memberships: [] 
+      memberships: [] // Start with no memberships, user can join via codes
     };
-    const defaultBusiness = MOCK_BUSINESSES_DB[0];
-    if (defaultBusiness) {
-      newUser.memberships.push({
-        businessId: defaultBusiness.id,
-        businessName: defaultBusiness.name,
-        pointsBalance: 50,
-        purchases: [{ id: `wp-${Date.now()}`, item: 'Welcome Bonus', amount: 0, date: new Date().toISOString(), pointsEarned: 50 }]
-      });
-    }
-
+    
     MOCK_USERS_DB[email] = newUser; 
     
     setUser(newUser);
@@ -183,11 +175,14 @@ localStorage.setItem('loyaltyUser', JSON.stringify(foundUser));
   };
 
   const addMockPurchaseToUser = async (userId: string, businessId: string, purchaseDetails: { item: string; amount: number; pointsEarned: number }): Promise<boolean> => {
-    const targetUser = Object.values(MOCK_USERS_DB).find(u => u.id === userId);
-    if (!targetUser) {
+    const targetUserArray = Object.values(MOCK_USERS_DB);
+    const userIndex = targetUserArray.findIndex(u => u.id === userId);
+
+    if (userIndex === -1) {
       console.error("User not found for adding purchase:", userId);
       return false;
     }
+    const targetUser = targetUserArray[userIndex];
 
     const newPurchase: MockPurchase = {
       id: `p-${Date.now()}-${Math.random().toString(36).substring(7)}`,
@@ -209,18 +204,11 @@ localStorage.setItem('loyaltyUser', JSON.stringify(foundUser));
         index === existingMembershipIndex ? updatedMembership : m
       );
     } else {
-      const business = MOCK_BUSINESSES_DB.find(b => b.id === businessId);
-      if (!business) {
-        console.error("Business not found for creating membership:", businessId);
-        return false;
-      }
-      const newMembership: UserMembership = {
-        businessId: business.id,
-        businessName: business.name,
-        pointsBalance: purchaseDetails.pointsEarned,
-        purchases: [newPurchase],
-      };
-      updatedMemberships = [...targetUser.memberships, newMembership];
+      // This case should ideally not be hit if purchases are only added to existing memberships.
+      // If joining a new business and adding a purchase simultaneously is a feature, this logic needs review.
+      // For now, we assume membership exists.
+      console.error("Cannot add purchase: User is not a member of this business.", businessId);
+      return false;
     }
     
     const updatedUser: User = {
@@ -230,12 +218,61 @@ localStorage.setItem('loyaltyUser', JSON.stringify(foundUser));
 
     MOCK_USERS_DB[targetUser.email] = updatedUser;
 
+    // If the currently logged-in user is the one being updated, refresh their state.
     if (user && user.id === userId) {
-      // Ensure the live user state is updated with a new object reference
-      setUser(JSON.parse(JSON.stringify(updatedUser)));
-      localStorage.setItem('loyaltyUser', JSON.stringify(updatedUser));
+      const newlyUpdatedUser = JSON.parse(JSON.stringify(updatedUser));
+      setUser(newlyUpdatedUser);
+      localStorage.setItem('loyaltyUser', JSON.stringify(newlyUpdatedUser));
     }
     return true;
+  };
+
+  const joinBusinessByCode = async (businessCode: string): Promise<{ success: boolean; message: string }> => {
+    if (!user) {
+      return { success: false, message: "You must be logged in to join a program." };
+    }
+
+    const businessToJoin = MOCK_BUSINESSES_DB.find(b => b.joinCode === businessCode);
+
+    if (!businessToJoin) {
+      return { success: false, message: "Invalid business code." };
+    }
+
+    const isAlreadyMember = user.memberships.some(m => m.businessId === businessToJoin.id);
+    if (isAlreadyMember) {
+      return { success: false, message: `You are already a member of ${businessToJoin.name}.` };
+    }
+
+    const welcomeBonusPoints = 50;
+    const newMembership: UserMembership = {
+      businessId: businessToJoin.id,
+      businessName: businessToJoin.name,
+      pointsBalance: welcomeBonusPoints,
+      purchases: [
+        {
+          id: `wb-${Date.now()}`,
+          item: "Welcome Bonus",
+          amount: 0,
+          date: new Date().toISOString(),
+          pointsEarned: welcomeBonusPoints,
+        }
+      ],
+    };
+
+    const updatedMemberships = [...user.memberships, newMembership];
+    const updatedUser: User = {
+      ...user,
+      memberships: updatedMemberships,
+    };
+
+    MOCK_USERS_DB[user.email] = updatedUser; // Update the "DB"
+    
+    // Update the live user state
+    const newlyUpdatedUser = JSON.parse(JSON.stringify(updatedUser)); // Deep clone
+    setUser(newlyUpdatedUser);
+    localStorage.setItem('loyaltyUser', JSON.stringify(newlyUpdatedUser));
+    
+    return { success: true, message: `Successfully joined ${businessToJoin.name} and received ${welcomeBonusPoints} welcome points!` };
   };
   
   const getBusinessById = (businessId: string): Business | undefined => {
@@ -247,7 +284,7 @@ localStorage.setItem('loyaltyUser', JSON.stringify(foundUser));
   };
 
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated, loading, login, logout, signup, addMockPurchaseToUser, getAllMockUsers, getBusinessById }}>
+    <AuthContext.Provider value={{ user, isAuthenticated, loading, login, logout, signup, addMockPurchaseToUser, joinBusinessByCode, getAllMockUsers, getBusinessById }}>
       {children}
     </AuthContext.Provider>
   );
@@ -260,4 +297,3 @@ export const useAuth = () => {
   }
   return context;
 };
- 

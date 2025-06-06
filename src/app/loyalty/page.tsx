@@ -1,17 +1,18 @@
 
 "use client";
 
-import { useEffect } from 'react';
+import { useEffect, useState, useTransition } from 'react'; // Added useState and useTransition
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label'; // Added import
-import { Input } from '@/components/ui/input'; // Added import for completeness
-import { QrCode, Edit3, Star, Briefcase, User, Info } from 'lucide-react';
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
+import { QrCode, Edit3, Star, Briefcase, User, Info, KeyRound, Loader2 } from 'lucide-react'; // Added KeyRound, Loader2
 import Image from 'next/image';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { UserMembership } from '@/types/user';
+import { useToast } from '@/hooks/use-toast'; // Added useToast
 
 function LoyaltyBusinessCard({ membership, userId }: { membership: UserMembership, userId: string }) {
   const pointsToNextReward = 500; // This can be dynamic per business later
@@ -71,14 +72,45 @@ function LoyaltyBusinessCard({ membership, userId }: { membership: UserMembershi
 
 
 export default function LoyaltyPage() {
-  const { user, isAuthenticated, loading } = useAuth();
+  const { user, isAuthenticated, loading, joinBusinessByCode } = useAuth();
   const router = useRouter();
+  const { toast } = useToast();
+  const [businessCode, setBusinessCode] = useState('');
+  const [isJoining, startTransition] = useTransition();
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {
       router.push('/login?redirect=/loyalty');
     }
   }, [loading, isAuthenticated, router]);
+
+  const handleJoinBusiness = async () => {
+    if (!businessCode.trim()) {
+      toast({
+        title: "Error",
+        description: "Please enter a business code.",
+        variant: "destructive",
+      });
+      return;
+    }
+    startTransition(async () => {
+      const result = await joinBusinessByCode(businessCode.trim().toUpperCase());
+      if (result.success) {
+        toast({
+          title: "Success!",
+          description: result.message,
+          variant: "default",
+        });
+        setBusinessCode(''); // Clear input on success
+      } else {
+        toast({
+          title: "Join Failed",
+          description: result.message,
+          variant: "destructive",
+        });
+      }
+    });
+  };
 
   if (loading || !isAuthenticated || !user) {
     return (
@@ -112,6 +144,19 @@ export default function LoyaltyPage() {
             </Card>
           ))}
         </div>
+         <Card className="mt-8 shadow-lg bg-card">
+          <CardHeader>
+            <Skeleton className="h-7 w-1/3 mb-1" />
+            <Skeleton className="h-4 w-2/3" />
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Skeleton className="h-4 w-1/4" />
+            <Skeleton className="h-10 w-full" />
+          </CardContent>
+          <CardFooter>
+             <Skeleton className="h-10 w-1/3" />
+          </CardFooter>
+        </Card>
       </div>
     );
   }
@@ -141,11 +186,46 @@ export default function LoyaltyPage() {
             <CardTitle className="font-headline text-2xl">No Loyalty Programs Joined Yet</CardTitle>
           </CardHeader>
           <CardContent>
-            <CardDescription className="text-lg mb-4">Explore businesses and join their loyalty programs to start earning rewards!</CardDescription>
-            <Button variant="default">Find Businesses (Coming Soon)</Button>
+            <CardDescription className="text-lg mb-4">Join a program using a business code below or explore businesses to start earning rewards!</CardDescription>
+            {/* <Button variant="default">Find Businesses (Coming Soon)</Button> */}
           </CardContent>
         </Card>
       )}
+
+      <Card className="mt-8 shadow-lg bg-card">
+        <CardHeader>
+          <CardTitle className="font-headline text-2xl flex items-center gap-2">
+            <KeyRound className="h-6 w-6 text-primary" />
+            Join a New Loyalty Program
+          </CardTitle>
+          <CardDescription>Enter the unique code provided by a business to enroll in their loyalty program.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div>
+            <Label htmlFor="business-code">Business Code</Label>
+            <Input 
+              id="business-code" 
+              placeholder="e.g., CAFE123" 
+              value={businessCode}
+              onChange={(e) => setBusinessCode(e.target.value.toUpperCase())} 
+              className="mt-1"
+            />
+          </div>
+        </CardContent>
+        <CardFooter>
+          <Button onClick={handleJoinBusiness} disabled={isJoining || !businessCode.trim()} className="bg-primary hover:bg-primary/90">
+            {isJoining ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Joining...
+              </>
+            ) : (
+              "Join Program"
+            )}
+          </Button>
+        </CardFooter>
+      </Card>
+
 
       <Card className="mt-12 shadow-lg bg-card">
         <CardHeader>
@@ -166,7 +246,7 @@ export default function LoyaltyPage() {
           </div>
           <div className="space-y-4 p-6 border rounded-lg bg-background">
             <Edit3 className="h-12 w-12 mx-auto text-primary md:mx-0" />
-            <h3 className="text-xl font-semibold">Enter Code Manually</h3>
+            <h3 className="text-xl font-semibold">Enter Purchase Code Manually</h3>
             <p className="text-muted-foreground text-sm mb-2">Functionality to enter codes for specific businesses is under development.</p>
             <div className="space-y-2">
               <Label htmlFor="manual-code">Enter your purchase code:</Label>

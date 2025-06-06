@@ -17,5 +17,6 @@ export interface Business {
   id: string;
   name: string;
   description: string;
+  joinCode: string; // Unique code for users to join this business's program
   rewards: Reward[];
 }
