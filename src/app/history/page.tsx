@@ -6,11 +6,10 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import { HistoryListItem, type HistoryEntry } from '@/components/history/HistoryListItem';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { ScrollText } from 'lucide-react';
+import { ScrollText, Info } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { MockPurchase, UserMembership } from '@/types/user';
 
-// Convert MockPurchase from a UserMembership to HistoryEntry
 function mapPurchaseToHistoryEntry(purchase: MockPurchase, businessName: string): HistoryEntry {
   return {
     id: purchase.id,
@@ -34,12 +33,12 @@ export default function HistoryPage() {
 
   if (loading || !isAuthenticated || !user) {
     return (
-      <div className="space-y-8">
+      <div className="w-full space-y-8">
         <div className="text-center">
           <Skeleton className="h-10 w-1/2 mx-auto mb-2" />
           <Skeleton className="h-6 w-3/4 mx-auto" />
         </div>
-        <Card className="shadow-lg">
+        <Card className="shadow-lg bg-card">
           <CardHeader className="flex flex-row items-center justify-between">
             <div>
               <Skeleton className="h-7 w-48 mb-1" />
@@ -78,12 +77,12 @@ export default function HistoryPage() {
   const sortedHistory = allHistoryEntries.sort((a, b) => b.date.getTime() - a.date.getTime());
 
   return (
-    <div className="space-y-8">
-       <div className="text-center">
+    <div className="w-full space-y-8">
+       <div className="text-center border-b border-border pb-6 mb-8">
         <h1 className="text-4xl font-headline font-bold text-primary mb-2">Your Activity</h1>
         <p className="text-lg text-muted-foreground">A record of your points earned and rewards redeemed across all programs.</p>
       </div>
-      <Card className="shadow-lg">
+      <Card className="shadow-lg bg-card">
         <CardHeader className="flex flex-row items-center justify-between">
           <div>
             <CardTitle className="font-headline text-2xl">Transaction History</CardTitle>
@@ -99,7 +98,11 @@ export default function HistoryPage() {
               ))}
             </ul>
           ) : (
-            <p className="text-muted-foreground text-center py-8">No history yet. Start earning points or make a purchase!</p>
+            <div className="text-center py-12">
+              <Info className="h-12 w-12 mx-auto text-primary mb-4" />
+              <p className="text-xl font-semibold text-muted-foreground">No history yet.</p>
+              <p className="text-muted-foreground">Start earning points or make a purchase to see your activity here!</p>
+            </div>
           )}
         </CardContent>
       </Card>

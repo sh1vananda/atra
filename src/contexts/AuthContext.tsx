@@ -98,12 +98,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (storedUser) {
       try {
         const parsedUser = JSON.parse(storedUser) as User;
-        // Ensure the stored user exists in our MOCK_USERS_DB (or fetch from a real DB)
         const dbUser = Object.values(MOCK_USERS_DB).find(u => u.id === parsedUser.id);
         if (dbUser) {
-          setUser(dbUser); // Use potentially updated data from MOCK_USERS_DB
+          setUser(dbUser); 
         } else {
-          setUser(parsedUser); // Fallback if not in current mock, though ideally it should be
+          setUser(parsedUser); 
         }
         setIsAuthenticated(true);
       } catch (e) {
@@ -121,18 +120,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     let foundUser: User | null = null;
     if (email === 'user@example.com' && pass === 'password123') {
       foundUser = MOCK_USERS_DB['user@example.com'];
-    } else if (MOCK_USERS_DB[email]) {
+    } else if (email === 'loyal@example.com' && pass === 'password123') { // Added for easier testing
+      foundUser = MOCK_USERS_DB['loyal@example.com'];
+    }
+     else if (MOCK_USERS_DB[email]) { // Fallback for any mock user by email
         foundUser = MOCK_USERS_DB[email];
     }
+
 
     if (foundUser) {
       setUser(foundUser);
       setIsAuthenticated(true);
       localStorage.setItem('loyaltyUser', JSON.stringify(foundUser));
-      router.push('/'); // Redirect to homepage after successful user login
+      router.push('/loyalty'); 
     } else {
       console.error("Login failed: Invalid credentials");
-      alert("Login failed: Invalid credentials. Test with user@example.com and password123, or other mock users.");
+      alert("Login failed: Invalid credentials. Test with user@example.com or loyal@example.com (pass: password123).");
     }
     setLoading(false);
   };
@@ -151,9 +154,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       id: `mock-user-${Date.now()}`, 
       name, 
       email,
-      memberships: [] // New users start with no memberships, or could auto-enroll in a default one
+      memberships: [] 
     };
-    // For demo, let's auto-enroll in the first business with a welcome bonus
     const defaultBusiness = MOCK_BUSINESSES_DB[0];
     if (defaultBusiness) {
       newUser.memberships.push({
@@ -170,7 +172,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setIsAuthenticated(true);
     localStorage.setItem('loyaltyUser', JSON.stringify(newUser));
     setLoading(false);
-    router.push('/'); // Redirect to homepage after signup
+    router.push('/loyalty'); 
   };
 
   const logout = () => {
@@ -189,7 +191,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     let membership = targetUser.memberships.find(m => m.businessId === businessId);
     if (!membership) {
-      // If user is not a member, create a new membership (or handle as an error)
       const business = MOCK_BUSINESSES_DB.find(b => b.id === businessId);
       if (!business) {
         console.error("Business not found for creating membership:", businessId);
@@ -213,10 +214,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     membership.purchases.push(newPurchase);
     membership.pointsBalance += purchaseDetails.pointsEarned;
     
-    MOCK_USERS_DB[targetUser.email] = {...targetUser, memberships: [...targetUser.memberships]}; // Ensure re-render by creating new arrays
+    MOCK_USERS_DB[targetUser.email] = {...targetUser, memberships: [...targetUser.memberships]};
 
     if (user && user.id === userId) {
-      const updatedCurrentUser = JSON.parse(JSON.stringify(MOCK_USERS_DB[targetUser.email])); // Deep clone for state update
+      const updatedCurrentUser = JSON.parse(JSON.stringify(MOCK_USERS_DB[targetUser.email])); 
       setUser(updatedCurrentUser);
       localStorage.setItem('loyaltyUser', JSON.stringify(updatedCurrentUser));
     }

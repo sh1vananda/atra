@@ -21,12 +21,12 @@ export default function OffersPage() {
 
   if (loading || !isAuthenticated) {
     return (
-      <div className="space-y-8">
-        <div className="text-center">
+      <div className="w-full space-y-8">
+        <div className="text-center border-b border-border pb-6 mb-8">
           <Skeleton className="h-10 w-1/2 mx-auto mb-2" />
           <Skeleton className="h-6 w-3/4 mx-auto" />
         </div>
-        <Card className="shadow-lg">
+        <Card className="shadow-lg bg-card">
           <CardHeader className="flex flex-row items-center justify-between">
             <div>
               <Skeleton className="h-7 w-48 mb-1" />
@@ -57,12 +57,12 @@ export default function OffersPage() {
   }
 
   return (
-    <div className="space-y-8">
-      <div className="text-center">
+    <div className="w-full space-y-8">
+      <div className="text-center border-b border-border pb-6 mb-8">
         <h1 className="text-4xl font-headline font-bold text-primary mb-2">Personalized Offers</h1>
         <p className="text-lg text-muted-foreground">Discover offers and recommendations curated just for you!</p>
       </div>
-      <Card className="shadow-lg">
+      <Card className="shadow-lg bg-card">
         <CardHeader className="flex flex-row items-center justify-between">
           <div>
             <CardTitle className="font-headline text-2xl">Generate Your Offer</CardTitle>

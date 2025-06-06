@@ -6,9 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { QrCode, Edit3, Star, Briefcase, User } from 'lucide-react';
+import { QrCode, Edit3, Star, Briefcase, User, Info } from 'lucide-react';
 import Image from 'next/image';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { UserMembership } from '@/types/user';
@@ -19,7 +17,7 @@ function LoyaltyBusinessCard({ membership, userId }: { membership: UserMembershi
   const pointsNeededForNext = Math.max(0, pointsToNextReward - membership.pointsBalance);
 
   return (
-    <Card className="shadow-lg w-full">
+    <Card className="shadow-lg w-full bg-card transform hover:shadow-xl transition-shadow duration-300">
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle className="font-headline text-2xl flex items-center gap-2">
@@ -58,7 +56,7 @@ function LoyaltyBusinessCard({ membership, userId }: { membership: UserMembershi
               <h3 className="text-xl font-semibold font-headline">{membership.businessName} Card</h3>
               <Star className="h-10 w-10 text-yellow-300 fill-yellow-300 opacity-50" />
             </div>
-            <p className="text-sm opacity-80">Member ID: {userId} (for {membership.businessName})</p>
+            <p className="text-sm opacity-80">Member ID: {userId.slice(-6).toUpperCase()} (for {membership.businessName})</p>
           </div>
           <div className="text-right">
             <p className="text-3xl font-bold">{membership.pointsBalance} PTS</p>
@@ -82,13 +80,11 @@ export default function LoyaltyPage() {
 
   if (loading || !isAuthenticated || !user) {
     return (
-      <div className="space-y-8">
-        <div className="text-left mb-6">
+      <div className="w-full space-y-8">
+        <div className="text-left mb-6 pb-4 border-b">
             <Skeleton className="h-8 w-1/2 mb-2" />
             <Skeleton className="h-5 w-3/4" />
         </div>
-        <Skeleton className="h-10 w-1/2 mx-auto mb-2" />
-        <Skeleton className="h-6 w-3/4 mx-auto mb-6" />
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {[...Array(2)].map((_, i) => (
             <Card key={i} className="shadow-lg w-full">
@@ -121,13 +117,13 @@ export default function LoyaltyPage() {
   const memberships = user.memberships || [];
 
   return (
-    <div className="space-y-12">
-      <div className="text-left pb-4 border-b">
-        <h1 className="text-3xl font-headline font-bold text-primary mb-1">
-          <User className="inline-block h-8 w-8 mr-2 align-text-bottom" /> 
+    <div className="w-full space-y-12">
+      <div className="text-left pb-4 border-b border-border">
+        <h1 className="text-3xl font-headline font-bold text-primary mb-1 flex items-center">
+          <User className="inline-block h-8 w-8 mr-3 align-text-bottom" /> 
           Welcome back, {user.name}!
         </h1>
-        <p className="text-lg text-muted-foreground">Here are your loyalty cards. Track your points and progress.</p>
+        <p className="text-lg text-muted-foreground">Here are your loyalty cards. Track your points and progress with each business.</p>
       </div>
 
       {memberships.length > 0 ? (
@@ -137,35 +133,36 @@ export default function LoyaltyPage() {
           ))}
         </div>
       ) : (
-        <Card className="shadow-lg text-center py-12">
+        <Card className="shadow-lg text-center py-12 bg-card">
           <CardHeader>
+            <Info className="h-12 w-12 mx-auto text-primary mb-3" />
             <CardTitle className="font-headline text-2xl">No Loyalty Programs Joined Yet</CardTitle>
           </CardHeader>
           <CardContent>
-            <CardDescription className="text-lg">Explore businesses and join their loyalty programs to start earning rewards!</CardDescription>
-            {/* TODO: Add a link to an "Explore Businesses" page if it exists */}
+            <CardDescription className="text-lg mb-4">Explore businesses and join their loyalty programs to start earning rewards!</CardDescription>
+            <Button variant="default">Find Businesses (Coming Soon)</Button>
           </CardContent>
         </Card>
       )}
 
-      <Card className="mt-12 shadow-lg">
+      <Card className="mt-12 shadow-lg bg-card">
         <CardHeader>
           <CardTitle className="font-headline text-2xl">Earn More Points</CardTitle>
           <CardDescription>Use your universal QR code at checkout or enter a purchase code manually (feature coming soon for specific businesses).</CardDescription>
         </CardHeader>
         <CardContent className="grid md:grid-cols-2 gap-6">
-          <div className="space-y-4 p-6 border rounded-lg bg-card text-center">
+          <div className="space-y-4 p-6 border rounded-lg bg-background text-center">
             <QrCode className="h-16 w-16 mx-auto text-primary" />
             <h3 className="text-xl font-semibold">Your Universal QR Code</h3>
             <p className="text-muted-foreground">Present this QR code at any participating business to identify yourself.</p>
             <div className="bg-white p-2 rounded-md inline-block shadow-md">
-              <Image src={`https://placehold.co/150x150.png?text=${user.id.slice(-6)}`} alt="QR Code Placeholder" width={150} height={150} data-ai-hint="QR code user" />
+              <Image src={`https://placehold.co/150x150.png?text=${user.id.slice(-6).toUpperCase()}`} alt="QR Code Placeholder" width={150} height={150} data-ai-hint="QR code user" />
             </div>
             <Button className="w-full mt-2" variant="outline">
               Show My QR Code
             </Button>
           </div>
-          <div className="space-y-4 p-6 border rounded-lg bg-card">
+          <div className="space-y-4 p-6 border rounded-lg bg-background">
             <Edit3 className="h-12 w-12 mx-auto text-primary md:mx-0" />
             <h3 className="text-xl font-semibold">Enter Code Manually</h3>
             <p className="text-muted-foreground text-sm mb-2">Functionality to enter codes for specific businesses is under development.</p>

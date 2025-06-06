@@ -23,12 +23,14 @@ export default function RootLayout({
     setHasMounted(true);
   }, []);
 
+  // Default to false or a server-friendly value until mounted
   const isAdminRoute = hasMounted ? pathname.startsWith('/admin') : false;
 
-  const mainClassName = `flex-grow container mx-auto px-4 py-8 ${
+  const mainClassName = `flex-grow w-full py-8 px-4 sm:px-6 lg:px-8 ${
     isAdminRoute ? 'bg-muted/40' : 'bg-background'
   }`;
   
+  // Default to true or a server-friendly value until mounted
   const showFooter = hasMounted ? !isAdminRoute : true;
 
   return (

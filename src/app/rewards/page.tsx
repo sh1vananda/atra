@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import { RewardCard } from '@/components/rewards/RewardCard';
-import { Gift, Briefcase, ArrowLeft } from 'lucide-react';
+import { Gift, Briefcase, ArrowLeft, Info } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -36,8 +36,8 @@ export default function RewardsPage() {
 
   if (loading || !isAuthenticated || !user) {
     return (
-      <div className="space-y-8">
-        <div className="text-center">
+      <div className="w-full space-y-8">
+        <div className="text-center border-b border-border pb-6 mb-8">
           <Skeleton className="h-10 w-1/2 mx-auto mb-2" />
           <Skeleton className="h-6 w-3/4 mx-auto" />
         </div>
@@ -52,11 +52,11 @@ export default function RewardsPage() {
 
   if (selectedBusiness) {
     return (
-      <div className="space-y-8">
+      <div className="w-full space-y-8">
         <Button variant="outline" onClick={() => setSelectedBusiness(null)} className="mb-6">
           <ArrowLeft className="mr-2 h-4 w-4" /> Back to Businesses
         </Button>
-        <div className="text-center">
+        <div className="text-center border-b border-border pb-6 mb-8">
           <h1 className="text-4xl font-headline font-bold text-primary mb-2">
             Rewards from {selectedBusiness.name}
           </h1>
@@ -71,9 +71,10 @@ export default function RewardsPage() {
             ))}
           </div>
         ) : (
-          <Card className="text-center py-12">
+          <Card className="text-center py-12 bg-card">
             <CardHeader>
-              <CardTitle>No Rewards Available</CardTitle>
+              <Info className="h-12 w-12 mx-auto text-primary mb-3" />
+              <CardTitle className="font-headline text-xl">No Rewards Available</CardTitle>
             </CardHeader>
             <CardContent>
               <CardDescription>{selectedBusiness.name} currently has no rewards listed.</CardDescription>
@@ -85,8 +86,8 @@ export default function RewardsPage() {
   }
 
   return (
-    <div className="space-y-8">
-      <div className="text-center">
+    <div className="w-full space-y-8">
+      <div className="text-center border-b border-border pb-6 mb-8">
         <h1 className="text-4xl font-headline font-bold text-primary mb-2">Select a Business</h1>
         <p className="text-lg text-muted-foreground">Choose a loyalty program to view its rewards catalog.</p>
       </div>
@@ -95,7 +96,7 @@ export default function RewardsPage() {
           {enrolledBusinesses.map((business) => (
             <Card 
               key={business.id} 
-              className="hover:shadow-xl transition-shadow duration-300 cursor-pointer"
+              className="bg-card hover:shadow-xl transition-shadow duration-300 cursor-pointer group"
               onClick={() => setSelectedBusiness(business)}
             >
               <CardHeader className="flex-row items-center gap-4">
@@ -108,16 +109,17 @@ export default function RewardsPage() {
                 </div>
               </CardHeader>
               <CardContent>
-                <p className="text-sm text-muted-foreground line-clamp-2">{business.description}</p>
-                 <Button variant="link" className="p-0 h-auto mt-2 text-primary">View Rewards &rarr;</Button>
+                <p className="text-sm text-muted-foreground line-clamp-2 mb-3">{business.description}</p>
+                 <Button variant="link" className="p-0 h-auto text-primary group-hover:underline">View Rewards <ArrowLeft className="h-4 w-4 ml-1 transform rotate-180 group-hover:translate-x-1 transition-transform duration-200" /></Button>
               </CardContent>
             </Card>
           ))}
         </div>
       ) : (
-        <Card className="text-center py-12">
+        <Card className="text-center py-12 bg-card">
            <CardHeader>
-            <CardTitle>No Loyalty Programs Joined</CardTitle>
+            <Info className="h-12 w-12 mx-auto text-primary mb-3" />
+            <CardTitle className="font-headline text-xl">No Loyalty Programs Joined</CardTitle>
           </CardHeader>
           <CardContent>
             <CardDescription>You haven't joined any loyalty programs yet. Once you do, you'll see them here.</CardDescription>
@@ -130,7 +132,7 @@ export default function RewardsPage() {
 
 function BusinessCardSkeleton() {
   return (
-    <Card className="w-full">
+    <Card className="w-full bg-card">
       <CardHeader className="flex-row items-center gap-4">
         <Skeleton className="h-10 w-10 rounded-md" />
         <div>
