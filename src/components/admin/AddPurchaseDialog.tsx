@@ -12,11 +12,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogC
 import { Loader2, ShoppingCart } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { User } from '@/types/user';
-import { useAuth } from '@/contexts/AuthContext'; // Assuming addMockPurchaseToUser is here
+import { useAuth } from '@/contexts/AuthContext'; // For addMockPurchaseToUser
 
 const purchaseSchema = z.object({
   item: z.string().min(1, "Item name is required"),
-  amount: z.coerce.number().min(0, "Amount must be positive"),
+  amount: z.coerce.number().min(0.01, "Amount must be positive"), // Usually purchases are > 0
   pointsEarned: z.coerce.number().int("Points must be a whole number"),
 });
 
@@ -24,12 +24,13 @@ type PurchaseFormData = z.infer<typeof purchaseSchema>;
 
 interface AddPurchaseDialogProps {
   user: User;
+  businessId: string; // To specify which business membership to update
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
-  onPurchaseAdded: () => void; // Callback to refresh user list or details
+  onPurchaseAdded: () => void;
 }
 
-export function AddPurchaseDialog({ user, isOpen, onOpenChange, onPurchaseAdded }: AddPurchaseDialogProps) {
+export function AddPurchaseDialog({ user, businessId, isOpen, onOpenChange, onPurchaseAdded }: AddPurchaseDialogProps) {
   const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
   const { addMockPurchaseToUser } = useAuth();
@@ -46,7 +47,8 @@ export function AddPurchaseDialog({ user, isOpen, onOpenChange, onPurchaseAdded 
   const onSubmit: SubmitHandler<PurchaseFormData> = async (data) => {
     startTransition(async () => {
       try {
-        const success = await addMockPurchaseToUser(user.id, {
+        // Pass businessId to the context function
+        const success = await addMockPurchaseToUser(user.id, businessId, {
           item: data.item,
           amount: data.amount,
           pointsEarned: data.pointsEarned,
@@ -55,14 +57,14 @@ export function AddPurchaseDialog({ user, isOpen, onOpenChange, onPurchaseAdded 
         if (success) {
           toast({
             title: "Purchase Added",
-            description: `Successfully added purchase for ${user.name}.`,
+            description: `Successfully added purchase for ${user.name} at this business.`,
             variant: 'default',
           });
           reset();
-          onPurchaseAdded(); // Notify parent to refresh data
-          onOpenChange(false); // Close dialog
+          onPurchaseAdded();
+          onOpenChange(false);
         } else {
-          throw new Error("Failed to add purchase via context.");
+          throw new Error("Failed to add purchase. User or business might not be correctly configured.");
         }
       } catch (e) {
         console.error("Error adding purchase:", e);
@@ -77,7 +79,7 @@ export function AddPurchaseDialog({ user, isOpen, onOpenChange, onPurchaseAdded 
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => {
-      if (!open) reset(); // Reset form if dialog is closed
+      if (!open) reset();
       onOpenChange(open);
     }}>
       <DialogContent className="sm:max-w-[425px]">

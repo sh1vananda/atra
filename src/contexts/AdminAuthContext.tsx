@@ -2,9 +2,11 @@
 "use client";
 
 import type { AdminUser } from '@/types/admin';
-import { useRouter }_from 'next/navigation';
+import type { Business } from '@/types/business'; // Import Business type
+import { useRouter } from 'next/navigation';
 import type { ReactNode } from 'react';
 import React, { createContext, useContext, useEffect, useState } from 'react';
+import { MOCK_BUSINESSES_DB } from './AuthContext'; // Assuming businesses are defined in AuthContext for now or a shared place
 
 interface AdminAuthContextType {
   adminUser: AdminUser | null;
@@ -12,9 +14,17 @@ interface AdminAuthContextType {
   loading: boolean;
   login: (email: string, pass: string) => Promise<void>;
   logout: () => void;
+  getManagedBusiness: () => Business | undefined;
 }
 
 const AdminAuthContext = createContext<AdminAuthContextType | undefined>(undefined);
+
+// Mock admin credentials - typically this would be a secure check against a database
+const MOCK_ADMIN_CREDENTIALS = {
+  email: 'admin@example.com',
+  password: 'adminpass',
+  businessId: 'biz-001', // Link this admin to the first mock business
+};
 
 export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
   const [adminUser, setAdminUser] = useState<AdminUser | null>(null);
@@ -26,8 +36,15 @@ export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
     const storedAdminUser = localStorage.getItem('loyaltyAdminUser');
     if (storedAdminUser) {
       try {
-        setAdminUser(JSON.parse(storedAdminUser) as AdminUser);
-        setIsAdminAuthenticated(true);
+        const parsedAdminUser = JSON.parse(storedAdminUser) as AdminUser;
+        // Validate if this admin user is still valid (e.g., against MOCK_ADMIN_CREDENTIALS or a fetched list)
+        const business = MOCK_BUSINESSES_DB.find(b => b.id === parsedAdminUser.businessId);
+        if (business) {
+          setAdminUser({ ...parsedAdminUser, businessName: business.name });
+          setIsAdminAuthenticated(true);
+        } else {
+            localStorage.removeItem('loyaltyAdminUser'); // Stored admin for a non-existent business
+        }
       } catch (e) {
         console.error("Failed to parse stored admin user:", e);
         localStorage.removeItem('loyaltyAdminUser');
@@ -40,19 +57,24 @@ export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
     setLoading(true);
     await new Promise(resolve => setTimeout(resolve, 500));
     
-    // Test admin account
-    if (email === 'admin@example.com' && pass === 'adminpass') {
-      const mockAdminUser: AdminUser = { 
-        id: 'admin-001', 
-        businessName: 'Loyalty Leap Admin', 
-        email: email 
-      };
-      setAdminUser(mockAdminUser);
-      setIsAdminAuthenticated(true);
-      localStorage.setItem('loyaltyAdminUser', JSON.stringify(mockAdminUser));
-      router.push('/admin/dashboard');
+    if (email === MOCK_ADMIN_CREDENTIALS.email && pass === MOCK_ADMIN_CREDENTIALS.password) {
+      const business = MOCK_BUSINESSES_DB.find(b => b.id === MOCK_ADMIN_CREDENTIALS.businessId);
+      if (business) {
+        const mockAdminUser: AdminUser = { 
+          id: 'admin-user-001', 
+          email: email,
+          businessId: business.id,
+          businessName: business.name,
+        };
+        setAdminUser(mockAdminUser);
+        setIsAdminAuthenticated(true);
+        localStorage.setItem('loyaltyAdminUser', JSON.stringify(mockAdminUser));
+        router.push('/admin/dashboard');
+      } else {
+        console.error("Admin login failed: Managed business not found.");
+        alert("Admin login failed. Configuration error.");
+      }
     } else {
-      // Handle login failure
       console.error("Admin login failed: Invalid credentials");
       alert("Admin login failed. Use admin@example.com and adminpass.");
     }
@@ -63,11 +85,18 @@ export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
     setAdminUser(null);
     setIsAdminAuthenticated(false);
     localStorage.removeItem('loyaltyAdminUser');
-    router.push('/admin/login');
+    router.push('/admin/login'); // Or '/' if you prefer a general landing after admin logout
+  };
+
+  const getManagedBusiness = (): Business | undefined => {
+    if (adminUser) {
+      return MOCK_BUSINESSES_DB.find(b => b.id === adminUser.businessId);
+    }
+    return undefined;
   };
 
   return (
-    <AdminAuthContext.Provider value={{ adminUser, isAdminAuthenticated, loading, login, logout }}>
+    <AdminAuthContext.Provider value={{ adminUser, isAdminAuthenticated, loading, login, logout, getManagedBusiness }}>
       {children}
     </AdminAuthContext.Provider>
   );

@@ -7,25 +7,35 @@ import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { UserTable } from '@/components/admin/UserTable';
-import { useAuth } from '@/contexts/AuthContext'; // For getAllMockUsers
-import type { User } from '@/types/user';
-import { Users, ShoppingCart, BarChart3 } from 'lucide-react'; // Added BarChart3 for points
+import { useAuth } from '@/contexts/AuthContext';
+import type { User, UserMembership } from '@/types/user';
+import { Users, ShoppingCart, BarChart3, Building } from 'lucide-react';
 
 export default function AdminDashboardPage() {
-  const { isAdminAuthenticated, loading: adminLoading, adminUser } = useAdminAuth();
-  const { getAllMockUsers } = useAuth(); // Get the function from AuthContext
+  const { isAdminAuthenticated, loading: adminLoading, adminUser, getManagedBusiness } = useAdminAuth();
+  const { getAllMockUsers } = useAuth();
   const router = useRouter();
   const [users, setUsers] = useState<User[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(true);
+  const [managedBusinessName, setManagedBusinessName] = useState<string | null>(null);
 
-  const fetchUsers = useCallback(() => {
+  const fetchUsersAndBusiness = useCallback(() => {
     setLoadingUsers(true);
-    // Simulate fetching users
-    setTimeout(() => {
-      setUsers(getAllMockUsers()); // Use the function from AuthContext
-      setLoadingUsers(false);
-    }, 100); // Short delay for refresh indication
-  }, [getAllMockUsers]);
+    const business = getManagedBusiness();
+    setManagedBusinessName(business ? business.name : "Your Business");
+
+    if (business) {
+      // Filter users who are members of the admin's business
+      const allUsers = getAllMockUsers();
+      const enrolledUsers = allUsers.filter(user => 
+        user.memberships?.some(m => m.businessId === business.id)
+      );
+      setUsers(enrolledUsers);
+    } else {
+      setUsers([]); // No business context, no users to show
+    }
+    setLoadingUsers(false);
+  }, [getManagedBusiness, getAllMockUsers]);
 
 
   useEffect(() => {
@@ -36,17 +46,21 @@ export default function AdminDashboardPage() {
 
   useEffect(() => {
     if (isAdminAuthenticated) {
-      fetchUsers();
+      fetchUsersAndBusiness();
     }
-  }, [isAdminAuthenticated, fetchUsers]);
+  }, [isAdminAuthenticated, fetchUsersAndBusiness]);
 
-  const totalPointsAcrossUsers = users.reduce((total, user) => 
-    total + (user.mockPurchases?.reduce((sum, p) => sum + p.pointsEarned, 0) || 0), 0
-  );
+  // Calculate stats specific to the managed business
+  const totalPointsInBusiness = users.reduce((total, user) => {
+    const membership = user.memberships?.find(m => m.businessId === adminUser?.businessId);
+    return total + (membership?.pointsBalance || 0);
+  }, 0);
 
-  const totalPurchasesCount = users.reduce((total, user) => 
-    total + (user.mockPurchases?.length || 0), 0
-  );
+  const totalTransactionsInBusiness = users.reduce((total, user) => {
+    const membership = user.memberships?.find(m => m.businessId === adminUser?.businessId);
+    return total + (membership?.purchases?.length || 0);
+  }, 0);
+
 
   if (adminLoading || !isAdminAuthenticated) {
     return (
@@ -68,44 +82,47 @@ export default function AdminDashboardPage() {
   return (
     <div className="space-y-8">
       <div className="text-left">
-        <h1 className="text-3xl font-headline font-bold text-primary mb-1">Admin Dashboard</h1>
-        <p className="text-lg text-muted-foreground">Welcome, {adminUser?.businessName || 'Admin'}. Manage your users and view activity.</p>
+        <h1 className="text-3xl font-headline font-bold text-primary mb-1">
+           <Building className="inline-block h-8 w-8 mr-2 align-text-bottom" /> 
+           {managedBusinessName || adminUser?.businessName || 'Admin Dashboard'}
+        </h1>
+        <p className="text-lg text-muted-foreground">Welcome, {adminUser?.email}. Manage users and activity for your business.</p>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Users</CardTitle>
+            <CardTitle className="text-sm font-medium">Enrolled Users</CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             {loadingUsers ? <Skeleton className="h-8 w-1/2" /> : <div className="text-2xl font-bold">{users.length}</div>}
             <p className="text-xs text-muted-foreground">
-              Number of registered users
+              Users enrolled in {managedBusinessName}
             </p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Points Issued (Mock)</CardTitle>
+            <CardTitle className="text-sm font-medium">Total Points Issued</CardTitle>
             <BarChart3 className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-             {loadingUsers ? <Skeleton className="h-8 w-1/2" /> : <div className="text-2xl font-bold">{totalPointsAcrossUsers}</div>}
+             {loadingUsers ? <Skeleton className="h-8 w-1/2" /> : <div className="text-2xl font-bold">{totalPointsInBusiness}</div>}
             <p className="text-xs text-muted-foreground">
-              Across all users
+              Within {managedBusinessName}
             </p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Transactions (Mock)</CardTitle>
+            <CardTitle className="text-sm font-medium">Total Transactions</CardTitle>
             <ShoppingCart className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            {loadingUsers ? <Skeleton className="h-8 w-1/2" /> : <div className="text-2xl font-bold">{totalPurchasesCount}</div>}
+            {loadingUsers ? <Skeleton className="h-8 w-1/2" /> : <div className="text-2xl font-bold">{totalTransactionsInBusiness}</div>}
             <p className="text-xs text-muted-foreground">
-              Mock purchase records
+              Recorded for {managedBusinessName}
             </p>
           </CardContent>
         </Card>
@@ -113,8 +130,8 @@ export default function AdminDashboardPage() {
 
       <Card className="shadow-lg">
         <CardHeader>
-          <CardTitle className="font-headline text-2xl">User Management</CardTitle>
-          <CardDescription>View users, their (mock) purchase history, and add new purchases.</CardDescription>
+          <CardTitle className="font-headline text-2xl">User Management for {managedBusinessName}</CardTitle>
+          <CardDescription>View users, their purchase history, and add new purchases for your business.</CardDescription>
         </CardHeader>
         <CardContent>
           {loadingUsers ? (
@@ -125,7 +142,7 @@ export default function AdminDashboardPage() {
                 <Skeleton className="h-8 w-full" />
               </div>
           ) : (
-            <UserTable users={users} onUserUpdate={fetchUsers} />
+            <UserTable users={users} onUserUpdate={fetchUsersAndBusiness} businessId={adminUser?.businessId || ""} />
           )}
         </CardContent>
       </Card>

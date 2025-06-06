@@ -1,5 +1,4 @@
 
-
 export interface MockPurchase {
   id: string;
   item: string;
@@ -8,9 +7,16 @@ export interface MockPurchase {
   pointsEarned: number;
 }
 
+export interface UserMembership {
+  businessId: string;
+  businessName: string; // For easier display
+  pointsBalance: number;
+  purchases: MockPurchase[];
+}
+
 export interface User {
   id: string;
   name: string;
   email: string;
-  mockPurchases?: MockPurchase[];
+  memberships: UserMembership[]; // User can be a member of multiple businesses
 }
