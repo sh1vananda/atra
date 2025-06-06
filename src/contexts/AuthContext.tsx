@@ -131,7 +131,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (foundUser) {
       setUser(foundUser);
       setIsAuthenticated(true);
-      localStorage.setItem('loyaltyUser', JSON.stringify(foundUser));
+localStorage.setItem('loyaltyUser', JSON.stringify(foundUser));
       router.push('/loyalty'); 
     } else {
       console.error("Login failed: Invalid credentials");
@@ -189,37 +189,51 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       return false;
     }
 
-    let membership = targetUser.memberships.find(m => m.businessId === businessId);
-    if (!membership) {
-      const business = MOCK_BUSINESSES_DB.find(b => b.id === businessId);
-      if (!business) {
-        console.error("Business not found for creating membership:", businessId);
-        return false;
-      }
-      membership = {
-        businessId: business.id,
-        businessName: business.name,
-        pointsBalance: 0,
-        purchases: [],
-      };
-      targetUser.memberships.push(membership);
-    }
-
     const newPurchase: MockPurchase = {
       id: `p-${Date.now()}-${Math.random().toString(36).substring(7)}`,
       date: new Date().toISOString(),
       ...purchaseDetails,
     };
 
-    membership.purchases.push(newPurchase);
-    membership.pointsBalance += purchaseDetails.pointsEarned;
+    let updatedMemberships: UserMembership[];
+    const existingMembershipIndex = targetUser.memberships.findIndex(m => m.businessId === businessId);
+
+    if (existingMembershipIndex > -1) {
+      const oldMembership = targetUser.memberships[existingMembershipIndex];
+      const updatedMembership: UserMembership = {
+        ...oldMembership,
+        purchases: [...oldMembership.purchases, newPurchase],
+        pointsBalance: oldMembership.pointsBalance + purchaseDetails.pointsEarned,
+      };
+      updatedMemberships = targetUser.memberships.map((m, index) =>
+        index === existingMembershipIndex ? updatedMembership : m
+      );
+    } else {
+      const business = MOCK_BUSINESSES_DB.find(b => b.id === businessId);
+      if (!business) {
+        console.error("Business not found for creating membership:", businessId);
+        return false;
+      }
+      const newMembership: UserMembership = {
+        businessId: business.id,
+        businessName: business.name,
+        pointsBalance: purchaseDetails.pointsEarned,
+        purchases: [newPurchase],
+      };
+      updatedMemberships = [...targetUser.memberships, newMembership];
+    }
     
-    MOCK_USERS_DB[targetUser.email] = {...targetUser, memberships: [...targetUser.memberships]};
+    const updatedUser: User = {
+      ...targetUser,
+      memberships: updatedMemberships,
+    };
+
+    MOCK_USERS_DB[targetUser.email] = updatedUser;
 
     if (user && user.id === userId) {
-      const updatedCurrentUser = JSON.parse(JSON.stringify(MOCK_USERS_DB[targetUser.email])); 
-      setUser(updatedCurrentUser);
-      localStorage.setItem('loyaltyUser', JSON.stringify(updatedCurrentUser));
+      // Ensure the live user state is updated with a new object reference
+      setUser(JSON.parse(JSON.stringify(updatedUser)));
+      localStorage.setItem('loyaltyUser', JSON.stringify(updatedUser));
     }
     return true;
   };
@@ -246,3 +260,4 @@ export const useAuth = () => {
   }
   return context;
 };
+ 
