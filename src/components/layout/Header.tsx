@@ -16,7 +16,7 @@ export function Header() {
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
-  const { isAuthenticated: isCustomerAuth, loading: customerLoading, logout: customerLogout } = useAuth();
+  const { isAuthenticated: isCustomerAuth, loading: customerLoading, logout: customerLogout, user: customerUser } = useAuth();
   const { isAdminAuthenticated, loading: adminLoading, logout: adminLogout, adminUser } = useAdminAuth();
 
   useEffect(() => setMounted(true), []);
@@ -33,7 +33,8 @@ export function Header() {
       titleHref = isAdminAuthenticated ? "/admin/dashboard" : "/admin/login";
     } else if (isCustomerAuth) {
       titleText = "Loyalty Leap";
-      titleHref = "/loyalty";
+      // If logged in as customer, title link goes to their loyalty page, unless they are on the homepage
+      titleHref = pathname === "/" ? "/" : "/loyalty";
     } else {
       titleText = "Loyalty Leap";
       titleHref = "/";
@@ -52,7 +53,7 @@ export function Header() {
   if (!mounted) {
     return (
       <header className="bg-card border-b border-border shadow-sm sticky top-0 z-50">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+        <div className="w-full px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
           <div className="flex items-center gap-2 text-primary">
             <Award className="h-7 w-7 sm:h-8 sm:w-8" />
             <h1 className="text-xl sm:text-2xl font-headline font-semibold">Loyalty Leap</h1>
@@ -68,7 +69,7 @@ export function Header() {
 
   return (
     <header className="bg-card border-b border-border shadow-sm sticky top-0 z-50">
-      <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+      <div className="w-full px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
         <Link href={titleHref} className="flex items-center gap-2 text-primary hover:opacity-80 transition-opacity">
           {isAdminRoute ? <Building className="h-7 w-7 sm:h-8 sm:w-8" /> : <Award className="h-7 w-7 sm:h-8 sm:w-8" />}
           <h1 className="text-xl sm:text-2xl font-headline font-semibold">{titleText}</h1>
@@ -82,7 +83,7 @@ export function Header() {
           ) : isAdminRoute ? (
             isAdminAuthenticated ? (
               <>
-                <Button variant="ghost" asChild>
+                <Button variant="ghost" asChild className={pathname === "/admin/dashboard" ? "bg-secondary" : ""}>
                   <Link href="/admin/dashboard">
                     <LayoutDashboard className="h-5 w-5 sm:mr-1" />
                     <span className="hidden sm:inline">Dashboard</span>
@@ -94,7 +95,6 @@ export function Header() {
                 </Button>
               </>
             ) : (
-              // On admin login page, show link to customer site if desired
               pathname === '/admin/login' && (
                  <Button variant="ghost" asChild>
                    <Link href="/">Customer Site</Link>
@@ -128,13 +128,13 @@ export function Header() {
               </>
             ) : (
               <>
-                <Button variant="ghost" asChild>
+                <Button variant="ghost" asChild className={pathname === "/login" ? "bg-secondary" : ""}>
                   <Link href="/login">
                     <LogIn className="h-5 w-5 sm:mr-1" />
                     <span className="hidden sm:inline">Login</span>
                   </Link>
                 </Button>
-                <Button variant="default" asChild className="bg-primary hover:bg-primary/90">
+                <Button variant="default" asChild className={`${pathname === "/signup" ? "bg-primary/80" : "bg-primary"} hover:bg-primary/90`}>
                   <Link href="/signup">
                     <UserPlus className="h-5 w-5 sm:mr-1" />
                     <span className="hidden sm:inline">Sign Up</span>

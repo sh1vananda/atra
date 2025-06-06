@@ -2,8 +2,22 @@
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { CreditCard, Gift, History, Sparkles, Users, BarChart3, Briefcase, ShoppingCart, ArrowRight } from 'lucide-react';
+import { CreditCard, Gift, History, Sparkles, Users, BarChart3, Briefcase, ShoppingCart, ArrowRight, CheckCircle } from 'lucide-react';
 import Image from 'next/image';
+
+interface FeatureListItemProps {
+  icon: React.ElementType;
+  text: string;
+}
+
+function FeatureListItem({ icon: Icon, text }: FeatureListItemProps) {
+  return (
+    <li className="flex items-start gap-3">
+      <Icon className="h-6 w-6 text-green-500 flex-shrink-0 mt-1" />
+      <span className="text-muted-foreground">{text}</span>
+    </li>
+  );
+}
 
 export default function HomePage() {
   return (
@@ -43,11 +57,11 @@ export default function HomePage() {
               <p className="text-muted-foreground leading-relaxed">
                 With Loyalty Leap, managing your rewards across all your favorite enrolled businesses is effortless:
               </p>
-              <ul className="list-disc list-inside space-y-3 text-muted-foreground">
-                <li><CreditCard className="inline-block h-5 w-5 mr-2 text-green-500" /> Collect points easily with a single account.</li>
-                <li><Gift className="inline-block h-5 w-5 mr-2 text-green-500" /> Discover and redeem exciting rewards from participating businesses.</li>
-                <li><History className="inline-block h-5 w-5 mr-2 text-green-500" /> Track all your purchases, points, and redemptions in one place.</li>
-                <li><Sparkles className="inline-block h-5 w-5 mr-2 text-green-500" /> Receive special offers tailored to your preferences.</li>
+              <ul className="space-y-4">
+                <FeatureListItem icon={CreditCard} text="Single account point collection across businesses." />
+                <FeatureListItem icon={Gift} text="Redeem exciting rewards from any participating partner." />
+                <FeatureListItem icon={History} text="Unified tracking for all purchases, points, and redemptions." />
+                <FeatureListItem icon={Sparkles} text="Receive personalized offers and deals tailored to you." />
               </ul>
               <Button variant="secondary" asChild>
                   <Link href="/loyalty">Explore Your Loyalty Hub <ArrowRight className="ml-2 h-4 w-4" /></Link>
@@ -92,11 +106,11 @@ export default function HomePage() {
               <p className="text-muted-foreground leading-relaxed">
                 Loyalty Leap provides businesses with the tools to:
               </p>
-              <ul className="list-disc list-inside space-y-3 text-muted-foreground">
-                <li><BarChart3 className="inline-block h-5 w-5 mr-2 text-green-500" /> Create and manage digital loyalty programs effortlessly.</li>
-                <li><ShoppingCart className="inline-block h-5 w-5 mr-2 text-green-500" /> Identify customers and record purchases to award points.</li>
-                <li><Users className="inline-block h-5 w-5 mr-2 text-green-500" /> Access a dashboard to view enrolled users and their activity.</li>
-                <li><Sparkles className="inline-block h-5 w-5 mr-2 text-green-500" /> Gain insights to understand customer behavior and tailor offers.</li>
+              <ul className="space-y-4">
+                <FeatureListItem icon={BarChart3} text="Effortlessly create and manage digital loyalty programs." />
+                <FeatureListItem icon={ShoppingCart} text="Identify customers, record purchases, and award points." />
+                <FeatureListItem icon={Users} text="Access a dashboard to view enrolled users and their activity." />
+                <FeatureListItem icon={Sparkles} text="Gain insights to understand customer behavior and tailor offers." />
               </ul>
               <Button variant="secondary" asChild>
                   <Link href="/admin/login">Access Business Portal <ArrowRight className="ml-2 h-4 w-4" /></Link>
