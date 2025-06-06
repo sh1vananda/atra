@@ -3,12 +3,12 @@
 
 import type { User as AuthUser } from 'firebase/auth';
 import { createUserWithEmailAndPassword, onAuthStateChanged, signInWithEmailAndPassword, signOut, deleteUser as deleteFirebaseAuthUser } from 'firebase/auth';
-import { doc, setDoc, getDoc, collection, getDocs, updateDoc, query, where, serverTimestamp } from 'firebase/firestore';
+import { doc, setDoc, getDoc, collection, getDocs, updateDoc, query, where, serverTimestamp, arrayUnion, arrayRemove } from 'firebase/firestore';
 import type { ReactNode } from 'react';
 import React, { createContext, useContext, useEffect, useState, useCallback, useMemo } from 'react';
 import { auth, db } from '@/lib/firebase';
 import type { User, MockPurchase, UserMembership } from '@/types/user';
-import type { Business } from '@/types/business';
+import type { Business, Reward } from '@/types/business'; // Ensure Reward is imported
 import { useToast } from '@/hooks/use-toast';
 
 interface AuthContextType {
@@ -20,8 +20,9 @@ interface AuthContextType {
   signup: (name: string, email: string, pass: string) => Promise<void>;
   addMockPurchaseToUser: (userId: string, businessId: string, purchaseDetails: { item: string; amount: number; pointsEarned: number }) => Promise<boolean>;
   joinBusinessByCode: (businessCode: string) => Promise<{ success: boolean; message: string }>;
-  getAllMockUsers: () => Promise<User[]>; // Kept for admin dashboard
-  getBusinessById: (businessId: string) => Promise<Business | null>; // Kept for rewards page
+  getAllMockUsers: () => Promise<User[]>; 
+  getBusinessById: (businessId: string) => Promise<Business | null>;
+  redeemReward: (userId: string, businessId: string, reward: Reward, currentUserPointsForBusiness: number) => Promise<boolean>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -38,7 +39,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseAuthUser: AuthUser | null) => {
       console.log(`AuthContext:EVENT: onAuthStateChanged triggered. Firebase UID: ${firebaseAuthUser?.uid || "null"}`);
       if (firebaseAuthUser) {
-        // Check if this Firebase user is an admin. If so, AuthContext should ignore them.
         const adminProfileRef = doc(db, 'admins', firebaseAuthUser.uid);
         try {
           const adminProfileSnap = await getDoc(adminProfileRef);
@@ -47,7 +47,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             setUser(null);
             setIsAuthenticated(false);
           } else {
-            // Not an admin, proceed to check if they are a regular user.
             console.log(`AuthContext:EVENT: Firebase user (UID: ${firebaseAuthUser.uid}) is NOT an admin. Checking 'users' collection...`);
             const userDocRef = doc(db, 'users', firebaseAuthUser.uid);
             const userDocSnap = await getDoc(userDocRef);
@@ -56,7 +55,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
               setUser({ id: firebaseAuthUser.uid, ...userDocSnap.data() } as User);
               setIsAuthenticated(true);
             } else {
-              console.log(`AuthContext:EVENT: No customer profile found for UID: ${firebaseAuthUser.uid}.`);
+              console.log(`AuthContext:EVENT: No customer profile found for UID: ${firebaseAuthUser.uid}. This user is not a customer.`);
               setUser(null);
               setIsAuthenticated(false);
             }
@@ -67,13 +66,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           setIsAuthenticated(false);
           toast({ title: "Profile Check Error", description: "Could not verify user type.", variant: "destructive" });
         } finally {
+          console.log("AuthContext:EVENT: Finished processing onAuthStateChanged for existing user/admin check. Setting loading to false.");
           setLoading(false);
         }
       } else {
-        // No Firebase user (signed out).
-        console.log("AuthContext:EVENT: No Firebase user. Clearing customer state.");
+        console.log("AuthContext:EVENT: No Firebase user (signed out). Clearing customer state.");
         setUser(null);
         setIsAuthenticated(false);
+        console.log("AuthContext:EVENT: Finished processing onAuthStateChanged (no user). Setting loading to false.");
         setLoading(false);
       }
     });
@@ -81,15 +81,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       console.log("AuthContext:EFFECT: Unsubscribing from onAuthStateChanged.");
       unsubscribe();
     };
-  }, [toast]);
+  }, [toast]); // toast is a stable function
 
   const login = useCallback(async (email: string, pass: string) => {
     console.log("AuthContext:ACTION:login: Attempt for email:", email);
-    setLoading(true); // Indicate auth operation in progress
+    setLoading(true);
     try {
       await signInWithEmailAndPassword(auth, email, pass);
-      // onAuthStateChanged will handle setting user state.
-      // setLoading(false) will be handled by onAuthStateChanged.
+      // onAuthStateChanged will handle setting user state and primary loading=false.
     } catch (error: any) {
       console.error("AuthContext:ACTION:login: Firebase signInWithEmailAndPassword failed:", error);
       let errorMessage = "Invalid email or password.";
@@ -139,18 +138,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
          errorMessage = error.message || "An unexpected error occurred during signup.";
       }
       toast({ title: "Signup Failed", description: errorMessage, variant: "destructive" });
-      if (fbAuthUser) {
+      if (fbAuthUser) { // If user was created in Auth but Firestore setup failed, delete Auth user
         try { await deleteFirebaseAuthUser(fbAuthUser); }
         catch (deleteError: any) { console.error("AuthContext:ACTION:signup:ROLLBACK: Failed to delete Firebase Auth user:", deleteError.message); }
       }
-      setLoading(false); // Crucial if signup fails before onAuthStateChanged naturally clears it.
+      setLoading(false); 
     }
   }, [toast]);
 
   const logout = useCallback(async () => {
     const currentCustomerEmail = user?.email;
     console.log("AuthContext:ACTION:logout: Attempt for customer:", currentCustomerEmail);
-    // setLoading(true); // onAuthStateChanged will handle this
     try {
       await signOut(auth);
       toast({ title: "Logged Out", description: `Customer ${currentCustomerEmail || ''} logged out.` });
@@ -158,7 +156,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     } catch (error: any) {
       console.error("AuthContext:ACTION:logout: Failed:", error);
       toast({ title: "Logout Failed", description: error.message || "Could not log out.", variant: "destructive" });
-      // setLoading(false); // If signOut fails, onAuthStateChanged might not fire as expected immediately.
     }
   }, [toast, user?.email]);
 
@@ -204,22 +201,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         updatedMemberships = userData.memberships.map((m, index) =>
           index === existingMembershipIndex ? updatedMembership : m
         );
-      } else {
+      } else { // User is not a member yet, but admin is adding a purchase (or user is logging past purchase for a new join)
         const businessDetails = await getBusinessById(businessId);
         if (!businessDetails) {
-          toast({ title: "Error", description: "Business not found. Cannot add purchase to non-member.", variant: "destructive" });
+          toast({ title: "Error", description: "Business not found. Cannot add purchase to non-member or non-existent business.", variant: "destructive" });
           return false;
         }
         const newMembershipEntry: UserMembership = {
             businessId: businessId,
             businessName: businessDetails.name,
             pointsBalance: purchaseDetails.pointsEarned,
-            purchases: [newPurchase]
+            purchases: [newPurchase].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()),
         };
         updatedMemberships = [...(userData.memberships || []), newMembershipEntry];
       }
       await updateDoc(userDocRef, { memberships: updatedMemberships });
-      if (user && user.id === userId) { // Update local state for current user
+      // If the current user is the one being updated, refresh local state
+      if (user && user.id === userId) {
          setUser(prevUser => prevUser ? ({ ...prevUser, memberships: [...updatedMemberships] }) : null);
       }
       return true;
@@ -227,10 +225,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       toast({ title: "Error Adding Purchase", description: `Failed: ${error.message || 'Unknown error'}`, variant: "destructive" });
       return false;
     }
-  }, [toast, user, getBusinessById]);
+  }, [toast, user, getBusinessById]); // user dependency is for the local state update
 
   const joinBusinessByCode = useCallback(async (businessCode: string): Promise<{ success: boolean; message: string }> => {
-    if (!user?.id) { // Check against internal user state too
+    if (!user?.id) {
       return { success: false, message: "You must be logged in as a customer to join a program." };
     }
     const businessesRef = collection(db, "businesses");
@@ -241,7 +239,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       
       const businessToJoinDoc = querySnapshot.docs[0];
       const businessToJoin = { id: businessToJoinDoc.id, ...businessToJoinDoc.data() } as Business;
-      const isAlreadyMember = user.memberships?.some(m => m.businessId === businessToJoin.id);
+      
+      const userDocRef = doc(db, 'users', user.id);
+      const userDocSnap = await getDoc(userDocRef);
+      if (!userDocSnap.exists()) return { success: false, message: "User profile not found."};
+      const currentUserData = userDocSnap.data() as User;
+
+      const isAlreadyMember = currentUserData.memberships?.some(m => m.businessId === businessToJoin.id);
       if (isAlreadyMember) return { success: false, message: `You are already a member of ${businessToJoin.name}.` };
 
       const welcomeBonusPoints = 50;
@@ -251,20 +255,78 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         pointsBalance: welcomeBonusPoints,
         purchases: [{ id: `wb-${Date.now()}`, item: "Welcome Bonus", amount: 0, date: new Date().toISOString(), pointsEarned: welcomeBonusPoints }],
       };
-      const updatedMemberships = [...(user.memberships || []), newMembership];
-      await updateDoc(doc(db, 'users', user.id), { memberships: updatedMemberships });
-      setUser(prevUser => prevUser ? ({ ...prevUser, memberships: [...updatedMemberships] }) : null);
+      
+      await updateDoc(userDocRef, { 
+        memberships: arrayUnion(newMembership) 
+      });
+      
+      // Refresh local user state
+      setUser(prevUser => prevUser ? ({ 
+        ...prevUser, 
+        memberships: [...(prevUser.memberships || []), newMembership] 
+      }) : null);
+      
       return { success: true, message: `Successfully joined ${businessToJoin.name} (+${welcomeBonusPoints} points)!` };
     } catch (error: any) {
+      console.error("AuthContext:ACTION:joinBusinessByCode: FAILED", error);
       return { success: false, message: `Failed to join program: ${error.message || 'Unknown error'}` };
     }
-  }, [user, toast]);
+  }, [user, toast]); // user dependency for user.id and local update
   
+  const redeemReward = useCallback(async (userId: string, businessId: string, reward: Reward, currentUserPointsForBusiness: number): Promise<boolean> => {
+    if (currentUserPointsForBusiness < reward.pointsCost) {
+        toast({ title: "Insufficient Points", description: `You need ${reward.pointsCost} points to redeem ${reward.title}, but you only have ${currentUserPointsForBusiness}.`, variant: "destructive" });
+        return false;
+    }
+
+    const userDocRef = doc(db, 'users', userId);
+    try {
+        const userDocSnap = await getDoc(userDocRef);
+        if (!userDocSnap.exists()) {
+            toast({ title: "Error", description: "User not found.", variant: "destructive" });
+            return false;
+        }
+        const userData = userDocSnap.data() as User;
+        const membershipIndex = userData.memberships?.findIndex(m => m.businessId === businessId);
+
+        if (membershipIndex === undefined || membershipIndex === -1 || !userData.memberships) {
+            toast({ title: "Error", description: "Membership not found for this business.", variant: "destructive" });
+            return false;
+        }
+        
+        const updatedMembership = { ...userData.memberships[membershipIndex] };
+        updatedMembership.pointsBalance -= reward.pointsCost;
+        const redemptionPurchase: MockPurchase = {
+            id: `rdm-${Date.now()}-${Math.random().toString(36).substring(7)}`,
+            item: `Redeemed: ${reward.title}`,
+            amount: 0, // Redemptions don't usually have an associated monetary amount in this context
+            date: new Date().toISOString(),
+            pointsEarned: -reward.pointsCost, // Negative points for redemption
+        };
+        updatedMembership.purchases = [redemptionPurchase, ...(updatedMembership.purchases || [])].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+        const updatedMemberships = [...userData.memberships];
+        updatedMemberships[membershipIndex] = updatedMembership;
+
+        await updateDoc(userDocRef, { memberships: updatedMemberships });
+
+        // Update local state if it's the current user
+        if (user && user.id === userId) {
+            setUser(prev => prev ? { ...prev, memberships: updatedMemberships } : null);
+        }
+        
+        toast({ title: "Reward Redeemed!", description: `You successfully redeemed ${reward.title}.` });
+        return true;
+
+    } catch (error: any) {
+        console.error("Error redeeming reward:", error);
+        toast({ title: "Redemption Failed", description: error.message || "Could not redeem reward.", variant: "destructive" });
+        return false;
+    }
+  }, [toast, user]); // user for local state update
+
+
   const getAllMockUsers = useCallback(async (): Promise<User[]> => {
-    // This function is primarily for the admin dashboard.
-    // Consider if it truly belongs in the customer AuthContext or if AdminAuthContext should handle it.
-    // For now, keeping it here if admin dashboard relies on it.
-    // No setLoading(true/false) here as it might interfere with customer auth loading.
     try {
       const usersCollectionRef = collection(db, 'users');
       const querySnapshot = await getDocs(usersCollectionRef);
@@ -289,8 +351,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     addMockPurchaseToUser,
     joinBusinessByCode,
     getAllMockUsers,
-    getBusinessById
-  }), [user, isAuthenticated, loading, login, logout, signup, addMockPurchaseToUser, joinBusinessByCode, getAllMockUsers, getBusinessById]);
+    getBusinessById,
+    redeemReward
+  }), [user, isAuthenticated, loading, login, logout, signup, addMockPurchaseToUser, joinBusinessByCode, getAllMockUsers, getBusinessById, redeemReward]);
 
   return <AuthContext.Provider value={contextValue}>{children}</AuthContext.Provider>;
 };

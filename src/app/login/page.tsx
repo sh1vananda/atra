@@ -20,49 +20,51 @@ export default function LoginPage() {
   const [businessPassword, setBusinessPassword] = useState('');
 
   const { login: customerLogin, loading: customerAuthLoading, isAuthenticated: isCustomerAuth } = useAuth();
-  const { login: businessLogin, loading: adminAuthLoading, isAdminAuthenticated } = useAdminAuth();
+  const { login: adminLogin, loading: adminAuthLoading, isAdminAuthenticated } = useAdminAuth(); // Renamed businessLogin to adminLogin for clarity
   const router = useRouter();
   const searchParams = useSearchParams();
+  const redirectPath = searchParams.get('redirect');
 
-  const isCheckingAuth = customerAuthLoading || adminAuthLoading;
+  const isAuthSystemBusy = customerAuthLoading || adminAuthLoading;
 
   // Effect for customer redirection
   useEffect(() => {
-    const redirectPath = searchParams.get('redirect');
     console.log(`LoginPage:EFFECT[customerAuth]: customerAuthLoading: ${customerAuthLoading}, isCustomerAuth: ${isCustomerAuth}, redirect: ${redirectPath}`);
     if (!customerAuthLoading && isCustomerAuth) {
-      const targetPath = redirectPath && redirectPath.startsWith('/') ? redirectPath : '/loyalty';
-      console.log(`LoginPage:EFFECT[customerAuth]: Redirecting authenticated customer to ${targetPath}`);
-      router.push(targetPath);
+      // Only redirect if the intended path is NOT an admin path, or if there's no specific redirect path (go to default customer page)
+      if (!redirectPath || !redirectPath.startsWith('/admin')) {
+        const targetPath = redirectPath && redirectPath.startsWith('/') ? redirectPath : '/loyalty';
+        console.log(`LoginPage:EFFECT[customerAuth]: Redirecting authenticated customer to ${targetPath}`);
+        router.push(targetPath);
+      } else {
+        console.log(`LoginPage:EFFECT[customerAuth]: Customer authenticated, but redirectPath is for admin (${redirectPath}). Waiting for admin auth.`);
+      }
     }
-  }, [isCustomerAuth, customerAuthLoading, router, searchParams]);
+  }, [isCustomerAuth, customerAuthLoading, router, redirectPath]);
 
   // Effect for admin redirection
   useEffect(() => {
-    const redirectPath = searchParams.get('redirect');
     console.log(`LoginPage:EFFECT[adminAuth]: adminAuthLoading: ${adminAuthLoading}, isAdminAuthenticated: ${isAdminAuthenticated}, redirect: ${redirectPath}`);
     if (!adminAuthLoading && isAdminAuthenticated) {
       const targetPath = redirectPath && redirectPath.startsWith('/admin') ? redirectPath : '/admin/dashboard';
       console.log(`LoginPage:EFFECT[adminAuth]: Redirecting authenticated admin to ${targetPath}`);
       router.push(targetPath);
     }
-  }, [isAdminAuthenticated, adminAuthLoading, router, searchParams]);
+  }, [isAdminAuthenticated, adminAuthLoading, router, redirectPath]);
 
   const handleCustomerSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     await customerLogin(customerEmail, customerPassword);
-    // Redirection handled by useEffect
   };
 
-  const handleBusinessSubmit = async (e: React.FormEvent) => {
+  const handleAdminSubmit = async (e: React.FormEvent) => { // Renamed from handleBusinessSubmit
     e.preventDefault();
-    await businessLogin(businessEmail, businessPassword);
-    // Redirection handled by useEffect
+    await adminLogin(businessEmail, businessPassword);
   };
   
-  if (isCheckingAuth && (!isCustomerAuth && !isAdminAuthenticated)) {
-    // Show loader only if actively checking auth AND user is not already authenticated
-    // (to prevent loader flashing if already authenticated and about to redirect)
+  // Render a loader if either auth system is busy AND the user isn't already authenticated and pending redirect.
+  // This prevents the form from flashing if a redirect is about to happen.
+  if (isAuthSystemBusy && !((!customerAuthLoading && isCustomerAuth) || (!adminAuthLoading && isAdminAuthenticated))) {
     console.log(`LoginPage:RENDER: Showing main loader. customerAuthLoading: ${customerAuthLoading}, adminAuthLoading: ${adminAuthLoading}`);
     return (
         <div className="flex flex-col items-center justify-center min-h-[calc(100vh-150px)]">
@@ -73,8 +75,8 @@ export default function LoginPage() {
   }
 
   // If already authenticated (and not loading), redirection useEffects should handle it.
-  // This prevents rendering the form briefly before redirecting.
-  if ((!customerAuthLoading && isCustomerAuth) || (!adminAuthLoading && isAdminAuthenticated)) {
+  // This renders a "Redirecting..." message to avoid showing the form briefly.
+  if ((!customerAuthLoading && isCustomerAuth && (!redirectPath || !redirectPath.startsWith('/admin'))) || (!adminAuthLoading && isAdminAuthenticated)) {
     console.log(`LoginPage:RENDER: Authenticated, waiting for redirect effect. isCustomerAuth: ${isCustomerAuth}, isAdminAuthenticated: ${isAdminAuthenticated}`);
      return (
         <div className="flex flex-col items-center justify-center min-h-[calc(100vh-150px)]">
@@ -149,7 +151,7 @@ export default function LoginPage() {
             </TabsContent>
 
             <TabsContent value="business" className="mt-6">
-              <form onSubmit={handleBusinessSubmit} className="space-y-6">
+              <form onSubmit={handleAdminSubmit} className="space-y-6">
                 <div className="space-y-2">
                   <Label htmlFor="business-email">Business Email</Label>
                   <Input

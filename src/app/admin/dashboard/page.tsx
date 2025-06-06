@@ -9,10 +9,13 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { UserTable } from '@/components/admin/UserTable';
 import { useAuth as useCustomerAuth } from '@/contexts/AuthContext'; 
 import type { User } from '@/types/user'; 
-import { Users, ShoppingCart, BarChart3, Building, KeyRound, Copy, Loader2, AlertTriangle } from 'lucide-react';
+import { Users, ShoppingCart, BarChart3, Building, KeyRound, Copy, Loader2, AlertTriangle, Settings, Gift } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import type { Business } from '@/types/business';
+import { ManageRewardsSection } from '@/components/admin/ManageRewardsSection';
+
+type AdminDashboardView = "userManagement" | "rewardManagement";
 
 export default function AdminDashboardPage() {
   const { isAdminAuthenticated, loading: adminAuthLoading, adminUser, getManagedBusiness } = useAdminAuth();
@@ -24,17 +27,18 @@ export default function AdminDashboardPage() {
   const [pageDataLoading, setPageDataLoading] = useState(true); 
   const [managedBusiness, setManagedBusiness] = useState<Business | null>(null);
   const [hasFetchedInitialData, setHasFetchedInitialData] = useState(false);
+  const [currentView, setCurrentView] = useState<AdminDashboardView>("userManagement");
 
   const fetchAdminPageData = useCallback(async () => {
     if (!adminUser?.uid || !adminUser?.businessId) {
       console.log("AdminDashboard:fetchAdminPageData - Aborting, adminUser or critical details missing.", adminUser);
       setPageDataLoading(false);
-      // setHasFetchedInitialData(true); // Mark as attempted, even if failed, to prevent loops
+      setHasFetchedInitialData(true); // Mark as attempted to prevent loops if adminUser details are missing
       return;
     }
 
     console.log("AdminDashboard:fetchAdminPageData - STARTING for adminUID:", adminUser.uid, "businessId:", adminUser.businessId);
-    setPageDataLoading(true); // Set loading true at the START of data fetching
+    setPageDataLoading(true);
     
     try {
       const businessDetails = await getManagedBusiness();
@@ -63,17 +67,16 @@ export default function AdminDashboardPage() {
     } finally {
         console.log("AdminDashboard:fetchAdminPageData - FINISHED. Setting pageDataLoading to false.");
         setPageDataLoading(false);
-        // setHasFetchedInitialData(true); // Mark data fetch attempt as complete
+        // setHasFetchedInitialData(true) is handled by the calling useEffect
     }
-  }, [adminUser, getManagedBusiness, getAllMockUsers, toast]); // adminUser itself is a dependency
+  }, [adminUser, getManagedBusiness, getAllMockUsers, toast]);
 
-  // Effect to handle authentication status and trigger initial data fetch ONCE
   useEffect(() => {
     console.log(`AdminDashboard:EFFECT[AuthCheck&InitialFetch]: adminAuthLoading: ${adminAuthLoading}, isAdminAuthenticated: ${isAdminAuthenticated}, adminUser UID: ${adminUser?.uid}, hasFetchedInitialData: ${hasFetchedInitialData}`);
     
     if (adminAuthLoading) {
       console.log("AdminDashboard:EFFECT[AuthCheck&InitialFetch]: Auth context is loading. Waiting...");
-      return; // Wait for auth context to finish loading
+      return;
     }
 
     if (!isAdminAuthenticated) {
@@ -84,18 +87,29 @@ export default function AdminDashboardPage() {
 
     // If authenticated, adminUser is present with necessary details, and data hasn't been fetched yet
     if (isAdminAuthenticated && adminUser?.uid && adminUser?.businessId && !hasFetchedInitialData) {
-      console.log("AdminDashboard:EFFECT[AuthCheck&InitialFetch]: Authenticated, adminUser valid, data not yet fetched. Calling fetchAdminPageData and setting hasFetchedInitialData=true.");
-      setHasFetchedInitialData(true); // Set BEFORE calling fetch to prevent re-trigger if adminUser reference changes
+      console.log("AdminDashboard:EFFECT[AuthCheck&InitialFetch]: Authenticated, adminUser valid, initial data not yet fetched. Calling fetchAdminPageData.");
+      setHasFetchedInitialData(true); // Set this BEFORE calling fetch to prevent re-trigger if adminUser reference changes within this effect's lifecycle
       fetchAdminPageData();
     } else if (isAdminAuthenticated && adminUser && !adminUser.businessId) {
         console.warn("AdminDashboard:EFFECT[AuthCheck&InitialFetch]: Authenticated but adminUser is missing businessId. Cannot fetch data.");
         setPageDataLoading(false); 
-        setHasFetchedInitialData(true); // Mark as "attempted"
+        setHasFetchedInitialData(true); // Mark as "attempted" to avoid re-fetch loop if profile is incomplete
     } else if (isAdminAuthenticated && adminUser && hasFetchedInitialData) {
-        console.log("AdminDashboard:EFFECT[AuthCheck&InitialFetch]: Authenticated and initial data fetch already attempted/done. No action.");
+        console.log("AdminDashboard:EFFECT[AuthCheck&InitialFetch]: Authenticated and initial data fetch already attempted/done. No action from this effect.");
     }
 
   }, [adminAuthLoading, isAdminAuthenticated, adminUser, router, fetchAdminPageData, hasFetchedInitialData]);
+
+
+  const handleUserTableUpdate = useCallback(() => {
+    console.log("AdminDashboard: UserTable onUserUpdate -> Triggering data re-fetch by resetting hasFetchedInitialData.");
+    setHasFetchedInitialData(false); // This will cause the main useEffect to re-trigger fetchAdminPageData
+  }, []);
+  
+  const handleRewardChange = useCallback(() => {
+    console.log("AdminDashboard: Reward change detected -> Triggering data re-fetch for business details by resetting hasFetchedInitialData.");
+    setHasFetchedInitialData(false); 
+  }, []);
 
 
   const totalPointsInBusiness = users.reduce((total, user) => {
@@ -116,10 +130,6 @@ export default function AdminDashboardPage() {
     }
   };
 
-  const handleUserTableUpdate = useCallback(() => {
-    console.log("AdminDashboard: UserTable onUserUpdate -> Triggering data re-fetch by resetting hasFetchedInitialData.");
-    setHasFetchedInitialData(false); // This will cause the main useEffect to re-trigger fetchAdminPageData
-  }, []);
 
   // Render 1: Auth context is still determining auth status
   if (adminAuthLoading) {
@@ -127,6 +137,7 @@ export default function AdminDashboardPage() {
     return (
       <div className="w-full space-y-8 animate-pulse">
         <div className="text-left pb-4 border-b border-border"> <Skeleton className="h-8 w-1/2 mb-2" /> <Skeleton className="h-5 w-3/4" /> </div>
+        <div className="flex space-x-2 mb-6"> <Skeleton className="h-10 w-36" /> <Skeleton className="h-10 w-36" /> </div>
         <Card className="bg-accent/10 border-accent"> <CardHeader> <Skeleton className="h-7 w-1/3 mb-1" /> <Skeleton className="h-4 w-2/3" /> </CardHeader> <CardContent className="flex items-center justify-between"> <Skeleton className="h-10 w-1/4" /> <Skeleton className="h-9 w-24" /> </CardContent> </Card>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3"> {[1,2,3].map(i => ( <Card key={i}> <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"> <Skeleton className="h-5 w-2/5"/> <Skeleton className="h-4 w-4"/> </CardHeader> <CardContent> <Skeleton className="h-8 w-1/2 mb-1"/> <Skeleton className="h-3 w-3/5"/> </CardContent> </Card> ))} </div>
         <Card> <CardHeader> <Skeleton className="h-8 w-2/5 mb-1" /> <Skeleton className="h-4 w-3/5" /> </CardHeader> <CardContent> <Skeleton className="h-10 w-full mb-4" /> <Skeleton className="h-64 w-full" /> </CardContent> </Card>
@@ -145,12 +156,13 @@ export default function AdminDashboardPage() {
     );
   }
 
-  // Render 3: Authenticated, but page-specific data is still loading OR initial fetch hasn't completed
+  // Render 3: Authenticated, but page-specific data is still loading OR initial fetch hasn't completed for the first time
   if (isAdminAuthenticated && (pageDataLoading || !hasFetchedInitialData)) { 
      console.log(`AdminDashboard:RENDER: SKELETON (Page data loading or initial fetch not done). pageDataLoading: ${pageDataLoading}, hasFetchedInitialData: ${hasFetchedInitialData}. AdminUser UID: ${adminUser?.uid}`);
      return (
       <div className="w-full space-y-8 animate-pulse">
         <div className="text-left pb-4 border-b border-border"> <Skeleton className="h-8 w-1/2 mb-2" /> <Skeleton className="h-5 w-3/4" /> </div>
+        <div className="flex space-x-2 mb-6"> <Skeleton className="h-10 w-36" /> <Skeleton className="h-10 w-36" /> </div>
         {(adminUser?.businessId || managedBusiness) && <Card className="bg-accent/10 border-accent"> <CardHeader> <Skeleton className="h-7 w-1/3 mb-1" /> <Skeleton className="h-4 w-2/3" /> </CardHeader> <CardContent className="flex items-center justify-between"> <Skeleton className="h-10 w-1/4" /> <Skeleton className="h-9 w-24" /> </CardContent> </Card>}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3"> {[1,2,3].map(i => ( <Card key={i}> <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"> <Skeleton className="h-5 w-2/5"/> <Skeleton className="h-4 w-4"/> </CardHeader> <CardContent> <Skeleton className="h-8 w-1/2 mb-1"/> <Skeleton className="h-3 w-3/5"/> </CardContent> </Card> ))} </div>
         <Card> <CardHeader> <Skeleton className="h-8 w-2/5 mb-1" /> <Skeleton className="h-4 w-3/5" /> </CardHeader> <CardContent> <Skeleton className="h-10 w-full mb-4" /> <Skeleton className="h-64 w-full" /> </CardContent> </Card>
@@ -159,6 +171,7 @@ export default function AdminDashboardPage() {
   }
   
   // Render 4: Authenticated, data fetch attempted (hasFetchedInitialData true), pageDataLoading false, but managedBusiness is NULL.
+  // This implies admin is authenticated but their businessId might be wrong or business doc is missing.
   if (isAdminAuthenticated && hasFetchedInitialData && !pageDataLoading && !managedBusiness) {
      console.log("AdminDashboard:RENDER: ERROR (Managed business is null after data load attempt). AdminUser Business ID:", adminUser?.businessId);
      return (
@@ -169,7 +182,7 @@ export default function AdminDashboardPage() {
             <p className="text-muted-foreground">This might be due to an incomplete admin profile or a temporary issue. Please ensure your admin account is correctly linked to a business.</p>
             <Button onClick={() => { 
                 console.log("AdminDashboard: Retry fetchAdminPageData clicked by resetting hasFetchedInitialData."); 
-                setHasFetchedInitialData(false); 
+                setHasFetchedInitialData(false); // Reset flag to allow main useEffect to re-trigger fetch
             }} className="mt-4">
                 <Loader2 className="mr-2 h-4 w-4 animate-spin hidden" /> 
                 Try Reloading Data
@@ -180,7 +193,7 @@ export default function AdminDashboardPage() {
 
   // Render 5: Normal dashboard content (all checks passed, data loaded, managedBusiness exists)
   if (isAdminAuthenticated && hasFetchedInitialData && !pageDataLoading && managedBusiness) {
-    console.log("AdminDashboard:RENDER: NORMAL dashboard content. AdminUser UID:", adminUser?.uid, "ManagedBusiness Name:", managedBusiness.name);
+    console.log("AdminDashboard:RENDER: NORMAL dashboard content. AdminUser UID:", adminUser?.uid, "ManagedBusiness Name:", managedBusiness.name, "Current View:", currentView);
     return (
       <div className="w-full space-y-8">
         <div className="text-left pb-4 border-b border-border">
@@ -209,11 +222,40 @@ export default function AdminDashboardPage() {
           <Card className="bg-card"> <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"> <CardTitle className="text-sm font-medium">Total Points Issued</CardTitle> <BarChart3 className="h-4 w-4 text-muted-foreground" /> </CardHeader> <CardContent> <div className="text-2xl font-bold">{totalPointsInBusiness}</div> <p className="text-xs text-muted-foreground"> Within {managedBusiness.name} </p> </CardContent> </Card>
           <Card className="bg-card"> <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"> <CardTitle className="text-sm font-medium">Total Transactions</CardTitle> <ShoppingCart className="h-4 w-4 text-muted-foreground" /> </CardHeader> <CardContent> <div className="text-2xl font-bold">{totalTransactionsInBusiness}</div> <p className="text-xs text-muted-foreground"> Recorded for {managedBusiness.name} </p> </CardContent> </Card>
         </div>
+        
+        {/* View Toggle Buttons */}
+        <div className="flex space-x-2 mb-6 border-b pb-4">
+            <Button 
+                variant={currentView === "userManagement" ? "default" : "outline"} 
+                onClick={() => setCurrentView("userManagement")}
+                className="bg-primary hover:bg-primary/90 data-[state=active]:bg-primary/80"
+            >
+                <Users className="mr-2 h-5 w-5" /> User Management
+            </Button>
+            <Button 
+                variant={currentView === "rewardManagement" ? "default" : "outline"} 
+                onClick={() => setCurrentView("rewardManagement")}
+                className="bg-primary hover:bg-primary/90 data-[state=active]:bg-primary/80"
+            >
+                <Gift className="mr-2 h-5 w-5" /> Reward Management
+            </Button>
+        </div>
 
-        <Card className="shadow-lg bg-card">
-          <CardHeader> <CardTitle className="font-headline text-2xl">User Management for {managedBusiness.name}</CardTitle> <CardDescription>View users, their purchase history, and add new purchases.</CardDescription> </CardHeader>
-          <CardContent> <UserTable users={users} onUserUpdate={handleUserTableUpdate} businessId={adminUser!.businessId!} /> </CardContent>
-        </Card>
+        {/* Conditional Content Based on View */}
+        {currentView === "userManagement" && (
+            <Card className="shadow-lg bg-card">
+              <CardHeader> <CardTitle className="font-headline text-2xl">User Management for {managedBusiness.name}</CardTitle> <CardDescription>View users, their purchase history, and add new purchases.</CardDescription> </CardHeader>
+              <CardContent> <UserTable users={users} onUserUpdate={handleUserTableUpdate} businessId={adminUser!.businessId!} /> </CardContent>
+            </Card>
+        )}
+
+        {currentView === "rewardManagement" && (
+            <ManageRewardsSection 
+                business={managedBusiness} 
+                onRewardChange={handleRewardChange} 
+            />
+        )}
+
       </div>
     );
   }
