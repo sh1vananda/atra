@@ -5,15 +5,16 @@ import { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import { RewardCard } from '@/components/rewards/RewardCard';
-import { Gift, Briefcase, ArrowLeft, Info, ShoppingBag } from 'lucide-react';
+import { Gift, Briefcase, ArrowLeft, Info, ShoppingBag, Loader2 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card'; // Added CardFooter
 import { Button } from '@/components/ui/button';
 import type { Business } from '@/types/business';
 import type { UserMembership } from '@/types/user';
+import Link from 'next/link';
 
 export default function RewardsPage() {
-  const { user, isAuthenticated, loading, getBusinessById } = useAuth();
+  const { user, isAuthenticated, loading: authLoading, getBusinessById } = useAuth();
   const router = useRouter();
   
   const [selectedBusiness, setSelectedBusiness] = useState<Business | null>(null);
@@ -22,10 +23,10 @@ export default function RewardsPage() {
   const [pageLoading, setPageLoading] = useState(true);
 
   useEffect(() => {
-    if (!loading && !isAuthenticated) {
+    if (!authLoading && !isAuthenticated) {
       router.push('/login?redirect=/rewards');
     }
-  }, [loading, isAuthenticated, router]);
+  }, [authLoading, isAuthenticated, router]);
 
   const fetchEnrolledBusinessesData = useCallback(async () => {
     if (user && user.memberships && user.memberships.length > 0) {
@@ -35,7 +36,15 @@ export default function RewardsPage() {
           (membership: UserMembership) => getBusinessById(membership.businessId)
         );
         const businessesResults = await Promise.all(businessesPromises);
-        setEnrolledBusinessesWithDetails(businessesResults.filter((b): b is Business => b !== null && b.rewards && b.rewards.length > 0));
+        const validBusinesses = businessesResults.filter((b): b is Business => b !== null);
+        
+        // Filter out businesses that don't have rewards OR where the user has no membership for them
+        const businessesWithRewardsAndMembership = validBusinesses.filter(business => 
+          (business.rewards && business.rewards.length > 0) && 
+          user.memberships?.some(m => m.businessId === business.id)
+        );
+        setEnrolledBusinessesWithDetails(businessesWithRewardsAndMembership);
+
       } catch (error) {
         // Error is handled by getBusinessById's toast
       } finally {
@@ -50,10 +59,10 @@ export default function RewardsPage() {
   useEffect(() => {
     if (isAuthenticated && user) {
       fetchEnrolledBusinessesData();
-    } else if (!loading && !isAuthenticated) {
+    } else if (!authLoading && !isAuthenticated) {
       setPageLoading(false); // Not logged in, no data to fetch
     }
-  }, [isAuthenticated, user, loading, fetchEnrolledBusinessesData]);
+  }, [isAuthenticated, user, authLoading, fetchEnrolledBusinessesData]);
 
   const handleSelectBusiness = useCallback((business: Business) => {
     setSelectedBusiness(business);
@@ -62,15 +71,16 @@ export default function RewardsPage() {
   }, [user?.memberships]);
 
   const handleRewardRedeemed = useCallback(() => {
-    // The AuthContext's user state update will trigger a re-render of this page.
-    // Re-derive selectedBusinessMembership from the updated user object.
+    // Re-derive selectedBusinessMembership from the updated user object from AuthContext
     if (user && selectedBusiness) {
       const updatedMembership = user.memberships?.find(m => m.businessId === selectedBusiness.id);
       setSelectedBusinessMembership(updatedMembership || null);
     }
+    // Optionally, re-fetch business details if rewards might change (e.g., stock)
+    // For now, relying on context update for points is sufficient.
   }, [user, selectedBusiness]);
 
-  if (loading || pageLoading) {
+  if (authLoading || pageLoading) {
     return (
       <div className="w-full space-y-8">
         <div className="text-center border-b border-border pb-6 mb-8">
@@ -97,7 +107,7 @@ export default function RewardsPage() {
     );
   }
   
-  if (!isAuthenticated) {
+  if (!isAuthenticated || !user) { // Ensure user object exists
      return (
         <div className="flex flex-col items-center justify-center min-h-[calc(100vh-var(--header-height,80px)-6rem)]">
             <Loader2 className="h-16 w-16 animate-spin text-primary mb-4" />
