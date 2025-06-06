@@ -15,8 +15,8 @@ import Link from 'next/link';
 export default function LoginPage() {
   const [customerEmail, setCustomerEmail] = useState('');
   const [customerPassword, setCustomerPassword] = useState('');
-  const [businessEmail, setBusinessEmail] = useState('admin@example.com'); // Pre-fill for convenience
-  const [businessPassword, setBusinessPassword] = useState('adminpass'); // Pre-fill for convenience
+  const [businessEmail, setBusinessEmail] = useState(''); // Removed pre-fill
+  const [businessPassword, setBusinessPassword] = useState(''); // Removed pre-fill
 
   const { login: customerLogin, loading: customerLoading } = useAuth();
   const { login: businessLogin, loading: businessLoading } = useAdminAuth();

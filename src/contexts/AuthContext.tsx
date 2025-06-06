@@ -99,9 +99,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (dbUser) {
           setUser(dbUser); 
         } else {
-          // If user from localStorage isn't in our current mock DB (e.g., after a DB reset/change),
-          // we might treat them as logged out or try to re-validate/re-create.
-          // For this mock, we'll just use the localStorage version if not in DB.
           setUser(parsedUser); 
         }
         setIsAuthenticated(true);
@@ -118,25 +115,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     await new Promise(resolve => setTimeout(resolve, 500));
 
     let foundUser: User | null = null;
-    // Prioritize direct matches for test accounts
+    // Stricter login: only specific test accounts
     if (email === 'user@example.com' && pass === 'password123') {
       foundUser = MOCK_USERS_DB['user@example.com'];
     } else if (email === 'loyal@example.com' && pass === 'password123') {
       foundUser = MOCK_USERS_DB['loyal@example.com'];
     }
-     else if (MOCK_USERS_DB[email]) { // Fallback for any mock user by email (assuming password check is skipped for other mocks)
-        foundUser = MOCK_USERS_DB[email];
-    }
-
 
     if (foundUser) {
       setUser(foundUser);
       setIsAuthenticated(true);
-localStorage.setItem('loyaltyUser', JSON.stringify(foundUser));
+      localStorage.setItem('loyaltyUser', JSON.stringify(foundUser));
       router.push('/loyalty'); 
     } else {
-      console.error("Login failed: Invalid credentials");
-      // alert("Login failed: Invalid credentials. Test with user@example.com or loyal@example.com (pass: password123).");
+      console.error("Login failed: Invalid credentials for customer account.");
+      // Consider adding toast for failed login:
+      // toast({ title: "Login Failed", description: "Invalid email or password.", variant: "destructive" });
     }
     setLoading(false);
   };
@@ -146,7 +140,9 @@ localStorage.setItem('loyaltyUser', JSON.stringify(foundUser));
     await new Promise(resolve => setTimeout(resolve, 500));
     
     if (MOCK_USERS_DB[email]) {
-        // alert("Signup failed: Email already exists.");
+        console.error("Signup failed: Email already exists.");
+        // Consider adding toast for failed signup:
+        // toast({ title: "Signup Failed", description: "This email is already registered.", variant: "destructive" });
         setLoading(false);
         return;
     }
@@ -155,7 +151,7 @@ localStorage.setItem('loyaltyUser', JSON.stringify(foundUser));
       id: `mock-user-${Date.now()}`, 
       name, 
       email,
-      memberships: [] // Start with no memberships, user can join via codes
+      memberships: []
     };
     
     MOCK_USERS_DB[email] = newUser; 
@@ -197,28 +193,24 @@ localStorage.setItem('loyaltyUser', JSON.stringify(foundUser));
       const oldMembership = targetUser.memberships[existingMembershipIndex];
       const updatedMembership: UserMembership = {
         ...oldMembership,
-        purchases: [...oldMembership.purchases, newPurchase],
+        purchases: [...oldMembership.purchases, newPurchase].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()), // Keep purchases sorted
         pointsBalance: oldMembership.pointsBalance + purchaseDetails.pointsEarned,
       };
       updatedMemberships = targetUser.memberships.map((m, index) =>
         index === existingMembershipIndex ? updatedMembership : m
       );
     } else {
-      // This case should ideally not be hit if purchases are only added to existing memberships.
-      // If joining a new business and adding a purchase simultaneously is a feature, this logic needs review.
-      // For now, we assume membership exists.
       console.error("Cannot add purchase: User is not a member of this business.", businessId);
       return false;
     }
     
     const updatedUser: User = {
       ...targetUser,
-      memberships: updatedMemberships,
+      memberships: [...updatedMemberships], // Create new array for immutability
     };
 
     MOCK_USERS_DB[targetUser.email] = updatedUser;
 
-    // If the currently logged-in user is the one being updated, refresh their state.
     if (user && user.id === userId) {
       const newlyUpdatedUser = JSON.parse(JSON.stringify(updatedUser));
       setUser(newlyUpdatedUser);
@@ -262,13 +254,12 @@ localStorage.setItem('loyaltyUser', JSON.stringify(foundUser));
     const updatedMemberships = [...user.memberships, newMembership];
     const updatedUser: User = {
       ...user,
-      memberships: updatedMemberships,
+      memberships: [...updatedMemberships], // Ensure new array for immutability
     };
 
-    MOCK_USERS_DB[user.email] = updatedUser; // Update the "DB"
+    MOCK_USERS_DB[user.email] = updatedUser; 
     
-    // Update the live user state
-    const newlyUpdatedUser = JSON.parse(JSON.stringify(updatedUser)); // Deep clone
+    const newlyUpdatedUser = JSON.parse(JSON.stringify(updatedUser)); 
     setUser(newlyUpdatedUser);
     localStorage.setItem('loyaltyUser', JSON.stringify(newlyUpdatedUser));
     

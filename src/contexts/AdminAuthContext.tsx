@@ -37,13 +37,12 @@ export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
     if (storedAdminUser) {
       try {
         const parsedAdminUser = JSON.parse(storedAdminUser) as AdminUser;
-        // Validate if this admin user is still valid (e.g., against MOCK_ADMIN_CREDENTIALS or a fetched list)
         const business = MOCK_BUSINESSES_DB.find(b => b.id === parsedAdminUser.businessId);
-        if (business) {
+        if (business && parsedAdminUser.email === MOCK_ADMIN_CREDENTIALS.email) { // Basic validation against mock
           setAdminUser({ ...parsedAdminUser, businessName: business.name });
           setIsAdminAuthenticated(true);
         } else {
-            localStorage.removeItem('loyaltyAdminUser'); // Stored admin for a non-existent business
+            localStorage.removeItem('loyaltyAdminUser'); 
         }
       } catch (e) {
         console.error("Failed to parse stored admin user:", e);
@@ -72,11 +71,11 @@ export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
         router.push('/admin/dashboard');
       } else {
         console.error("Admin login failed: Managed business not found.");
-        alert("Admin login failed. Configuration error.");
+        // Consider toast: toast({ title: "Login Failed", description: "Admin configuration error.", variant: "destructive" });
       }
     } else {
       console.error("Admin login failed: Invalid credentials");
-      alert("Admin login failed. Use admin@example.com and adminpass.");
+      // Consider toast: toast({ title: "Login Failed", description: "Invalid admin email or password.", variant: "destructive" });
     }
     setLoading(false);
   };
@@ -85,7 +84,7 @@ export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
     setAdminUser(null);
     setIsAdminAuthenticated(false);
     localStorage.removeItem('loyaltyAdminUser');
-    router.push('/admin/login'); // Or '/' if you prefer a general landing after admin logout
+    router.push('/admin/login'); 
   };
 
   const getManagedBusiness = (): Business | undefined => {

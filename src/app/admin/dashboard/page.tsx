@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Skeleton } from '@/components/ui/skeleton';
 import { UserTable } from '@/components/admin/UserTable';
 import { useAuth } from '@/contexts/AuthContext';
-import type { User } from '@/types/user'; // UserMembership is part of User
+import type { User } from '@/types/user'; 
 import { Users, ShoppingCart, BarChart3, Building, KeyRound, Copy } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
@@ -145,7 +145,7 @@ export default function AdminDashboardPage() {
           <CardContent>
             {loadingUsers ? <Skeleton className="h-8 w-1/2" /> : <div className="text-2xl font-bold">{users.length}</div>}
             <p className="text-xs text-muted-foreground">
-              Users enrolled in {managedBusiness?.name}
+              Users enrolled in {managedBusiness?.name || 'your business'}
             </p>
           </CardContent>
         </Card>
@@ -157,7 +157,7 @@ export default function AdminDashboardPage() {
           <CardContent>
              {loadingUsers ? <Skeleton className="h-8 w-1/2" /> : <div className="text-2xl font-bold">{totalPointsInBusiness}</div>}
             <p className="text-xs text-muted-foreground">
-              Within {managedBusiness?.name}
+              Within {managedBusiness?.name || 'your business'}
             </p>
           </CardContent>
         </Card>
@@ -169,7 +169,7 @@ export default function AdminDashboardPage() {
           <CardContent>
             {loadingUsers ? <Skeleton className="h-8 w-1/2" /> : <div className="text-2xl font-bold">{totalTransactionsInBusiness}</div>}
             <p className="text-xs text-muted-foreground">
-              Recorded for {managedBusiness?.name}
+              Recorded for {managedBusiness?.name || 'your business'}
             </p>
           </CardContent>
         </Card>
@@ -177,7 +177,7 @@ export default function AdminDashboardPage() {
 
       <Card className="shadow-lg bg-card">
         <CardHeader>
-          <CardTitle className="font-headline text-2xl">User Management for {managedBusiness?.name}</CardTitle>
+          <CardTitle className="font-headline text-2xl">User Management for {managedBusiness?.name || 'your business'}</CardTitle>
           <CardDescription>View users, their purchase history, and add new purchases for your business.</CardDescription>
         </CardHeader>
         <CardContent>
