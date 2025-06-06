@@ -1,7 +1,7 @@
 
 "use client";
 
-import type { User } from '@/types/user';
+import type { User, MockPurchase } from '@/types/user';
 import { useRouter } from 'next/navigation';
 import type { ReactNode } from 'react';
 import React, { createContext, useContext, useEffect, useState } from 'react';
@@ -13,12 +13,15 @@ interface AuthContextType {
   login: (email: string, pass: string) => Promise<void>;
   logout: () => void;
   signup: (name: string, email: string, pass: string) => Promise<void>;
+  addMockPurchaseToUser: (userId: string, purchaseDetails: { item: string; amount: number; pointsEarned: number }) => Promise<boolean>;
+  getAllMockUsers: () => User[]; // Keep this for admin
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 // Mock user data including purchases for admin view
-const MOCK_USERS_DB: { [email: string]: User } = {
+// This will act as our in-memory "database"
+let MOCK_USERS_DB: { [email: string]: User } = {
   'loyal@example.com': {
     id: 'mock-user-id-123',
     name: 'Loyal Customer',
@@ -51,11 +54,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (storedUser) {
       try {
         const parsedUser = JSON.parse(storedUser) as User;
-        // Enrich with mock purchases if they exist in our "DB"
         const dbUser = Object.values(MOCK_USERS_DB).find(u => u.id === parsedUser.id);
         if (dbUser) {
-          setUser(dbUser);
+          setUser(dbUser); // Use the potentially updated user from MOCK_USERS_DB
         } else {
+          // This case should ideally not happen if MOCK_USERS_DB is the source of truth after login
           setUser(parsedUser);
         }
         setIsAuthenticated(true);
@@ -73,6 +76,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     let foundUser: User | null = null;
 
+    // Prioritize specific test account
     if (email === 'user@example.com' && pass === 'password123') {
       foundUser = MOCK_USERS_DB['user@example.com'];
     } else if (MOCK_USERS_DB[email]) { // Allow login for any user in mock DB with any password for demo
@@ -86,9 +90,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       localStorage.setItem('loyaltyUser', JSON.stringify(foundUser));
       router.push('/profile');
     } else {
-      // Handle login failure (e.g., show a toast message)
       console.error("Login failed: Invalid credentials");
-      alert("Login failed: Invalid credentials. Test with user@example.com and password123.");
+      alert("Login failed: Invalid credentials. Test with user@example.com and password123, or other mock users.");
     }
     setLoading(false);
   };
@@ -111,7 +114,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         { id: `p-${Date.now()}`, item: 'Welcome Bonus Points', amount: 0, date: new Date().toISOString(), pointsEarned: 50 }
       ]
     };
-    MOCK_USERS_DB[email] = newUser; // Add to our mock DB
+    MOCK_USERS_DB[email] = newUser; 
     
     setUser(newUser);
     setIsAuthenticated(true);
@@ -127,8 +130,43 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     router.push('/login');
   };
 
+  const addMockPurchaseToUser = async (userId: string, purchaseDetails: { item: string; amount: number; pointsEarned: number }): Promise<boolean> => {
+    const targetUser = Object.values(MOCK_USERS_DB).find(u => u.id === userId);
+    if (!targetUser) {
+      console.error("User not found for adding purchase:", userId);
+      return false;
+    }
+
+    const newPurchase: MockPurchase = {
+      id: `p-${Date.now()}-${Math.random().toString(36).substring(7)}`,
+      date: new Date().toISOString(),
+      ...purchaseDetails,
+    };
+
+    if (!targetUser.mockPurchases) {
+      targetUser.mockPurchases = [];
+    }
+    targetUser.mockPurchases.push(newPurchase);
+    
+    // Update MOCK_USERS_DB (by reference)
+    MOCK_USERS_DB[targetUser.email] = {...targetUser};
+
+
+    // If the updated user is the currently logged-in user, update their state and localStorage
+    if (user && user.id === userId) {
+      const updatedCurrentUser = { ...targetUser }; // Create a new object to trigger re-render
+      setUser(updatedCurrentUser);
+      localStorage.setItem('loyaltyUser', JSON.stringify(updatedCurrentUser));
+    }
+    return true;
+  };
+
+  const getAllMockUsers = (): User[] => {
+    return Object.values(MOCK_USERS_DB);
+  };
+
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated, loading, login, logout, signup }}>
+    <AuthContext.Provider value={{ user, isAuthenticated, loading, login, logout, signup, addMockPurchaseToUser, getAllMockUsers }}>
       {children}
     </AuthContext.Provider>
   );
@@ -140,9 +178,4 @@ export const useAuth = () => {
     throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
-};
-
-// Function to be used by admin panel to get all mock users
-export const getAllMockUsers = (): User[] => {
-  return Object.values(MOCK_USERS_DB);
 };

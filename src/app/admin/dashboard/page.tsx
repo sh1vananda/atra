@@ -1,21 +1,32 @@
 
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { UserTable } from '@/components/admin/UserTable';
-import { getAllMockUsers } from '@/contexts/AuthContext'; // We'll get users from here
+import { useAuth } from '@/contexts/AuthContext'; // For getAllMockUsers
 import type { User } from '@/types/user';
-import { Users, ShoppingCart } from 'lucide-react';
+import { Users, ShoppingCart, BarChart3 } from 'lucide-react'; // Added BarChart3 for points
 
 export default function AdminDashboardPage() {
   const { isAdminAuthenticated, loading: adminLoading, adminUser } = useAdminAuth();
+  const { getAllMockUsers } = useAuth(); // Get the function from AuthContext
   const router = useRouter();
   const [users, setUsers] = useState<User[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(true);
+
+  const fetchUsers = useCallback(() => {
+    setLoadingUsers(true);
+    // Simulate fetching users
+    setTimeout(() => {
+      setUsers(getAllMockUsers()); // Use the function from AuthContext
+      setLoadingUsers(false);
+    }, 100); // Short delay for refresh indication
+  }, [getAllMockUsers]);
+
 
   useEffect(() => {
     if (!adminLoading && !isAdminAuthenticated) {
@@ -25,20 +36,15 @@ export default function AdminDashboardPage() {
 
   useEffect(() => {
     if (isAdminAuthenticated) {
-      setLoadingUsers(true);
-      // Simulate fetching users
-      setTimeout(() => {
-        setUsers(getAllMockUsers());
-        setLoadingUsers(false);
-      }, 500);
+      fetchUsers();
     }
-  }, [isAdminAuthenticated]);
+  }, [isAdminAuthenticated, fetchUsers]);
 
   const totalPointsAcrossUsers = users.reduce((total, user) => 
     total + (user.mockPurchases?.reduce((sum, p) => sum + p.pointsEarned, 0) || 0), 0
   );
 
-  const totalPurchases = users.reduce((total, user) => 
+  const totalPurchasesCount = users.reduce((total, user) => 
     total + (user.mockPurchases?.length || 0), 0
   );
 
@@ -82,7 +88,7 @@ export default function AdminDashboardPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Points Issued (Mock)</CardTitle>
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" className="h-4 w-4 text-muted-foreground"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 15 .35-.35a2.5 2.5 0 0 1 0-3.54l2.82-2.82a2.5 2.5 0 0 1 3.54 0l.35.35M12 9l-.35.35a2.5 2.5 0 0 1 0 3.54l-2.82 2.82a2.5 2.5 0 0 1-3.54 0L5 15.35"/></svg>
+            <BarChart3 className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
              {loadingUsers ? <Skeleton className="h-8 w-1/2" /> : <div className="text-2xl font-bold">{totalPointsAcrossUsers}</div>}
@@ -97,7 +103,7 @@ export default function AdminDashboardPage() {
             <ShoppingCart className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            {loadingUsers ? <Skeleton className="h-8 w-1/2" /> : <div className="text-2xl font-bold">{totalPurchases}</div>}
+            {loadingUsers ? <Skeleton className="h-8 w-1/2" /> : <div className="text-2xl font-bold">{totalPurchasesCount}</div>}
             <p className="text-xs text-muted-foreground">
               Mock purchase records
             </p>
@@ -108,17 +114,18 @@ export default function AdminDashboardPage() {
       <Card className="shadow-lg">
         <CardHeader>
           <CardTitle className="font-headline text-2xl">User Management</CardTitle>
-          <CardDescription>View and manage your loyalty program users and their (mock) purchase history.</CardDescription>
+          <CardDescription>View users, their (mock) purchase history, and add new purchases.</CardDescription>
         </CardHeader>
         <CardContent>
           {loadingUsers ? (
              <div className="space-y-2">
+                <Skeleton className="h-10 w-full" />
                 <Skeleton className="h-8 w-full" />
                 <Skeleton className="h-8 w-full" />
                 <Skeleton className="h-8 w-full" />
               </div>
           ) : (
-            <UserTable users={users} />
+            <UserTable users={users} onUserUpdate={fetchUsers} />
           )}
         </CardContent>
       </Card>

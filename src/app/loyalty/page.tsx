@@ -13,7 +13,7 @@ import Image from 'next/image';
 import { Skeleton } from '@/components/ui/skeleton';
 
 export default function LoyaltyPage() {
-  const { isAuthenticated, loading } = useAuth();
+  const { user, isAuthenticated, loading } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
@@ -22,12 +22,12 @@ export default function LoyaltyPage() {
     }
   }, [loading, isAuthenticated, router]);
 
-  // Mock data
-  const currentPoints = 280;
-  const pointsToNextReward = 500;
-  const progress = (currentPoints / pointsToNextReward) * 100;
+  const currentPoints = user?.mockPurchases?.reduce((sum, p) => sum + p.pointsEarned, 0) || 0;
+  const pointsToNextReward = 500; // This can be dynamic later
+  const progress = Math.min((currentPoints / pointsToNextReward) * 100, 100); // Cap progress at 100%
+  const pointsNeededForNext = Math.max(0, pointsToNextReward - currentPoints);
 
-  if (loading || !isAuthenticated) {
+  if (loading || !isAuthenticated || !user) {
     return (
       <div className="space-y-8">
         <Card className="shadow-lg">
@@ -92,7 +92,9 @@ export default function LoyaltyPage() {
                 style={{ width: `${progress}%` }}
               />
             </div>
-             <p className="text-xs text-muted-foreground mt-1 text-center">You are {pointsToNextReward - currentPoints} points away from your next reward!</p>
+             <p className="text-xs text-muted-foreground mt-1 text-center">
+               {pointsNeededForNext > 0 ? `You are ${pointsNeededForNext} points away from your next reward!` : "You've reached the next reward tier!"}
+             </p>
           </div>
 
           <div className="aspect-[16/10] w-full max-w-md mx-auto bg-gradient-to-br from-primary to-blue-700 rounded-xl shadow-2xl p-6 flex flex-col justify-between text-primary-foreground">
@@ -101,7 +103,7 @@ export default function LoyaltyPage() {
                 <h3 className="text-xl font-semibold font-headline">Loyalty Leap Card</h3>
                 <Star className="h-10 w-10 text-yellow-300 fill-yellow-300 opacity-50" />
               </div>
-              <p className="text-sm opacity-80">Member ID: LL-12345678</p>
+              <p className="text-sm opacity-80">Member ID: {user.id}</p>
             </div>
             <div className="text-right">
               <p className="text-3xl font-bold">{currentPoints} PTS</p>
@@ -121,7 +123,7 @@ export default function LoyaltyPage() {
             <h3 className="text-xl font-semibold">Scan QR Code</h3>
             <p className="text-muted-foreground">Present this QR code at checkout to earn points.</p>
             <div className="bg-white p-2 rounded-md inline-block shadow-md">
-              <Image src="https://placehold.co/150x150.png?text=SCAN+ME" alt="QR Code Placeholder" width={150} height={150} data-ai-hint="QR code" />
+              <Image src={`https://placehold.co/150x150.png?text=${user.id.slice(-6)}`} alt="QR Code Placeholder" width={150} height={150} data-ai-hint="QR code user" />
             </div>
             <Button className="w-full mt-2" variant="outline">
               Show My QR Code

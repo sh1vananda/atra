@@ -8,47 +8,21 @@ import { HistoryListItem, type HistoryEntry } from '@/components/history/History
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { ScrollText } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import type { MockPurchase } from '@/types/user';
 
-const mockHistory: HistoryEntry[] = [
-  {
-    id: '1',
-    date: new Date('2024-07-20T10:30:00Z'),
-    description: 'Earned points - Coffee Purchase',
-    pointsChange: 20,
-    type: 'earn',
-  },
-  {
-    id: '2',
-    date: new Date('2024-07-18T15:00:00Z'),
-    description: 'Redeemed - Free Coffee',
-    pointsChange: -100,
-    type: 'redeem',
-  },
-  {
-    id: '3',
-    date: new Date('2024-07-15T09:15:00Z'),
-    description: 'Earned points - Pastry Purchase',
-    pointsChange: 15,
-    type: 'earn',
-  },
-  {
-    id: '4',
-    date: new Date('2024-07-10T12:00:00Z'),
-    description: 'Bonus points - Welcome Offer',
-    pointsChange: 50,
-    type: 'earn',
-  },
-   {
-    id: '5',
-    date: new Date('2024-07-05T18:45:00Z'),
-    description: 'Earned points - Sandwich & Drink',
-    pointsChange: 35,
-    type: 'earn',
-  },
-];
+// Convert MockPurchase to HistoryEntry
+function mapPurchaseToHistoryEntry(purchase: MockPurchase): HistoryEntry {
+  return {
+    id: purchase.id,
+    date: new Date(purchase.date),
+    description: purchase.item, // Assuming item name is the description
+    pointsChange: purchase.pointsEarned,
+    type: purchase.pointsEarned >= 0 ? 'earn' : 'redeem', // Basic logic, can be refined
+  };
+}
 
 export default function HistoryPage() {
-  const { isAuthenticated, loading } = useAuth();
+  const { user, isAuthenticated, loading } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
@@ -93,6 +67,10 @@ export default function HistoryPage() {
     );
   }
 
+  const userHistory = user?.mockPurchases
+    ?.map(mapPurchaseToHistoryEntry)
+    .sort((a, b) => b.date.getTime() - a.date.getTime()) || [];
+
   return (
     <div className="space-y-8">
        <div className="text-center">
@@ -108,14 +86,14 @@ export default function HistoryPage() {
           <ScrollText className="h-8 w-8 text-primary"/>
         </CardHeader>
         <CardContent>
-          {mockHistory.length > 0 ? (
+          {userHistory.length > 0 ? (
             <ul className="space-y-4">
-              {mockHistory.map((entry) => (
+              {userHistory.map((entry) => (
                 <HistoryListItem key={entry.id} entry={entry} />
               ))}
             </ul>
           ) : (
-            <p className="text-muted-foreground text-center py-8">No history yet. Start earning points!</p>
+            <p className="text-muted-foreground text-center py-8">No history yet. Start earning points or make a purchase!</p>
           )}
         </CardContent>
       </Card>

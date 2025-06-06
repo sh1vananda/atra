@@ -83,7 +83,7 @@ export default function ProfilePage() {
           </div>
           <div className="flex items-center space-x-3 p-3 bg-secondary/30 rounded-md">
             <Gift className="h-5 w-5 text-primary" />
-            <p><span className="font-medium">Total Points (Mock):</span> {totalPoints}</p>
+            <p><span className="font-medium">Total Points:</span> {totalPoints}</p>
           </div>
            <div className="flex items-center space-x-3 p-3 bg-green-100 dark:bg-green-900/30 border border-green-300 dark:border-green-700 rounded-md">
             <ShieldCheck className="h-5 w-5 text-green-600 dark:text-green-400" />
@@ -97,3 +97,4 @@ export default function ProfilePage() {
     </div>
   );
 }
+
