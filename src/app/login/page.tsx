@@ -37,7 +37,7 @@ export default function LoginPage() {
         <CardHeader className="text-center">
           <LogIn className="mx-auto h-10 w-10 text-primary mb-2" />
           <CardTitle className="font-headline text-3xl">Account Login</CardTitle>
-          <CardDescription>Access your loyalty or business account.</CardDescription>
+          <CardDescription>Access your ATRA customer or business account.</CardDescription>
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="customer" className="w-full">
@@ -130,7 +130,7 @@ export default function LoginPage() {
               </form>
                <p className="mt-4 text-center text-sm text-muted-foreground">
                 New business?{' '}
-                <Link href="/business-signup" className="font-medium text-primary hover:underline flex items-center justify-center">
+                <Link href="/signup" className="font-medium text-primary hover:underline flex items-center justify-center">
                   <Building className="mr-1 h-4 w-4" /> Register Your Business
                 </Link>
               </p>
@@ -141,4 +141,3 @@ export default function LoginPage() {
     </div>
   );
 }
-

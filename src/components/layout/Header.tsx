@@ -17,45 +17,25 @@ export function Header() {
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
-  const { isAuthenticated: isCustomerAuth, loading: customerLoading, logout: customerLogout, user: customerUser } = useAuth();
-  const { isAdminAuthenticated, loading: adminLoading, logout: adminLogout, adminUser } = useAdminAuth();
+  const { isAuthenticated: isCustomerAuth, loading: customerLoading, logout: customerLogout } = useAuth();
+  const { isAdminAuthenticated, loading: adminLoading, logout: adminLogout } = useAdminAuth();
 
   useEffect(() => setMounted(true), []);
 
   const combinedLoading = customerLoading || adminLoading;
   
-  let titleText = "Loyalty Leap";
-  let titleHref = "/";
-  let displayIcon = <Award className="h-7 w-7 sm:h-8 sm:w-8" />;
+  const titleText = "ATRA";
+  const titleHref = "/";
+  const displayIcon = <Award className="h-7 w-7 sm:h-8 sm:w-8" />;
   
-  // Determine title, href, and icon based on client-side state after mount
-  if (mounted) {
-    const currentAdminRoute = pathname.startsWith('/admin');
-    if (currentAdminRoute) {
-      displayIcon = <Building className="h-7 w-7 sm:h-8 sm:w-8" />;
-      titleText = adminUser?.businessName ? `${adminUser.businessName} Portal` : "Admin Portal";
-      titleHref = isAdminAuthenticated ? "/admin/dashboard" : "/admin/login";
-    } else if (isCustomerAuth) {
-      displayIcon = <Award className="h-7 w-7 sm:h-8 sm:w-8" />;
-      titleText = "Loyalty Leap";
-      titleHref = pathname === "/" ? "/" : "/loyalty";
-    } else {
-      // Logged out, customer routes
-      displayIcon = <Award className="h-7 w-7 sm:h-8 sm:w-8" />;
-      titleText = "Loyalty Leap";
-      titleHref = "/";
-    }
-  }
-
-
   if (!mounted) {
     // Consistent skeleton for SSR and initial client render
     return (
       <header className="bg-card border-b border-border shadow-sm sticky top-0 z-50">
         <div className="w-full px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
           <div className="flex items-center gap-2 text-primary">
-            <Award className="h-7 w-7 sm:h-8 sm:w-8" /> 
-            <h1 className="text-xl sm:text-2xl font-headline font-semibold">Loyalty Leap</h1>
+            {displayIcon}
+            <h1 className="text-xl sm:text-2xl font-headline font-semibold">{titleText}</h1>
           </div>
           <nav className="flex items-center gap-1 sm:gap-2">
             <Skeleton className="h-9 w-9 rounded-md" /> 
@@ -67,7 +47,6 @@ export function Header() {
     );
   }
   
-  // Client-side mounted render
   const currentAdminRoute = pathname.startsWith('/admin');
 
   return (
@@ -88,7 +67,7 @@ export function Header() {
             isAdminAuthenticated ? (
               <>
                 <Button variant="ghost" asChild className={cn(pathname === "/admin/dashboard" && "bg-secondary")}>
-                  <Link href="/admin/dashboard">
+                  <Link href="/admin/dashboard" aria-label="Admin Dashboard">
                     <LayoutDashboard className="h-5 w-5 sm:mr-1" />
                     <span className="hidden sm:inline">Dashboard</span>
                   </Link>
@@ -99,7 +78,7 @@ export function Header() {
                 </Button>
               </>
             ) : (
-              pathname === '/admin/login' && (
+              pathname !== '/login' && ( // Show 'Customer Site' link if not on general login page where business tab is present
                  <Button variant="ghost" asChild>
                    <Link href="/">Customer Site</Link>
                  </Button>
@@ -133,13 +112,13 @@ export function Header() {
             ) : (
               <>
                 <Button variant="ghost" asChild className={cn(pathname === "/login" && "bg-secondary")}>
-                  <Link href="/login">
+                  <Link href="/login" aria-label="Login page">
                     <LogIn className="h-5 w-5 sm:mr-1" />
                     <span className="hidden sm:inline">Login</span>
                   </Link>
                 </Button>
                 <Button variant="default" asChild className={cn(pathname === "/signup" ? "bg-primary/80" : "bg-primary", "hover:bg-primary/90")}>
-                  <Link href="/signup">
+                  <Link href="/signup" aria-label="Signup page">
                     <UserPlus className="h-5 w-5 sm:mr-1" />
                     <span className="hidden sm:inline">Sign Up</span>
                   </Link>

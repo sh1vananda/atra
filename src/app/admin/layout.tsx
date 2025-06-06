@@ -2,8 +2,8 @@
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Loyalty Leap - Admin',
-  description: 'Manage your Loyalty Leap Program',
+  title: 'ATRA - Admin',
+  description: 'Manage your ATRA Program',
 };
 
 export default function AdminLayout({

@@ -3,22 +3,47 @@
 
 import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Loader2, UserPlus } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Loader2, UserPlus, Briefcase } from 'lucide-react';
 import Link from 'next/link';
+import { useToast } from '@/hooks/use-toast';
 
 export default function SignupPage() {
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const { signup, loading } = useAuth();
+  // Customer Signup States
+  const [customerName, setCustomerName] = useState('');
+  const [customerEmail, setCustomerEmail] = useState('');
+  const [customerPassword, setCustomerPassword] = useState('');
+  
+  // Business Signup States
+  const [businessName, setBusinessName] = useState('');
+  const [adminEmail, setAdminEmail] = useState('');
+  const [adminPassword, setAdminPassword] = useState('');
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const { signup: customerSignup, loading: customerLoading } = useAuth();
+  const { signupBusiness, loading: businessLoading } = useAdminAuth() as any; // Cast as any if signupBusiness might not exist
+  const { toast } = useToast();
+
+  const handleCustomerSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    await signup(name, email, password);
+    await customerSignup(customerName, customerEmail, customerPassword);
+  };
+
+  const handleBusinessSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!signupBusiness) {
+        toast({
+            title: "Feature not fully implemented",
+            description: "Business signup function is not available in the admin context.",
+            variant: "destructive",
+        });
+        return;
+    }
+    await signupBusiness(businessName, adminEmail, adminPassword);
   };
 
   return (
@@ -26,55 +51,116 @@ export default function SignupPage() {
       <Card className="w-full max-w-md shadow-xl">
         <CardHeader className="text-center">
           <UserPlus className="mx-auto h-12 w-12 text-primary mb-2" />
-          <CardTitle className="font-headline text-3xl">Create Your Account</CardTitle>
-          <CardDescription>Join Loyalty Leap and start earning rewards!</CardDescription>
+          <CardTitle className="font-headline text-3xl">Create an Account</CardTitle>
+          <CardDescription>Join ATRA as a customer or register your business.</CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="space-y-2">
-              <Label htmlFor="name">Full Name</Label>
-              <Input
-                id="name"
-                type="text"
-                placeholder="Your Name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="you@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                type="password"
-                placeholder="Create a strong password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
-            </div>
-            <Button type="submit" disabled={loading} className="w-full bg-primary hover:bg-primary/90">
-              {loading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Signing up...
-                </>
-              ) : (
-                "Sign Up"
-              )}
-            </Button>
-          </form>
+          <Tabs defaultValue="customer" className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="customer">
+                <UserPlus className="mr-2 h-4 w-4" /> Customer
+              </TabsTrigger>
+              <TabsTrigger value="business">
+                <Briefcase className="mr-2 h-4 w-4" /> Business
+              </TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="customer" className="mt-6">
+              <form onSubmit={handleCustomerSubmit} className="space-y-6">
+                <div className="space-y-2">
+                  <Label htmlFor="customer-name">Full Name</Label>
+                  <Input
+                    id="customer-name"
+                    type="text"
+                    placeholder="Your Name"
+                    value={customerName}
+                    onChange={(e) => setCustomerName(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="customer-email">Email</Label>
+                  <Input
+                    id="customer-email"
+                    type="email"
+                    placeholder="you@example.com"
+                    value={customerEmail}
+                    onChange={(e) => setCustomerEmail(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="customer-password">Password</Label>
+                  <Input
+                    id="customer-password"
+                    type="password"
+                    placeholder="Create a strong password"
+                    value={customerPassword}
+                    onChange={(e) => setCustomerPassword(e.target.value)}
+                    required
+                  />
+                </div>
+                <Button type="submit" disabled={customerLoading} className="w-full bg-primary hover:bg-primary/90">
+                  {customerLoading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Signing up...
+                    </>
+                  ) : (
+                    "Sign Up as Customer"
+                  )}
+                </Button>
+              </form>
+            </TabsContent>
+
+            <TabsContent value="business" className="mt-6">
+              <form onSubmit={handleBusinessSubmit} className="space-y-6">
+                <div className="space-y-2">
+                  <Label htmlFor="businessName">Business Name</Label>
+                  <Input
+                    id="businessName"
+                    type="text"
+                    placeholder="Your Business Name"
+                    value={businessName}
+                    onChange={(e) => setBusinessName(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="adminEmail">Admin Email</Label>
+                  <Input
+                    id="adminEmail"
+                    type="email"
+                    placeholder="admin@yourbusiness.com"
+                    value={adminEmail}
+                    onChange={(e) => setAdminEmail(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="adminPassword">Admin Password</Label>
+                  <Input
+                    id="adminPassword"
+                    type="password"
+                    placeholder="Create a strong password"
+                    value={adminPassword}
+                    onChange={(e) => setAdminPassword(e.target.value)}
+                    required
+                  />
+                </div>
+                <Button type="submit" disabled={businessLoading} className="w-full bg-primary hover:bg-primary/90">
+                  {businessLoading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Registering...
+                    </>
+                  ) : (
+                    "Register Business"
+                  )}
+                </Button>
+              </form>
+            </TabsContent>
+          </Tabs>
           <p className="mt-6 text-center text-sm text-muted-foreground">
             Already have an account?{' '}
             <Link href="/login" className="font-medium text-primary hover:underline">

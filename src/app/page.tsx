@@ -26,10 +26,10 @@ export default function HomePage() {
       <section className="bg-card py-16 shadow-lg rounded-lg">
         <div className="container mx-auto px-4 text-center">
           <h1 className="text-4xl md:text-5xl font-headline font-bold text-primary mb-4">
-            Welcome to Loyalty Leap!
+            Welcome to ATRA!
           </h1>
           <p className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto">
-            Elevate your customer relationships and reward loyalty. Loyalty Leap is your all-in-one platform for digital loyalty programs, personalized rewards, and insightful analytics.
+            Elevate your customer relationships and reward loyalty. ATRA is your all-in-one platform for digital loyalty programs, personalized rewards, and insightful analytics.
           </p>
           <div className="mt-8 flex flex-col sm:flex-row justify-center items-center gap-4">
             <Button asChild size="lg" className="bg-primary hover:bg-primary/90">
@@ -55,7 +55,7 @@ export default function HomePage() {
                 <Users className="h-7 w-7" /> Your Personalized Loyalty Hub
               </h3>
               <p className="text-muted-foreground leading-relaxed">
-                With Loyalty Leap, managing your rewards across all your favorite enrolled businesses is effortless:
+                With ATRA, managing your rewards across all your favorite enrolled businesses is effortless:
               </p>
               <ul className="space-y-4">
                 <FeatureListItem icon={CreditCard} text="Single account point collection across businesses." />
@@ -70,7 +70,7 @@ export default function HomePage() {
             <div className="rounded-lg overflow-hidden shadow-xl">
               <Image 
                 src="https://placehold.co/600x450.png" 
-                alt="Customer using Loyalty Leap app on phone" 
+                alt="Customer using ATRA app on phone" 
                 width={600} 
                 height={450} 
                 className="object-cover w-full h-full"
@@ -92,7 +92,7 @@ export default function HomePage() {
             <div className="rounded-lg overflow-hidden shadow-xl md:order-last">
               <Image 
                 src="https://placehold.co/600x450.png" 
-                alt="Business dashboard analytics on Loyalty Leap" 
+                alt="Business dashboard analytics on ATRA" 
                 width={600} 
                 height={450} 
                 className="object-cover w-full h-full"
@@ -104,7 +104,7 @@ export default function HomePage() {
                 <Briefcase className="h-7 w-7" /> Tools for Growth
               </h3>
               <p className="text-muted-foreground leading-relaxed">
-                Loyalty Leap provides businesses with the tools to:
+                ATRA provides businesses with the tools to:
               </p>
               <ul className="space-y-4">
                 <FeatureListItem icon={BarChart3} text="Effortlessly create and manage digital loyalty programs." />
@@ -123,7 +123,7 @@ export default function HomePage() {
       {/* Call to Action Section */}
       <section className="py-12 text-center">
         <div className="container mx-auto px-4">
-          <h2 className="text-3xl font-headline font-semibold text-foreground mb-4">Ready to Leap into Loyalty?</h2>
+          <h2 className="text-3xl font-headline font-semibold text-foreground mb-4">Ready to Leap into Loyalty with ATRA?</h2>
           <p className="text-lg text-muted-foreground max-w-xl mx-auto mb-8">
             Join users and businesses benefiting from a smarter way to manage loyalty.
           </p>
