@@ -16,18 +16,20 @@ import type { Business } from '@/types/business';
 
 export default function AdminDashboardPage() {
   const { isAdminAuthenticated, loading: adminAuthLoading, adminUser, getManagedBusiness } = useAdminAuth();
-  const { getAllMockUsers } = useCustomerAuth(); // Using customer auth context to get all users
+  const { getAllMockUsers } = useCustomerAuth(); 
   const router = useRouter();
   const { toast } = useToast();
   
   const [users, setUsers] = useState<User[]>([]);
-  const [pageDataLoading, setPageDataLoading] = useState(true); 
+  const [pageDataLoading, setPageDataLoading] = useState(true); // True initially, set to false after first data fetch attempt
   const [managedBusiness, setManagedBusiness] = useState<Business | null>(null);
   
+  // Memoized data fetching function
   const fetchAdminPageData = useCallback(async () => {
-    if (!adminUser || !adminUser.businessId) {
-      console.log("AdminDashboard: fetchAdminPageData - Aborting, adminUser or businessId missing.", adminUser);
-      setPageDataLoading(false);
+    // Ensure adminUser and its critical properties (uid, businessId) are available
+    if (!adminUser?.uid || !adminUser?.businessId) {
+      console.log("AdminDashboard: fetchAdminPageData - Aborting, adminUser or critical details missing.", adminUser);
+      setPageDataLoading(false); // Stop loading if prerequisites aren't met
       return;
     }
 
@@ -36,8 +38,8 @@ export default function AdminDashboardPage() {
     
     try {
       const businessDetails = await getManagedBusiness();
-      setManagedBusiness(businessDetails);
-      console.log("AdminDashboard: fetchAdminPageData - Business details fetched:", businessDetails);
+      setManagedBusiness(businessDetails); // Can be null if not found
+      console.log("AdminDashboard: fetchAdminPageData - Business details fetched (could be null):", businessDetails);
 
       if (businessDetails) {
         console.log("AdminDashboard: fetchAdminPageData - Fetching users for businessId:", businessDetails.id);
@@ -48,8 +50,8 @@ export default function AdminDashboardPage() {
         setUsers(enrolledUsers);
         console.log(`AdminDashboard: fetchAdminPageData - Found ${enrolledUsers.length} enrolled users.`);
       } else {
-        console.log("AdminDashboard: fetchAdminPageData - No business details found, clearing users.");
-        setUsers([]);
+        console.log("AdminDashboard: fetchAdminPageData - No business details found, clearing users list.");
+        setUsers([]); // Clear users if no business details
       }
     } catch (error) {
         console.error("AdminDashboard: fetchAdminPageData - Error fetching data:", error);
@@ -58,24 +60,29 @@ export default function AdminDashboardPage() {
             description: "Could not load all necessary data for the dashboard.",
             variant: "destructive"
         });
+        setManagedBusiness(null); // Ensure business is null on error
+        setUsers([]); // Ensure users are empty on error
     } finally {
         console.log("AdminDashboard: fetchAdminPageData - Finished. Setting pageDataLoading to false.");
         setPageDataLoading(false);
     }
-  }, [adminUser, getManagedBusiness, getAllMockUsers, toast]);
+  }, [adminUser, getManagedBusiness, getAllMockUsers, toast]); // adminUser will cause re-memo if its reference changes.
 
+  // Effect to handle authentication status changes and trigger data fetching
   useEffect(() => {
-    console.log("AdminDashboard:EFFECT[adminAuthLoading, isAdminAuthenticated, adminUser]: adminAuthLoading:", adminAuthLoading, "isAdminAuthenticated:", isAdminAuthenticated, "adminUser Exists:", !!adminUser);
-    if (!adminAuthLoading) { 
+    console.log("AdminDashboard:EFFECT[auth]: adminAuthLoading:", adminAuthLoading, "isAdminAuthenticated:", isAdminAuthenticated, "adminUser.uid:", adminUser?.uid);
+    if (!adminAuthLoading) { // Only proceed if the auth context has finished its initial loading
       if (!isAdminAuthenticated) {
-        console.log("AdminDashboard:EFFECT: Not authenticated after initial context load, redirecting to /login.");
+        console.log("AdminDashboard:EFFECT[auth]: Not authenticated, redirecting to /login.");
         router.push('/login?redirect=/admin/dashboard');
-      } else if (adminUser) { 
-        console.log("AdminDashboard:EFFECT: Authenticated and adminUser present, calling fetchAdminPageData.");
+      } else if (adminUser?.uid && adminUser?.businessId) { 
+        console.log("AdminDashboard:EFFECT[auth]: Authenticated and adminUser valid, calling fetchAdminPageData.");
         fetchAdminPageData();
-      } else {
-        console.warn("AdminDashboard:EFFECT: isAdminAuthenticated is true, but adminUser is null. This might indicate a state issue in AdminAuthContext. Not fetching page data.");
-        setPageDataLoading(false); 
+      } else if (isAdminAuthenticated && (!adminUser?.uid || !adminUser?.businessId)) {
+        console.warn("AdminDashboard:EFFECT[auth]: Authenticated but adminUser details (uid/businessId) are missing. This is an inconsistent state.");
+        // Potentially show an error or wait for adminUser to fully populate if it's a timing issue.
+        // For now, we rely on the rendering logic to handle this (e.g., !managedBusiness state).
+        setPageDataLoading(false); // Stop specific page loading if adminUser is inconsistent
       }
     }
   }, [adminAuthLoading, isAdminAuthenticated, adminUser, router, fetchAdminPageData]);
@@ -99,9 +106,9 @@ export default function AdminDashboardPage() {
     }
   };
 
-  // Initial loading: Auth context is loading OR auth is done, user is authenticated, but page data is still loading.
+  // Render 1: Auth context is still determining auth status
   if (adminAuthLoading) {
-    console.log("AdminDashboard:RENDER: Showing SKELETON (Auth context loading).");
+    console.log("AdminDashboard:RENDER: SKELETON (Auth context loading).");
     return (
       <div className="w-full space-y-8 animate-pulse">
         <div className="text-left pb-4 border-b border-border"> <Skeleton className="h-8 w-1/2 mb-2" /> <Skeleton className="h-5 w-3/4" /> </div>
@@ -112,8 +119,9 @@ export default function AdminDashboardPage() {
     );
   }
   
-  if (!isAdminAuthenticated) { // Auth context loaded, but user is not authenticated admin
-    console.log("AdminDashboard:RENDER: Auth context loaded, NOT authenticated. Showing redirect message.");
+  // Render 2: Auth context loaded, but user is NOT authenticated admin (redirect is handled by useEffect)
+  if (!isAdminAuthenticated) { 
+    console.log("AdminDashboard:RENDER: NOT authenticated (redirecting).");
     return (
         <div className="flex flex-col items-center justify-center min-h-[calc(100vh-150px)]">
             <Loader2 className="h-16 w-16 animate-spin text-primary mb-4" />
@@ -122,10 +130,9 @@ export default function AdminDashboardPage() {
     );
   }
 
-  // At this point, adminAuthLoading is false and isAdminAuthenticated is true.
-  // Now consider pageDataLoading for the actual content.
-  if (pageDataLoading || !adminUser) { // Still loading page-specific data, or adminUser somehow not set yet
-     console.log("AdminDashboard:RENDER: Authenticated, but page data loading or adminUser not yet fully set. Showing SKELETON. pageDataLoading:", pageDataLoading, "adminUser exists:", !!adminUser);
+  // Render 3: Authenticated, but page-specific data (business, users) is still loading OR adminUser is not fully populated yet.
+  if (pageDataLoading || !adminUser?.uid || !adminUser?.businessId) { 
+     console.log("AdminDashboard:RENDER: SKELETON (Page data loading or adminUser incomplete). pageDataLoading:", pageDataLoading, "adminUser valid:", !!(adminUser?.uid && adminUser?.businessId));
      return (
       <div className="w-full space-y-8 animate-pulse">
         <div className="text-left pb-4 border-b border-border"> <Skeleton className="h-8 w-1/2 mb-2" /> <Skeleton className="h-5 w-3/4" /> </div>
@@ -136,39 +143,40 @@ export default function AdminDashboardPage() {
     );
   }
   
-  // If authenticated, adminUser exists, page data NOT loading, but managedBusiness is NULL
-  if (!pageDataLoading && !managedBusiness) {
-     console.log("AdminDashboard:RENDER: Authenticated, page data NOT loading, but managedBusiness is NULL. Showing error for missing business data.");
+  // Render 4: Authenticated, page data finished loading, but managedBusiness is NULL (problem fetching it).
+  if (!managedBusiness) {
+     console.log("AdminDashboard:RENDER: ERROR (Managed business is null).");
      return (
         <div className="w-full space-y-8 text-center py-10">
             <AlertTriangle className="h-20 w-20 mx-auto text-destructive mb-4" />
             <h2 className="text-2xl font-semibold text-destructive">Business Data Not Found</h2>
-            <p className="text-muted-foreground">We could not load the details for your managed business.</p>
-            <p className="text-muted-foreground">This might be due to an incomplete admin profile or a temporary issue.</p>
+            <p className="text-muted-foreground">We could not load the details for your managed business (ID: {adminUser.businessId}).</p>
+            <p className="text-muted-foreground">This may be due to a temporary issue or incorrect data configuration.</p>
             <Button onClick={() => { console.log("AdminDashboard: Retry fetchAdminPageData clicked"); fetchAdminPageData(); }} className="mt-4">
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Try Reloading Data
+                <Loader2 className="mr-2 h-4 w-4 animate-spin hidden" /> {/* Hide spin for now unless button is clicked */}
+                Try Reloading Data
             </Button>
         </div>
      );
   }
 
-  // Normal render: adminAuthLoading=false, isAdminAuthenticated=true, adminUser=exists, pageDataLoading=false, managedBusiness=exists
-  console.log("AdminDashboard:RENDER: Rendering NORMAL dashboard content. AdminUser:", adminUser, "ManagedBusiness:", managedBusiness);
+  // Render 5: Normal dashboard content
+  console.log("AdminDashboard:RENDER: NORMAL dashboard content. AdminUser:", adminUser, "ManagedBusiness:", managedBusiness);
   return (
     <div className="w-full space-y-8">
       <div className="text-left pb-4 border-b border-border">
         <h1 className="text-3xl font-headline font-bold text-primary mb-1 flex items-center">
            <Building className="inline-block h-8 w-8 mr-3 align-text-bottom" />
-           {managedBusiness?.name || 'Your Business'}
+           {managedBusiness.name}
         </h1>
-        <p className="text-lg text-muted-foreground">Welcome, {adminUser?.email}. Manage users and activity for {managedBusiness?.name || 'your business'}.</p>
+        <p className="text-lg text-muted-foreground">Welcome, {adminUser.email}. Manage users and activity for {managedBusiness.name}.</p>
       </div>
 
-      {managedBusiness?.joinCode && (
+      {managedBusiness.joinCode && (
         <Card className="bg-accent/10 border-accent shadow-md">
           <CardHeader>
             <CardTitle className="font-headline text-xl flex items-center text-accent"> <KeyRound className="h-6 w-6 mr-2" /> Your Business Join Code </CardTitle>
-            <CardDescription className="text-accent/80"> Share this code with your customers so they can join your loyalty program on ATRA. </CardDescription>
+            <CardDescription className="text-accent/80"> Share this code with customers to join your loyalty program.</CardDescription>
           </CardHeader>
           <CardContent className="flex items-center justify-between">
             <p className="text-3xl font-bold text-accent tracking-wider bg-accent/20 px-4 py-2 rounded-md"> {managedBusiness.joinCode} </p>
@@ -178,14 +186,14 @@ export default function AdminDashboardPage() {
       )}
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        <Card className="bg-card"> <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"> <CardTitle className="text-sm font-medium">Enrolled Users</CardTitle> <Users className="h-4 w-4 text-muted-foreground" /> </CardHeader> <CardContent> <div className="text-2xl font-bold">{users.length}</div> <p className="text-xs text-muted-foreground"> Users enrolled in {managedBusiness?.name || 'your business'} </p> </CardContent> </Card>
-        <Card className="bg-card"> <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"> <CardTitle className="text-sm font-medium">Total Points Issued</CardTitle> <BarChart3 className="h-4 w-4 text-muted-foreground" /> </CardHeader> <CardContent> <div className="text-2xl font-bold">{totalPointsInBusiness}</div> <p className="text-xs text-muted-foreground"> Within {managedBusiness?.name || 'your business'} </p> </CardContent> </Card>
-        <Card className="bg-card"> <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"> <CardTitle className="text-sm font-medium">Total Transactions</CardTitle> <ShoppingCart className="h-4 w-4 text-muted-foreground" /> </CardHeader> <CardContent> <div className="text-2xl font-bold">{totalTransactionsInBusiness}</div> <p className="text-xs text-muted-foreground"> Recorded for {managedBusiness?.name || 'your business'} </p> </CardContent> </Card>
+        <Card className="bg-card"> <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"> <CardTitle className="text-sm font-medium">Enrolled Users</CardTitle> <Users className="h-4 w-4 text-muted-foreground" /> </CardHeader> <CardContent> <div className="text-2xl font-bold">{users.length}</div> <p className="text-xs text-muted-foreground"> Users in {managedBusiness.name} </p> </CardContent> </Card>
+        <Card className="bg-card"> <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"> <CardTitle className="text-sm font-medium">Total Points Issued</CardTitle> <BarChart3 className="h-4 w-4 text-muted-foreground" /> </CardHeader> <CardContent> <div className="text-2xl font-bold">{totalPointsInBusiness}</div> <p className="text-xs text-muted-foreground"> Within {managedBusiness.name} </p> </CardContent> </Card>
+        <Card className="bg-card"> <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"> <CardTitle className="text-sm font-medium">Total Transactions</CardTitle> <ShoppingCart className="h-4 w-4 text-muted-foreground" /> </CardHeader> <CardContent> <div className="text-2xl font-bold">{totalTransactionsInBusiness}</div> <p className="text-xs text-muted-foreground"> Recorded for {managedBusiness.name} </p> </CardContent> </Card>
       </div>
 
       <Card className="shadow-lg bg-card">
-        <CardHeader> <CardTitle className="font-headline text-2xl">User Management for {managedBusiness?.name || 'your business'}</CardTitle> <CardDescription>View users, their purchase history, and add new purchases for your business.</CardDescription> </CardHeader>
-        <CardContent> <UserTable users={users} onUserUpdate={() => { console.log("AdminDashboard: UserTable onUserUpdate triggered -> fetchAdminPageData"); fetchAdminPageData(); }} businessId={adminUser?.businessId || ""} /> </CardContent>
+        <CardHeader> <CardTitle className="font-headline text-2xl">User Management for {managedBusiness.name}</CardTitle> <CardDescription>View users, their purchase history, and add new purchases.</CardDescription> </CardHeader>
+        <CardContent> <UserTable users={users} onUserUpdate={() => { console.log("AdminDashboard: UserTable onUserUpdate -> fetchAdminPageData"); fetchAdminPageData(); }} businessId={adminUser.businessId} /> </CardContent>
       </Card>
     </div>
   );
