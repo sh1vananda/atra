@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -84,5 +85,17 @@ body {
   }
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+/* Custom animation for slow spin */
+@layer utilities {
+  .animate-spin-slow {
+    animation: spin-slow 5s linear infinite;
+  }
+  @keyframes spin-slow {
+    to {
+      transform: rotate(360deg);
+    }
   }
 }

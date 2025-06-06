@@ -13,15 +13,14 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogC
 import { Loader2, PlusCircle } from 'lucide-react';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import type { Reward } from '@/types/business';
-import { useToast } from '@/hooks/use-toast';
 
+// Schema without image and imageHint
 const rewardSchema = z.object({
   title: z.string().min(3, "Title must be at least 3 characters"),
   description: z.string().min(10, "Description must be at least 10 characters"),
   pointsCost: z.coerce.number().int().min(1, "Points cost must be at least 1"),
   category: z.string().min(2, "Category is required"),
-  image: z.string().url("Must be a valid URL (e.g., https://placehold.co/400x225.png)").or(z.literal('')).optional(),
-  imageHint: z.string().optional(),
+  icon: z.string().optional(), // Optional Lucide icon name
 });
 
 type RewardFormData = z.infer<typeof rewardSchema>;
@@ -35,7 +34,6 @@ interface AddRewardDialogProps {
 
 export function AddRewardDialog({ isOpen, onOpenChange, businessId, onRewardAdded }: AddRewardDialogProps) {
   const { addRewardToBusiness } = useAdminAuth();
-  const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
 
   const { register, handleSubmit, reset, formState: { errors } } = useForm<RewardFormData>({
@@ -45,8 +43,7 @@ export function AddRewardDialog({ isOpen, onOpenChange, businessId, onRewardAdde
       description: '',
       pointsCost: 0,
       category: '',
-      image: '',
-      imageHint: '',
+      icon: '',
     }
   });
 
@@ -54,15 +51,14 @@ export function AddRewardDialog({ isOpen, onOpenChange, businessId, onRewardAdde
     setIsLoading(true);
     const rewardPayload: Omit<Reward, 'id'> = {
       ...data,
-      image: data.image || `https://placehold.co/400x225.png?text=${encodeURIComponent(data.title)}`, // Default placeholder if empty
-      imageHint: data.imageHint || data.title.toLowerCase().split(' ').slice(0,2).join(' '), // Default hint
-      icon: undefined, // icon is optional in type, not set from this form
+      icon: data.icon || '', // Ensure icon is an empty string if not provided
     };
     const success = await addRewardToBusiness(businessId, rewardPayload);
     setIsLoading(false);
     if (success) {
       onRewardAdded(); 
       reset(); 
+      onOpenChange(false); // Close dialog on success
     }
   };
 
@@ -108,15 +104,9 @@ export function AddRewardDialog({ isOpen, onOpenChange, businessId, onRewardAdde
           </div>
           
           <div>
-            <Label htmlFor="image">Image URL (Optional)</Label>
-            <Input id="image" {...register("image")} placeholder="https://placehold.co/400x225.png" />
-            {errors.image && <p className="text-sm text-destructive mt-1">{errors.image.message}</p>}
-          </div>
-
-           <div>
-            <Label htmlFor="imageHint">Image AI Hint (Optional)</Label>
-            <Input id="imageHint" {...register("imageHint")} placeholder="e.g., coffee cup" />
-            {errors.imageHint && <p className="text-sm text-destructive mt-1">{errors.imageHint.message}</p>}
+            <Label htmlFor="icon">Icon Name (Optional)</Label>
+            <Input id="icon" {...register("icon")} placeholder="e.g., Coffee, Gift (from Lucide)" />
+            {errors.icon && <p className="text-sm text-destructive mt-1">{errors.icon.message}</p>}
           </div>
 
           <DialogFooter className="pt-4">

@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm, type SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -14,13 +14,13 @@ import { Loader2, Edit3 } from 'lucide-react';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import type { Reward } from '@/types/business';
 
+// Schema without image and imageHint
 const rewardSchema = z.object({
   title: z.string().min(3, "Title must be at least 3 characters"),
   description: z.string().min(10, "Description must be at least 10 characters"),
   pointsCost: z.coerce.number().int().min(1, "Points cost must be at least 1"),
   category: z.string().min(2, "Category is required"),
-  image: z.string().url("Must be a valid URL").or(z.literal('')).optional(),
-  imageHint: z.string().optional(),
+  icon: z.string().optional(), // Optional Lucide icon name
 });
 
 type RewardFormData = z.infer<typeof rewardSchema>;
@@ -44,8 +44,7 @@ export function EditRewardDialog({ isOpen, onOpenChange, businessId, rewardToEdi
       description: rewardToEdit.description,
       pointsCost: rewardToEdit.pointsCost,
       category: rewardToEdit.category,
-      image: rewardToEdit.image,
-      imageHint: rewardToEdit.imageHint,
+      icon: rewardToEdit.icon || '',
     }
   });
 
@@ -56,8 +55,7 @@ export function EditRewardDialog({ isOpen, onOpenChange, businessId, rewardToEdi
         description: rewardToEdit.description,
         pointsCost: rewardToEdit.pointsCost,
         category: rewardToEdit.category,
-        image: rewardToEdit.image,
-        imageHint: rewardToEdit.imageHint,
+        icon: rewardToEdit.icon || '',
       });
     }
   }, [rewardToEdit, reset]);
@@ -65,20 +63,21 @@ export function EditRewardDialog({ isOpen, onOpenChange, businessId, rewardToEdi
   const onSubmit: SubmitHandler<RewardFormData> = async (data) => {
     setIsLoading(true);
     const fullUpdatedReward: Reward = {
-        ...rewardToEdit, // Keeps original ID and any other non-form fields
+        ...rewardToEdit, 
         ...data,
-        image: data.image || '', // Ensure image is empty string if not provided, not undefined
+        icon: data.icon || '', // Ensure icon is an empty string if not provided
     };
     const success = await updateRewardInBusiness(businessId, fullUpdatedReward);
     setIsLoading(false);
     if (success) {
       onRewardUpdated();
+      onOpenChange(false); // Close dialog on success
     }
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => {
-      if (!open) reset(); // Reset form if dialog is closed without submitting
+      if (!open) reset(); 
       onOpenChange(open);
     }}>
       <DialogContent className="sm:max-w-lg">
@@ -118,15 +117,9 @@ export function EditRewardDialog({ isOpen, onOpenChange, businessId, rewardToEdi
           </div>
           
           <div>
-            <Label htmlFor="image">Image URL (Optional)</Label>
-            <Input id="image" {...register("image")} placeholder="https://example.com/image.png" />
-            {errors.image && <p className="text-sm text-destructive mt-1">{errors.image.message}</p>}
-          </div>
-
-           <div>
-            <Label htmlFor="imageHint">Image AI Hint (Optional)</Label>
-            <Input id="imageHint" {...register("imageHint")} placeholder="e.g., coffee cup" />
-            {errors.imageHint && <p className="text-sm text-destructive mt-1">{errors.imageHint.message}</p>}
+            <Label htmlFor="icon">Icon Name (Optional)</Label>
+            <Input id="icon" {...register("icon")} placeholder="e.g., Coffee, Gift (from Lucide)" />
+            {errors.icon && <p className="text-sm text-destructive mt-1">{errors.icon.message}</p>}
           </div>
 
           <DialogFooter className="pt-4">
