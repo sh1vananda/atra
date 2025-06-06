@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { UserTable } from '@/components/admin/UserTable';
-import { useAuth as useCustomerAuth } from '@/contexts/AuthContext'; // Renamed to avoid conflict
+import { useAuth as useCustomerAuth } from '@/contexts/AuthContext'; 
 import type { User } from '@/types/user'; 
 import { Users, ShoppingCart, BarChart3, Building, KeyRound, Copy } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -16,13 +16,13 @@ import type { Business } from '@/types/business';
 
 export default function AdminDashboardPage() {
   const { isAdminAuthenticated, loading: adminLoading, adminUser, getManagedBusiness } = useAdminAuth();
-  const { getAllMockUsers } = useCustomerAuth();
+  const { getAllMockUsers } = useCustomerAuth(); // Renamed to avoid conflict with useAuth from AdminAuthContext if it were named the same
   const router = useRouter();
   const { toast } = useToast();
   const [users, setUsers] = useState<User[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(true);
   const [managedBusiness, setManagedBusiness] = useState<Business | null>(null);
-  const [businessName, setBusinessName] = useState<string>('Admin Dashboard');
+  const [businessName, setBusinessName] = useState<string>('Your Business'); // Default while loading
 
   const fetchAdminData = useCallback(async () => {
     if (isAdminAuthenticated && adminUser) {
@@ -38,24 +38,29 @@ export default function AdminDashboardPage() {
         );
         setUsers(enrolledUsers);
       } else {
-        setUsers([]);
+        setUsers([]); // No business details, so no users for this admin's business
       }
       setLoadingUsers(false);
-    } else {
-      setLoadingUsers(false); // Not admin or no adminUser
+    } else if (!adminLoading && !isAdminAuthenticated) {
+      router.push('/login'); // Redirect if not authenticated and not loading
+      setLoadingUsers(false);
     }
-  }, [isAdminAuthenticated, adminUser, getManagedBusiness, getAllMockUsers]);
+  }, [isAdminAuthenticated, adminUser, getManagedBusiness, getAllMockUsers, router, adminLoading]);
 
 
   useEffect(() => {
+    // Initial check for auth state and redirect
     if (!adminLoading && !isAdminAuthenticated) {
-      router.push('/login'); // General login, then user can choose business tab
+      router.push('/login');
     }
   }, [adminLoading, isAdminAuthenticated, router]);
 
   useEffect(() => {
-    fetchAdminData();
-  }, [fetchAdminData]); // Runs when admin auth state changes or adminUser details are available
+    // Fetch data when auth state is confirmed or adminUser details are available
+    if (isAdminAuthenticated && adminUser) {
+      fetchAdminData();
+    }
+  }, [isAdminAuthenticated, adminUser, fetchAdminData]);
 
   const totalPointsInBusiness = users.reduce((total, user) => {
     const membership = user.memberships?.find(m => m.businessId === managedBusiness?.id);
@@ -77,7 +82,7 @@ export default function AdminDashboardPage() {
           });
         })
         .catch(err => {
-          console.error("Failed to copy join code: ", err);
+          // console.error("Failed to copy join code: ", err);
           toast({
             title: "Error",
             description: "Could not copy join code.",
@@ -87,7 +92,7 @@ export default function AdminDashboardPage() {
     }
   };
 
-  if (adminLoading || !isAdminAuthenticated || !adminUser) {
+  if (adminLoading || !adminUser) { // Simplified loading check
     return (
       <div className="w-full space-y-8">
         <div className="text-left pb-4 border-b border-border">
@@ -126,7 +131,7 @@ export default function AdminDashboardPage() {
               Your Business Join Code
             </CardTitle>
             <CardDescription className="text-accent/80">
-              Share this code with your customers so they can join your loyalty program on Loyalty Leap.
+              Share this code with your customers so they can join your loyalty program on ATRA.
             </CardDescription>
           </CardHeader>
           <CardContent className="flex items-center justify-between">

@@ -42,26 +42,37 @@ export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
   const { toast } = useToast();
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseAdminAuthUser) => {
-      if (firebaseAdminAuthUser) {
-        // Check if this user is in our 'admins' collection
-        const adminProfileRef = doc(db, 'admins', firebaseAdminAuthUser.uid);
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseAuthUser) => {
+      setLoading(true);
+      if (firebaseAuthUser) {
+        const adminProfileRef = doc(db, 'admins', firebaseAuthUser.uid);
         const adminProfileSnap = await getDoc(adminProfileRef);
 
         if (adminProfileSnap.exists()) {
-          const adminProfileData = adminProfileSnap.data() as Omit<AdminUser, 'uid' | 'email'>; // email from auth
+          const adminProfileData = adminProfileSnap.data() as Omit<AdminUser, 'uid' | 'email'>; 
           setAdminUser({
-            uid: firebaseAdminAuthUser.uid,
-            email: firebaseAdminAuthUser.email || '',
+            uid: firebaseAuthUser.uid,
+            email: firebaseAuthUser.email || '',
             businessId: adminProfileData.businessId,
           });
           setIsAdminAuthenticated(true);
+          // Only redirect if they are on a page that *isn't* already an admin page
+          // or the login page (to prevent redirect loops)
+          const currentPath = window.location.pathname;
+          if (!currentPath.startsWith('/admin') && currentPath !== '/login' && currentPath !== '/signup') {
+             router.push('/admin/dashboard');
+          }
         } else {
-          // This auth user is not a registered admin in our system
-          // Potentially sign them out or handle as an error
-          await signOut(auth); // Ensure non-admins are logged out
-          setAdminUser(null);
-          setIsAdminAuthenticated(false);
+          // This auth user exists but is not in 'admins' collection.
+          // If they are on an admin route, they should be signed out from this context.
+          // If they are elsewhere, this onAuthStateChanged might be for the customer context.
+          // This logic helps ensure only "admins" collection users are treated as admin here.
+          if (adminUser && adminUser.uid === firebaseAuthUser.uid) { // Check if it's the same user we thought was admin
+            setAdminUser(null);
+            setIsAdminAuthenticated(false);
+            // No automatic signOut(auth) here as it might interfere with customer sessions.
+            // Route protection in AdminLayout/pages should handle unauthorized access.
+          }
         }
       } else {
         setAdminUser(null);
@@ -70,16 +81,14 @@ export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
       setLoading(false);
     });
     return () => unsubscribe();
-  }, []);
+  }, [router, adminUser]); // Added router and adminUser to dependency array
 
   const signupBusiness = async (businessName: string, email: string, pass: string) => {
     setLoading(true);
     try {
-      // 1. Create Firebase Auth user for the admin
       const userCredential = await createUserWithEmailAndPassword(auth, email, pass);
       const adminAuthUser = userCredential.user;
 
-      // 2. Generate a unique join code (ensure it's actually unique)
       let joinCode = generateJoinCode();
       let attempts = 0;
       let codeExists = true;
@@ -89,29 +98,26 @@ export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
         if (querySnapshot.empty) {
           codeExists = false;
         } else {
-          joinCode = generateJoinCode(); // Regenerate if exists
+          joinCode = generateJoinCode(); 
         }
         attempts++;
       }
       if (codeExists) throw new Error("Failed to generate a unique join code.");
 
 
-      // 3. Create the business document in Firestore
       const businessCollectionRef = collection(db, 'businesses');
       const newBusinessRef = await addDoc(businessCollectionRef, {
         name: businessName,
-        description: `Welcome to ${businessName}'s loyalty program!`, // Default description
+        description: `Welcome to ${businessName}'s loyalty program!`, 
         joinCode: joinCode,
-        rewards: [], // Start with no rewards
+        rewards: [], 
         ownerUid: adminAuthUser.uid,
         createdAt: serverTimestamp(),
+        id: '', // Will be updated post-creation
       });
       const businessId = newBusinessRef.id;
-      // Update business doc with its own ID for convenience
       await setDoc(doc(db, 'businesses', businessId), { id: businessId }, { merge: true });
 
-
-      // 4. Create the admin user profile in Firestore
       const adminProfileRef = doc(db, 'admins', adminAuthUser.uid);
       await setDoc(adminProfileRef, {
         uid: adminAuthUser.uid,
@@ -119,12 +125,15 @@ export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
         businessId: businessId,
       });
       
-      // Auth state change will pick up the new admin
-      toast({ title: "Business Registered!", description: `${businessName} is now part of Loyalty Leap.` });
+      toast({ title: "Business Registered!", description: `${businessName} is now part of ATRA.` });
+      // onAuthStateChanged will handle setting the admin user and redirecting
+      // Setting admin user explicitly here for immediate UI update before onAuthStateChanged potentially fires
+      setAdminUser({ uid: adminAuthUser.uid, email: adminAuthUser.email || '', businessId });
+      setIsAdminAuthenticated(true);
       router.push('/admin/dashboard');
 
     } catch (error: any) {
-      console.error("Business signup failed:", error);
+      // console.error("Business signup failed:", error);
       toast({
         title: "Registration Failed",
         description: error.message || "Could not register business.",
@@ -139,12 +148,10 @@ export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
     setLoading(true);
     try {
       await signInWithEmailAndPassword(auth, email, pass);
-      // onAuthStateChanged will handle setting adminUser if valid admin
-      // It will also push to dashboard if admin is valid
-      // If not a valid admin, onAuthStateChanged will clear user and auth status
-      // router.push('/admin/dashboard'); // This push is now handled by onAuthStateChanged logic effectively
+      // onAuthStateChanged will handle setting adminUser if valid admin and redirecting.
+      // router.push('/admin/dashboard'); // Let onAuthStateChanged handle redirection logic
     } catch (error: any) {
-      console.error("Admin login failed:", error);
+      // console.error("Admin login failed:", error);
       toast({
         title: "Login Failed",
         description: error.message || "Invalid admin email or password.",
@@ -155,16 +162,19 @@ export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const logout = async () => {
+    const currentAdminEmail = adminUser?.email;
     setLoading(true);
     try {
       await signOut(auth);
-      router.push('/login'); // Redirect to general login page
+      // Clear local state immediately
+      setAdminUser(null);
+      setIsAdminAuthenticated(false);
+      router.push('/login'); 
+      toast({ title: "Logged Out", description: `Admin ${currentAdminEmail || ''} logged out successfully.`});
     } catch (error: any) {
-        console.error("Admin logout failed:", error);
+        // console.error("Admin logout failed:", error);
         toast({ title: "Logout Failed", description: error.message, variant: "destructive"});
     } finally {
-        setAdminUser(null);
-        setIsAdminAuthenticated(false);
         setLoading(false);
     }
   };

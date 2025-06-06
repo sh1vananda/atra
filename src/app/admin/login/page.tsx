@@ -10,70 +10,37 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Loader2, ShieldCheck } from 'lucide-react';
 import Link from 'next/link';
 
+// This page is deprecated as login is handled by the unified /login page.
+// It can be modified to redirect or removed. For now, it will redirect.
+import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
+
 export default function AdminLoginPage() {
-  const [email, setEmail] = useState('admin@example.com');
-  const [password, setPassword] = useState('adminpass');
-  const { login, loading } = useAdminAuth();
+  const router = useRouter();
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    await login(email, password);
-  };
+  useEffect(() => {
+    router.replace('/login'); // Redirect to the unified login page
+  }, [router]);
 
-  // This page is wrapped by AdminLayout, which is inside RootLayout's <main>
-  // The RootLayout <main> provides `container mx-auto px-4 py-8 bg-muted/40` for admin routes.
-  // AdminLayout provides AdminHeader.
-  // This div will center its content within the space given after the AdminHeader.
+
+  // Fallback content while redirecting
   return (
     <div className="flex flex-grow flex-col items-center justify-center py-12">
       <Card className="w-full max-w-md shadow-xl">
         <CardHeader className="text-center">
           <ShieldCheck className="mx-auto h-12 w-12 text-primary mb-2" />
-          <CardTitle className="font-headline text-3xl">Business Portal</CardTitle>
-          <CardDescription>Log in to manage your loyalty program.</CardDescription>
+          <CardTitle className="font-headline text-3xl">Business Portal Login</CardTitle>
+          <CardDescription>Redirecting to the main login page...</CardDescription>
         </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="admin@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                type="password"
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
-            </div>
-            <Button type="submit" disabled={loading} className="w-full bg-primary hover:bg-primary/90">
-              {loading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Logging in...
-                </>
-              ) : (
-                "Log In"
-              )}
-            </Button>
-          </form>
-           <p className="mt-6 text-center text-sm">
-            <Link href="/" className="font-medium text-primary hover:underline">
-              Back to customer site
-            </Link>
-          </p>
+        <CardContent className="flex items-center justify-center py-10">
+          <Loader2 className="h-12 w-12 animate-spin text-primary" />
         </CardContent>
       </Card>
+       <p className="mt-6 text-center text-sm">
+        <Link href="/" className="font-medium text-primary hover:underline">
+          Back to customer site
+        </Link>
+      </p>
     </div>
   );
 }

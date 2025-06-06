@@ -3,7 +3,7 @@
 
 import './globals.css';
 import { Header } from '@/components/layout/Header';
-import { Footer } from '@/components/layout/Footer';
+// import { Footer } from '@/components/layout/Footer'; // Footer removed
 import { Toaster } from '@/components/ui/toaster';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { AdminAuthProvider } from '@/contexts/AdminAuthContext';
@@ -30,8 +30,8 @@ export default function RootLayout({
     isAdminRoute ? 'bg-muted/40' : 'bg-background'
   }`;
   
-  // Default to true or a server-friendly value until mounted
-  const showFooter = hasMounted ? !isAdminRoute : true;
+  // Logic for showing footer removed
+  // const showFooter = hasMounted ? !isAdminRoute : true;
 
   return (
     <html lang="en" suppressHydrationWarning>
@@ -55,7 +55,7 @@ export default function RootLayout({
               <main className={mainClassName}>
                 {children}
               </main>
-              {showFooter && <Footer />}
+              {/* {showFooter && <Footer />} Footer component removed */}
               <Toaster />
             </AuthProvider>
           </AdminAuthProvider>

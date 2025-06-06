@@ -3,7 +3,7 @@
 
 import type { User as AuthUser } from 'firebase/auth'; // Firebase Auth user type
 import { createUserWithEmailAndPassword, onAuthStateChanged, signInWithEmailAndPassword, signOut } from 'firebase/auth';
-import { doc, setDoc, getDoc, collection, getDocs, updateDoc, arrayUnion, query, where, writeBatch } from 'firebase/firestore';
+import { doc, setDoc, getDoc, collection, getDocs, updateDoc, query, where } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 import type { ReactNode } from 'react';
 import React, { createContext, useContext, useEffect, useState } from 'react';
@@ -39,27 +39,38 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (fbUser) => {
+      setLoading(true);
       if (fbUser) {
+        // Check if this user is in the 'admins' collection to prevent admin login via customer portal
         const adminProfileRef = doc(db, 'admins', fbUser.uid);
         const adminProfileSnap = await getDoc(adminProfileRef);
 
         if (adminProfileSnap.exists()) {
-            console.warn("Admin user detected in customer auth context. This might be confusing.");
+          // If an admin tries to log in/use customer context, sign them out from this context
+          // and prevent setting customer state.
+          // console.warn("Admin user detected in customer auth context. Logging out from customer session.");
+          await signOut(auth); // This will trigger onAuthStateChanged again with fbUser as null
+          setUser(null);
+          setFirebaseUser(null);
+          setIsAuthenticated(false);
+          setLoading(false);
+          // Optionally, redirect or show a message
+          // router.push('/login'); // Or a specific page explaining the issue
+          // toast({ title: "Access Denied", description: "Admins should use the business portal.", variant: "destructive" });
+          return; // Exit early
         }
-
+        
         setFirebaseUser(fbUser);
         const userDocRef = doc(db, 'users', fbUser.uid);
         const userDocSnap = await getDoc(userDocRef);
         if (userDocSnap.exists()) {
           setUser({ id: fbUser.uid, ...userDocSnap.data() } as User);
+          setIsAuthenticated(true);
         } else {
-          // This can happen if signup process was interrupted before Firestore doc creation
-          // or if the user document was manually deleted.
-          // For a robust app, you might attempt to re-create the user doc here or handle it.
           setUser(null); 
-          console.warn("User document not found in Firestore for UID:", fbUser.uid);
+          setIsAuthenticated(false);
+          // console.warn("User document not found in Firestore for UID:", fbUser.uid);
         }
-        setIsAuthenticated(true);
       } else {
         setFirebaseUser(null);
         setUser(null);
@@ -78,7 +89,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       // onAuthStateChanged will handle fetching user data and setting state
       router.push('/loyalty');
     } catch (error: any) {
-      console.error("Login failed:", error);
+      // console.error("Login failed:", error);
       toast({
         title: "Login Failed",
         description: error.message || "Invalid email or password.",
@@ -103,7 +114,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       // onAuthStateChanged will handle setting user data and state
       router.push('/loyalty');
     } catch (error: any) {
-      console.error("Signup failed:", error);
+      // console.error("Signup failed:", error);
       toast({
         title: "Signup Failed",
         description: error.message || "Could not create account.",
@@ -117,18 +128,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setLoading(true);
     try {
       await signOut(auth);
-      // onAuthStateChanged will clear user data and state
       router.push('/login');
     } catch (error: any) {
-      console.error("Logout failed:", error);
+      // console.error("Logout failed:", error);
       toast({
         title: "Logout Failed",
         description: error.message || "Could not log out.",
         variant: "destructive",
       });
-    } finally {
-      // setLoading(false); // onAuthStateChanged handles this
-    }
+    } 
+    // setLoading is handled by onAuthStateChanged
   };
 
   const addMockPurchaseToUser = async (userId: string, businessId: string, purchaseDetails: { item: string; amount: number; pointsEarned: number }): Promise<boolean> => {
@@ -148,11 +157,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       };
 
       let updatedMemberships: UserMembership[];
-      const existingMembershipIndex = userData.memberships.findIndex(m => m.businessId === businessId);
+      const existingMembershipIndex = userData.memberships?.findIndex(m => m.businessId === businessId) ?? -1;
 
-      if (existingMembershipIndex > -1) {
+      if (existingMembershipIndex > -1 && userData.memberships) {
         const oldMembership = userData.memberships[existingMembershipIndex];
-        const updatedMembership = {
+        const updatedMembership: UserMembership = {
           ...oldMembership,
           purchases: [newPurchase, ...(oldMembership.purchases || [])].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()),
           pointsBalance: (oldMembership.pointsBalance || 0) + purchaseDetails.pointsEarned,
@@ -161,7 +170,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           index === existingMembershipIndex ? updatedMembership : m
         );
       } else {
-        // User is not a member of this business yet, create new membership
         const businessDetails = await getBusinessById(businessId);
         if (!businessDetails) {
           toast({ title: "Error", description: "Business not found for new membership.", variant: "destructive" });
@@ -169,7 +177,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
         const newMembershipEntry: UserMembership = {
             businessId: businessId,
-            businessName: businessDetails.name, // Fetched from Firestore
+            businessName: businessDetails.name,
             pointsBalance: purchaseDetails.pointsEarned,
             purchases: [newPurchase]
         };
@@ -178,22 +186,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       
       await updateDoc(userDocRef, { memberships: updatedMemberships });
 
-      // If the updated user is the currently logged-in user, update local state
       if (user && user.id === userId) {
-         setUser(prevUser => prevUser ? ({ ...prevUser, memberships: updatedMemberships }) : null);
+         setUser(prevUser => prevUser ? ({ ...prevUser, memberships: [...updatedMemberships] }) : null);
       }
       toast({ title: "Purchase Added", description: `Purchase recorded.`, variant: "default" });
       return true;
 
     } catch (error: any) {
-      console.error("Error adding purchase to Firestore:", error);
+      // console.error("Error adding purchase to Firestore:", error);
       toast({ title: "Error", description: `Failed to add purchase: ${error.message}`, variant: "destructive" });
       return false;
     }
   };
 
   const joinBusinessByCode = async (businessCode: string): Promise<{ success: boolean; message: string }> => {
-    if (!firebaseUser || !user) { // Check both firebaseUser (for UID) and local user state
+    if (!firebaseUser || !user) { 
       return { success: false, message: "You must be logged in to join a program." };
     }
 
@@ -211,7 +218,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const businessToJoin = { id: businessToJoinDoc.id, ...businessToJoinDoc.data() } as Business;
 
       const userDocRef = doc(db, 'users', firebaseUser.uid);
-      // Fetch the latest user data to avoid race conditions with local state
       const userDocSnap = await getDoc(userDocRef);
       if (!userDocSnap.exists()) {
         return { success: false, message: "User profile not found." };
@@ -223,13 +229,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         return { success: false, message: `You are already a member of ${businessToJoin.name}.` };
       }
 
-      const welcomeBonusPoints = 50; // Define a welcome bonus
+      const welcomeBonusPoints = 50; 
       const newMembership: UserMembership = {
         businessId: businessToJoin.id,
         businessName: businessToJoin.name,
-        pointsBalance: welcomeBonusPoints, // Award welcome bonus
+        pointsBalance: welcomeBonusPoints,
         purchases: [
-          { // Add a purchase entry for the welcome bonus
+          { 
             id: `wb-${Date.now()}-${Math.random().toString(36).substring(7)}`,
             item: "Welcome Bonus",
             amount: 0,
@@ -244,18 +250,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         memberships: updatedMemberships
       });
       
-      // Update local user state if this is the currently logged-in user
       if (user && user.id === firebaseUser.uid) {
         setUser(prevUser => prevUser ? ({
           ...prevUser,
-          memberships: updatedMemberships
+          memberships: [...updatedMemberships] // Ensure new array for state update
         }) : null);
       }
       
       return { success: true, message: `Successfully joined ${businessToJoin.name} and received ${welcomeBonusPoints} welcome points!` };
 
     } catch (error: any) {
-      console.error("Error joining business by code:", error);
+      // console.error("Error joining business by code:", error);
       return { success: false, message: `Failed to join program: ${error.message}` };
     }
   };
@@ -270,7 +275,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
       return null;
     } catch (error: any) {
-      console.error(`Error fetching business ${businessId}:`, error);
+      // console.error(`Error fetching business ${businessId}:`, error);
       toast({ title: "Error", description: `Could not fetch business details: ${error.message}`, variant: "destructive"});
       return null;
     }
@@ -288,7 +293,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setLoading(false);
       return usersList;
     } catch (error: any) {
-      console.error("Error fetching all users from Firestore:", error);
+      // console.error("Error fetching all users from Firestore:", error);
       toast({
           title: "Error Fetching Users",
           description: error.message || "Could not load user data.",
@@ -313,4 +318,3 @@ export const useAuth = () => {
   }
   return context;
 };
-
