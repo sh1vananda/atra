@@ -12,15 +12,14 @@ export default function AdminLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  // AdminAuthProvider is now in RootLayout, so it's removed from here.
-  // Toaster is also in RootLayout.
-  // Removed <html>, <head>, <body> tags as this is a child layout.
   return (
-    <div className="flex flex-col flex-grow w-full bg-muted/40"> {/* Apply styling that was on body */}
+    // The overall background is handled by RootLayout now based on isAdminRoute
+    // This div can be for specific admin area styling if needed, or removed if RootLayout covers it.
+    <div className="flex flex-col flex-grow w-full"> 
       <AdminHeader />
-      <main className="flex-grow container mx-auto px-4 py-8">
-        {children}
-      </main>
+      {/* main tag is now in RootLayout, children are directly rendered */}
+      {children}
     </div>
   );
 }
+

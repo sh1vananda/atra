@@ -8,16 +8,17 @@ import { HistoryListItem, type HistoryEntry } from '@/components/history/History
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { ScrollText } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
-import type { MockPurchase } from '@/types/user';
+import type { MockPurchase, UserMembership } from '@/types/user';
 
-// Convert MockPurchase to HistoryEntry
-function mapPurchaseToHistoryEntry(purchase: MockPurchase): HistoryEntry {
+// Convert MockPurchase from a UserMembership to HistoryEntry
+function mapPurchaseToHistoryEntry(purchase: MockPurchase, businessName: string): HistoryEntry {
   return {
     id: purchase.id,
     date: new Date(purchase.date),
-    description: purchase.item, // Assuming item name is the description
+    description: purchase.item,
     pointsChange: purchase.pointsEarned,
-    type: purchase.pointsEarned >= 0 ? 'earn' : 'redeem', // Basic logic, can be refined
+    type: purchase.pointsEarned >= 0 ? 'earn' : 'redeem',
+    businessName: businessName,
   };
 }
 
@@ -31,7 +32,7 @@ export default function HistoryPage() {
     }
   }, [loading, isAuthenticated, router]);
 
-  if (loading || !isAuthenticated) {
+  if (loading || !isAuthenticated || !user) {
     return (
       <div className="space-y-8">
         <div className="text-center">
@@ -67,15 +68,20 @@ export default function HistoryPage() {
     );
   }
 
-  const userHistory = user?.mockPurchases
-    ?.map(mapPurchaseToHistoryEntry)
-    .sort((a, b) => b.date.getTime() - a.date.getTime()) || [];
+  const allHistoryEntries: HistoryEntry[] = [];
+  user.memberships?.forEach((membership: UserMembership) => {
+    membership.purchases?.forEach(purchase => {
+      allHistoryEntries.push(mapPurchaseToHistoryEntry(purchase, membership.businessName));
+    });
+  });
+
+  const sortedHistory = allHistoryEntries.sort((a, b) => b.date.getTime() - a.date.getTime());
 
   return (
     <div className="space-y-8">
        <div className="text-center">
         <h1 className="text-4xl font-headline font-bold text-primary mb-2">Your Activity</h1>
-        <p className="text-lg text-muted-foreground">A record of your points earned and rewards redeemed.</p>
+        <p className="text-lg text-muted-foreground">A record of your points earned and rewards redeemed across all programs.</p>
       </div>
       <Card className="shadow-lg">
         <CardHeader className="flex flex-row items-center justify-between">
@@ -86,10 +92,10 @@ export default function HistoryPage() {
           <ScrollText className="h-8 w-8 text-primary"/>
         </CardHeader>
         <CardContent>
-          {userHistory.length > 0 ? (
+          {sortedHistory.length > 0 ? (
             <ul className="space-y-4">
-              {userHistory.map((entry) => (
-                <HistoryListItem key={entry.id} entry={entry} />
+              {sortedHistory.map((entry) => (
+                <HistoryListItem key={entry.id + entry.businessName} entry={entry} />
               ))}
             </ul>
           ) : (

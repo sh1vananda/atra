@@ -8,9 +8,67 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { QrCode, Edit3, Star } from 'lucide-react';
+import { QrCode, Edit3, Star, Briefcase } from 'lucide-react';
 import Image from 'next/image';
 import { Skeleton } from '@/components/ui/skeleton';
+import type { UserMembership } from '@/types/user';
+
+function LoyaltyBusinessCard({ membership, userId }: { membership: UserMembership, userId: string }) {
+  const pointsToNextReward = 500; // This can be dynamic per business later
+  const progress = Math.min((membership.pointsBalance / pointsToNextReward) * 100, 100);
+  const pointsNeededForNext = Math.max(0, pointsToNextReward - membership.pointsBalance);
+
+  return (
+    <Card className="shadow-lg w-full">
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <CardTitle className="font-headline text-2xl flex items-center gap-2">
+            <Briefcase className="h-7 w-7 text-primary" />
+            {membership.businessName}
+          </CardTitle>
+          <Star className="h-8 w-8 text-yellow-400 fill-yellow-400" />
+        </div>
+        <CardDescription>Your loyalty status with {membership.businessName}.</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        <div className="text-center">
+          <p className="text-5xl font-bold text-primary">{membership.pointsBalance}</p>
+          <p className="text-muted-foreground">Points</p>
+        </div>
+        
+        <div>
+          <div className="flex justify-between text-sm text-muted-foreground mb-1">
+            <span>Progress to next reward</span>
+            <span>{membership.pointsBalance} / {pointsToNextReward}</span>
+          </div>
+          <div className="w-full bg-muted rounded-full h-4 overflow-hidden">
+            <div
+              className="bg-accent h-4 rounded-full transition-all duration-500 ease-out"
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+           <p className="text-xs text-muted-foreground mt-1 text-center">
+             {pointsNeededForNext > 0 ? `You are ${pointsNeededForNext} points away from your next reward!` : "You've reached the next reward tier!"}
+           </p>
+        </div>
+
+        <div className="aspect-[16/10] w-full max-w-md mx-auto bg-gradient-to-br from-primary to-blue-700 rounded-xl shadow-2xl p-6 flex flex-col justify-between text-primary-foreground">
+          <div>
+            <div className="flex justify-between items-center">
+              <h3 className="text-xl font-semibold font-headline">{membership.businessName} Card</h3>
+              <Star className="h-10 w-10 text-yellow-300 fill-yellow-300 opacity-50" />
+            </div>
+            <p className="text-sm opacity-80">Member ID: {userId} (for {membership.businessName})</p>
+          </div>
+          <div className="text-right">
+            <p className="text-3xl font-bold">{membership.pointsBalance} PTS</p>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 
 export default function LoyaltyPage() {
   const { user, isAuthenticated, loading } = useAuth();
@@ -22,106 +80,77 @@ export default function LoyaltyPage() {
     }
   }, [loading, isAuthenticated, router]);
 
-  const currentPoints = user?.mockPurchases?.reduce((sum, p) => sum + p.pointsEarned, 0) || 0;
-  const pointsToNextReward = 500; // This can be dynamic later
-  const progress = Math.min((currentPoints / pointsToNextReward) * 100, 100); // Cap progress at 100%
-  const pointsNeededForNext = Math.max(0, pointsToNextReward - currentPoints);
-
   if (loading || !isAuthenticated || !user) {
     return (
       <div className="space-y-8">
-        <Card className="shadow-lg">
-          <CardHeader>
-            <Skeleton className="h-8 w-3/5 mb-2" />
-            <Skeleton className="h-4 w-4/5" />
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="text-center">
-              <Skeleton className="h-12 w-24 mx-auto mb-1" />
-              <Skeleton className="h-4 w-16 mx-auto" />
-            </div>
-            <div>
-              <div className="flex justify-between mb-1">
-                <Skeleton className="h-4 w-1/3" />
-                <Skeleton className="h-4 w-1/4" />
-              </div>
-              <Skeleton className="h-4 w-full rounded-full" />
-              <Skeleton className="h-3 w-1/2 mx-auto mt-1" />
-            </div>
-            <Skeleton className="aspect-[16/10] w-full max-w-md mx-auto rounded-xl" />
-          </CardContent>
-        </Card>
-         <Card>
-          <CardHeader>
-            <Skeleton className="h-7 w-2/5 mb-1" />
-            <Skeleton className="h-4 w-3/5" />
-          </CardHeader>
-          <CardContent className="grid md:grid-cols-2 gap-6">
-            <Skeleton className="h-60 rounded-lg" />
-            <Skeleton className="h-60 rounded-lg" />
-          </CardContent>
-        </Card>
+        <Skeleton className="h-10 w-1/2 mx-auto mb-2" />
+        <Skeleton className="h-6 w-3/4 mx-auto mb-6" />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {[...Array(2)].map((_, i) => (
+            <Card key={i} className="shadow-lg w-full">
+              <CardHeader>
+                <Skeleton className="h-8 w-3/5 mb-2" />
+                <Skeleton className="h-4 w-4/5" />
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="text-center">
+                  <Skeleton className="h-12 w-24 mx-auto mb-1" />
+                  <Skeleton className="h-4 w-16 mx-auto" />
+                </div>
+                <div>
+                  <div className="flex justify-between mb-1">
+                    <Skeleton className="h-4 w-1/3" />
+                    <Skeleton className="h-4 w-1/4" />
+                  </div>
+                  <Skeleton className="h-4 w-full rounded-full" />
+                  <Skeleton className="h-3 w-1/2 mx-auto mt-1" />
+                </div>
+                <Skeleton className="aspect-[16/10] w-full max-w-md mx-auto rounded-xl" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
       </div>
     );
   }
 
+  const memberships = user.memberships || [];
+
   return (
-    <div className="space-y-8">
-      <Card className="shadow-lg">
-        <CardHeader>
-          <CardTitle className="font-headline text-3xl flex items-center gap-2">
-            <Star className="h-8 w-8 text-yellow-400 fill-yellow-400" />
-            Your Loyalty Status
-          </CardTitle>
-          <CardDescription>Track your points and progress towards new rewards.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="text-center">
-            <p className="text-5xl font-bold text-primary">{currentPoints}</p>
-            <p className="text-muted-foreground">Points</p>
-          </div>
-          
-          <div>
-            <div className="flex justify-between text-sm text-muted-foreground mb-1">
-              <span>Progress to next reward tier</span>
-              <span>{currentPoints} / {pointsToNextReward}</span>
-            </div>
-            <div className="w-full bg-muted rounded-full h-4 overflow-hidden">
-              <div
-                className="bg-accent h-4 rounded-full transition-all duration-500 ease-out"
-                style={{ width: `${progress}%` }}
-              />
-            </div>
-             <p className="text-xs text-muted-foreground mt-1 text-center">
-               {pointsNeededForNext > 0 ? `You are ${pointsNeededForNext} points away from your next reward!` : "You've reached the next reward tier!"}
-             </p>
-          </div>
+    <div className="space-y-12">
+      <div className="text-center">
+        <h1 className="text-4xl font-headline font-bold text-primary mb-2">Your Loyalty Cards</h1>
+        <p className="text-lg text-muted-foreground">Track your points and progress with each business.</p>
+      </div>
 
-          <div className="aspect-[16/10] w-full max-w-md mx-auto bg-gradient-to-br from-primary to-blue-700 rounded-xl shadow-2xl p-6 flex flex-col justify-between text-primary-foreground">
-            <div>
-              <div className="flex justify-between items-center">
-                <h3 className="text-xl font-semibold font-headline">Loyalty Leap Card</h3>
-                <Star className="h-10 w-10 text-yellow-300 fill-yellow-300 opacity-50" />
-              </div>
-              <p className="text-sm opacity-80">Member ID: {user.id}</p>
-            </div>
-            <div className="text-right">
-              <p className="text-3xl font-bold">{currentPoints} PTS</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      {memberships.length > 0 ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
+          {memberships.map((membership) => (
+            <LoyaltyBusinessCard key={membership.businessId} membership={membership} userId={user.id} />
+          ))}
+        </div>
+      ) : (
+        <Card className="shadow-lg text-center py-12">
+          <CardHeader>
+            <CardTitle className="font-headline text-2xl">No Loyalty Programs Joined Yet</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <CardDescription className="text-lg">Explore businesses and join their loyalty programs to start earning rewards!</CardDescription>
+            {/* TODO: Add a link to an "Explore Businesses" page if it exists */}
+          </CardContent>
+        </Card>
+      )}
 
-      <Card>
+      <Card className="mt-12 shadow-lg">
         <CardHeader>
           <CardTitle className="font-headline text-2xl">Earn More Points</CardTitle>
-          <CardDescription>Use QR code at checkout or enter a code manually.</CardDescription>
+          <CardDescription>Use your universal QR code at checkout or enter a purchase code manually (feature coming soon for specific businesses).</CardDescription>
         </CardHeader>
         <CardContent className="grid md:grid-cols-2 gap-6">
-          <div className="space-y-4 p-6 border rounded-lg bg-secondary/30 text-center">
+          <div className="space-y-4 p-6 border rounded-lg bg-card text-center">
             <QrCode className="h-16 w-16 mx-auto text-primary" />
-            <h3 className="text-xl font-semibold">Scan QR Code</h3>
-            <p className="text-muted-foreground">Present this QR code at checkout to earn points.</p>
+            <h3 className="text-xl font-semibold">Your Universal QR Code</h3>
+            <p className="text-muted-foreground">Present this QR code at any participating business to identify yourself.</p>
             <div className="bg-white p-2 rounded-md inline-block shadow-md">
               <Image src={`https://placehold.co/150x150.png?text=${user.id.slice(-6)}`} alt="QR Code Placeholder" width={150} height={150} data-ai-hint="QR code user" />
             </div>
@@ -129,14 +158,15 @@ export default function LoyaltyPage() {
               Show My QR Code
             </Button>
           </div>
-          <div className="space-y-4 p-6 border rounded-lg bg-secondary/30">
+          <div className="space-y-4 p-6 border rounded-lg bg-card">
             <Edit3 className="h-12 w-12 mx-auto text-primary md:mx-0" />
             <h3 className="text-xl font-semibold">Enter Code Manually</h3>
+            <p className="text-muted-foreground text-sm mb-2">Functionality to enter codes for specific businesses is under development.</p>
             <div className="space-y-2">
               <Label htmlFor="manual-code">Enter your purchase code:</Label>
-              <Input id="manual-code" placeholder="e.g., XYZ123ABC" />
+              <Input id="manual-code" placeholder="e.g., XYZ123ABC" disabled />
             </div>
-            <Button className="w-full bg-primary hover:bg-primary/90">Submit Code</Button>
+            <Button className="w-full bg-primary hover:bg-primary/90" disabled>Submit Code</Button>
             <p className="text-xs text-muted-foreground text-center">Code can be found on your receipt.</p>
           </div>
         </CardContent>
@@ -144,3 +174,4 @@ export default function LoyaltyPage() {
     </div>
   );
 }
+

@@ -1,13 +1,15 @@
-import { ArrowDownCircle, ArrowUpCircle, CalendarDays } from 'lucide-react';
+
+import { ArrowDownCircle, ArrowUpCircle, CalendarDays, Briefcase } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 
 export interface HistoryEntry {
   id: string;
   date: Date;
-  description: string;
+  description: string; // Item name or action
   pointsChange: number;
   type: 'earn' | 'redeem';
+  businessName?: string; // Optional: name of the business related to this entry
 }
 
 interface HistoryListItemProps {
@@ -31,6 +33,12 @@ export function HistoryListItem({ entry }: HistoryListItemProps) {
             <CalendarDays className="h-4 w-4" />
             <span>{format(entry.date, 'MMMM d, yyyy HH:mm')}</span>
           </div>
+          {entry.businessName && (
+            <div className="flex items-center gap-1 text-xs text-muted-foreground mt-0.5">
+              <Briefcase className="h-3 w-3" />
+              <span>{entry.businessName}</span>
+            </div>
+          )}
         </div>
       </div>
       <p className={cn(
@@ -42,3 +50,4 @@ export function HistoryListItem({ entry }: HistoryListItemProps) {
     </li>
   );
 }
+
