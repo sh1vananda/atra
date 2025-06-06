@@ -23,7 +23,7 @@ const generateJoinCode = (length = 6): string => {
 interface AdminAuthContextType {
   adminUser: AdminUser | null;
   isAdminAuthenticated: boolean;
-  loading: boolean;
+  loading: boolean; // Renamed from adminAuthLoading for clarity within this context
   login: (email: string, pass: string) => Promise<void>;
   logout: () => void;
   signupBusiness: (businessName: string, email: string, pass: string) => Promise<void>;
@@ -35,16 +35,16 @@ const AdminAuthContext = createContext<AdminAuthContextType | undefined>(undefin
 export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
   const [adminUser, setAdminUser] = useState<AdminUser | null>(null);
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true); // True by default for initial auth check
   const router = useRouter();
   const { toast } = useToast();
 
   useEffect(() => {
     console.log("AdminAuth:EFFECT: Subscribing to onAuthStateChanged.");
+    setLoading(true); // Ensure loading is true when subscription starts or re-evaluates
     const unsubscribe = onAuthStateChanged(auth, async (firebaseAuthUser: FirebaseAuthUser | null) => {
       console.log("AdminAuth:EVENT: onAuthStateChanged triggered. Firebase user UID:", firebaseAuthUser?.uid || "null");
-      setLoading(true); // Explicitly set loading true at the start of every auth state change
-
+      
       if (firebaseAuthUser) {
         const adminProfileRef = doc(db, 'admins', firebaseAuthUser.uid);
         console.log(`AdminAuth:EVENT: Firebase user exists (UID: ${firebaseAuthUser.uid}). Checking Firestore 'admins' collection...`);
@@ -57,7 +57,7 @@ export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
               console.log(`AdminAuth:EVENT: Admin profile HAS businessId: ${adminProfileData.businessId}. Setting admin state.`);
               setAdminUser({
                 uid: firebaseAuthUser.uid,
-                email: firebaseAuthUser.email || adminProfileData.email || '',
+                email: firebaseAuthUser.email || adminProfileData.email || '', // Prefer fresh email from auth user
                 businessId: adminProfileData.businessId,
               });
               setIsAdminAuthenticated(true);
@@ -65,12 +65,14 @@ export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
               console.warn(`AdminAuth:EVENT: Admin profile for ${firebaseAuthUser.uid} MISSING or has invalid businessId. Clearing admin state.`);
               setAdminUser(null);
               setIsAdminAuthenticated(false);
-              toast({ title: "Admin Profile Incomplete", description: "Your admin profile is missing critical information (Business ID). Please contact support or try signing up again.", variant: "destructive" });
+              toast({ title: "Admin Profile Incomplete", description: "Your admin profile is missing critical information (Business ID). Please contact support.", variant: "destructive" });
             }
           } else {
             console.log(`AdminAuth:EVENT: No admin profile found in Firestore for ${firebaseAuthUser.uid}. This user is NOT an app admin. Clearing admin state.`);
             setAdminUser(null);
             setIsAdminAuthenticated(false);
+            // Optional: toast if a user somehow authenticated via Firebase but has no admin doc.
+            // This could happen if signup failed midway.
           }
         } catch (error) {
           console.error("AdminAuth:EVENT: Error fetching admin profile from Firestore:", error);
@@ -92,7 +94,7 @@ export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
       console.log("AdminAuth:EFFECT: Unsubscribing from onAuthStateChanged.");
       unsubscribe();
     };
-  }, [router, toast]); // router, toast are stable
+  }, [toast]); // router and toast are stable dependencies
 
   const signupBusiness = async (businessName: string, email: string, pass: string) => {
     console.log("AdminAuth:ACTION: signupBusiness attempt for email:", email);
@@ -102,13 +104,11 @@ export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
     let adminProfileCreated = false;
 
     try {
-      // Step 1: Create Firebase Auth user
       console.log("AdminAuth:ACTION:signupBusiness: Creating Firebase Auth user...");
       const userCredential = await createUserWithEmailAndPassword(auth, email, pass);
       adminAuthUser = userCredential.user;
       console.log("AdminAuth:ACTION:signupBusiness: Firebase Auth user created:", adminAuthUser.uid);
 
-      // Step 2: Create Business Document in Firestore
       console.log("AdminAuth:ACTION:signupBusiness: Creating business document in Firestore...");
       let joinCode = generateJoinCode();
       let attempts = 0;
@@ -128,7 +128,7 @@ export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
         name: businessName,
         description: `Welcome to ${businessName}'s loyalty program!`,
         joinCode: joinCode,
-        rewards: [],
+        rewards: [], // Initialize with empty rewards
         ownerUid: adminAuthUser.uid,
         createdAt: serverTimestamp(),
       };
@@ -137,7 +137,6 @@ export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
       await updateDoc(doc(db, 'businesses', newBusinessId), { id: newBusinessId });
       console.log("AdminAuth:ACTION:signupBusiness: Business document created/updated in Firestore with ID:", newBusinessId);
 
-      // Step 3: Create Admin Profile Document in Firestore
       console.log("AdminAuth:ACTION:signupBusiness: Creating admin profile document in Firestore...");
       const adminProfileData = {
         uid: adminAuthUser.uid,
@@ -148,23 +147,23 @@ export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
       adminProfileCreated = true;
       console.log("AdminAuth:ACTION:signupBusiness: Admin profile document created in Firestore for UID:", adminAuthUser.uid);
 
-      toast({ title: "Business Registered!", description: `${businessName} is now part of ATRA. You will be logged in.` });
+      toast({ title: "Business Registered!", description: `${businessName} is now part of ATRA. You will be logged in shortly.` });
       // onAuthStateChanged will handle setting the user, isAdminAuthenticated.
-      // Explicit redirect after successful signup
-      console.log("AdminAuth:ACTION:signupBusiness: Signup fully successful. Redirecting to /admin/dashboard");
-      router.push('/admin/dashboard'); 
+      // No explicit redirect here; let the UI components react to auth state changes.
+      // router.push('/admin/dashboard'); // Removed
+      console.log("AdminAuth:ACTION:signupBusiness: Signup fully successful.");
 
     } catch (error: any) {
       console.error("AdminAuth:ACTION:signupBusiness: FAILED:", error);
       let errorMessage = "Could not register business.";
-      if (error.code) { // Firebase Auth errors
+      if (error.code) {
         switch (error.code) {
           case 'auth/email-already-in-use': errorMessage = 'This email is already in use. Please use a different email or log in.'; break;
           case 'auth/weak-password': errorMessage = 'The password is too weak. Please choose a stronger password.'; break;
           case 'auth/invalid-email': errorMessage = 'The email address is not valid.'; break;
           default: errorMessage = error.message || "An unexpected error occurred during signup's Auth phase.";
         }
-      } else if (error.message) { // Firestore or custom errors
+      } else if (error.message) {
         errorMessage = error.message;
         if (adminAuthUser && !newBusinessId) {
           errorMessage = `Auth user created, but failed to create business document: ${error.message}`;
@@ -174,29 +173,24 @@ export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
       }
       toast({ title: "Registration Failed", description: errorMessage, variant: "destructive" });
 
-      // Rollback efforts
       if (adminAuthUser) {
-        // Only attempt to delete admin profile if it wasn't the step that failed
-        if (newBusinessId && adminProfileCreated) { 
-            // This case means error happened after all creations, which is unusual for a client error toast.
-            // More likely an error toast from a subsequent operation not caught properly.
-        } else if (newBusinessId && !adminProfileCreated && error.message.includes("admin profile")) { // If admin profile creation failed
-            console.log("AdminAuth:ACTION:signupBusiness:ROLLBACK: Deleting business document (ID:", newBusinessId, ") due to admin profile creation failure.");
-            try {
-                await deleteDoc(doc(db, 'businesses', newBusinessId));
-                console.log("AdminAuth:ACTION:signupBusiness:ROLLBACK: Business document deleted successfully.");
-            } catch (deleteBusinessError: any) {
-                console.error("AdminAuth:ACTION:signupBusiness:ROLLBACK: Failed to delete business document:", deleteBusinessError.message);
-            }
+        if (newBusinessId && !adminProfileCreated) {
+          console.log("AdminAuth:ACTION:signupBusiness:ROLLBACK: Attempting to delete business document (ID:", newBusinessId, ") due to admin profile creation failure.");
+          try {
+            await deleteDoc(doc(db, 'businesses', newBusinessId));
+            console.log("AdminAuth:ACTION:signupBusiness:ROLLBACK: Business document deleted successfully.");
+          } catch (deleteBusinessError: any) {
+            console.error("AdminAuth:ACTION:signupBusiness:ROLLBACK: Failed to delete business document:", deleteBusinessError.message);
+            toast({ title: "Cleanup Issue", description: `Business doc for ${businessName} might be orphaned. Error: ${deleteBusinessError.message}`, variant: "destructive", duration: 7000 });
+          }
         }
-        // Always try to delete the Auth user if any Firestore step failed or Auth step itself failed but user was partially created.
-        console.log("AdminAuth:ACTION:signupBusiness:ROLLBACK: Deleting Firebase Auth user (UID:", adminAuthUser.uid, ") due to overall signup failure.");
+        console.log("AdminAuth:ACTION:signupBusiness:ROLLBACK: Attempting to delete Firebase Auth user (UID:", adminAuthUser.uid, ") due to overall signup failure.");
         try {
-          await deleteUser(adminAuthUser); // This re-authenticates, might be tricky. Simpler to just let user know.
+          await deleteUser(adminAuthUser);
           console.log("AdminAuth:ACTION:signupBusiness:ROLLBACK: Firebase Auth user deleted successfully.");
         } catch (deleteAuthError: any) {
-          console.error("AdminAuth:ACTION:signupBusiness:ROLLBACK: Failed to delete Firebase Auth user. They might need to re-authenticate to complete deletion if prompted, or you may need to handle this manually in Firebase console.", deleteAuthError.message);
-           toast({ title: "Partial Signup Cleanup Issue", description: `An account was partially created for ${email}. If you see this email in Firebase Auth console, please delete it manually. Error: ${deleteAuthError.message}`, variant: "destructive", duration: 10000 });
+          console.error("AdminAuth:ACTION:signupBusiness:ROLLBACK: Failed to delete Firebase Auth user. Manual deletion might be needed in Firebase console.", deleteAuthError.message);
+          toast({ title: "Partial Signup Cleanup Issue", description: `An account was partially created for ${email}. If you see this email in Firebase Auth console, please delete it manually. Error: ${deleteAuthError.message}`, variant: "destructive", duration: 10000 });
         }
       }
     } finally {
@@ -212,14 +206,12 @@ export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
       await signInWithEmailAndPassword(auth, email, pass);
       console.log("AdminAuth:ACTION:login: Firebase signInWithEmailAndPassword successful for", email);
       // onAuthStateChanged will handle fetching admin data and setting further state.
-      // It will also set loading to false after its processing.
-      // Redirect after successful Firebase Auth login.
-      console.log("AdminAuth:ACTION:login: Redirecting to /admin/dashboard");
-      router.push('/admin/dashboard'); 
+      // No explicit redirect here. Let UI components react.
+      // router.push('/admin/dashboard'); // Removed
     } catch (error: any) {
       console.error("AdminAuth:ACTION:login: Firebase signInWithEmailAndPassword failed:", error);
       let errorMessage = "Invalid admin email or password.";
-       if (error.code) {
+      if (error.code) {
         switch (error.code) {
           case 'auth/user-not-found':
           case 'auth/wrong-password':
@@ -231,9 +223,9 @@ export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
         }
       }
       toast({ title: "Login Failed", description: errorMessage, variant: "destructive" });
-      console.log("AdminAuth:ACTION:login: Login failed. Setting loading to false.");
-      setLoading(false); // Ensure loading is false if signInWithEmailAndPassword itself fails
+      setLoading(false); // Explicitly set loading false on login failure
     }
+    // setLoading(false) will be handled by onAuthStateChanged after successful login or by catch block on failure
   };
 
   const logout = async () => {
@@ -243,27 +235,23 @@ export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       await signOut(auth);
       // onAuthStateChanged will clear adminUser and isAdminAuthenticated, and set loading to false.
-      console.log("AdminAuth:ACTION:logout: Firebase signOut successful. Redirecting to /login.");
-      router.push('/login'); 
+      console.log("AdminAuth:ACTION:logout: Firebase signOut successful. Redirecting to /login via UI reaction.");
+      router.push('/login'); // Explicit redirect on logout is fine
       toast({ title: "Logged Out", description: `Admin ${currentAdminEmail || ''} logged out successfully.`});
     } catch (error: any) {
-        console.error("AdminAuth:ACTION:logout: Failed:", error);
-        toast({ title: "Logout Failed", description: error.message || "Could not log out.", variant: "destructive"});
+      console.error("AdminAuth:ACTION:logout: Failed:", error);
+      toast({ title: "Logout Failed", description: error.message || "Could not log out.", variant: "destructive"});
     } finally {
-        // onAuthStateChanged will set loading to false if signOut is successful
-        // If signOut fails, we need to ensure loading is false here.
-        // However, if signOut itself errors, onAuthStateChanged might not fire as expected,
-        // so explicitly setting loading false here in finally is safer.
-        console.log("AdminAuth:ACTION:logout: Finished. Setting loading to false (in finally).");
-        setLoading(false);
+      console.log("AdminAuth:ACTION:logout: Finished.");
+      // setLoading(false) will be handled by onAuthStateChanged
     }
   };
 
   const getManagedBusiness = useCallback(async (): Promise<Business | null> => {
-    console.log("AdminAuth:ACTION:getManagedBusiness called. Current loading state:", loading, "isAdminAuthenticated:", isAdminAuthenticated, "AdminUser:", adminUser);
+    console.log("AdminAuth:ACTION:getManagedBusiness called. Current loading state (context):", loading, "isAdminAuthenticated:", isAdminAuthenticated, "AdminUser Exists:", !!adminUser);
     if (!adminUser || !adminUser.businessId) {
       console.warn("AdminAuth:ACTION:getManagedBusiness: Returning null - adminUser or businessId missing.");
-      if (!loading && isAdminAuthenticated) { // Only toast if we expected to have data
+      if (!loading && isAdminAuthenticated) {
          toast({ title: "Data Error", description: "Admin user details incomplete or business ID missing.", variant: "destructive" });
       }
       return null;
@@ -286,7 +274,7 @@ export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
       toast({ title: "Fetch Error", description: `Could not fetch business details: ${error.message || 'Unknown error'}.`, variant: "destructive" });
       return null;
     }
-  }, [adminUser, toast, loading, isAdminAuthenticated]); // Added loading, isAdminAuthenticated for conditional toast
+  }, [adminUser, toast, loading, isAdminAuthenticated]); // Added loading, isAdminAuthenticated dependencies
 
   return (
     <AdminAuthContext.Provider value={{ adminUser, isAdminAuthenticated, loading, login, logout, signupBusiness, getManagedBusiness }}>

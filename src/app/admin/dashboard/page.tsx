@@ -21,14 +21,13 @@ export default function AdminDashboardPage() {
   const { toast } = useToast();
   
   const [users, setUsers] = useState<User[]>([]);
-  const [pageDataLoading, setPageDataLoading] = useState(true);
+  const [pageDataLoading, setPageDataLoading] = useState(true); // For data specific to this page
   const [managedBusiness, setManagedBusiness] = useState<Business | null>(null);
-  const [initialLoadDone, setInitialLoadDone] = useState(false);
-
+  
   const fetchAdminPageData = useCallback(async () => {
     if (!adminUser || !adminUser.businessId) {
       console.log("AdminDashboard: fetchAdminPageData - Aborting, adminUser or businessId missing.", adminUser);
-      setPageDataLoading(false); // Ensure loading stops if we can't fetch
+      setPageDataLoading(false);
       return;
     }
 
@@ -51,7 +50,6 @@ export default function AdminDashboardPage() {
       } else {
         console.log("AdminDashboard: fetchAdminPageData - No business details found, clearing users.");
         setUsers([]);
-        // Toast for missing business details might be handled by getManagedBusiness itself
       }
     } catch (error) {
         console.error("AdminDashboard: fetchAdminPageData - Error fetching data:", error);
@@ -67,26 +65,21 @@ export default function AdminDashboardPage() {
   }, [adminUser, getManagedBusiness, getAllMockUsers, toast]);
 
   useEffect(() => {
-    console.log("AdminDashboard:EFFECT[adminAuthLoading, isAdminAuthenticated]: adminAuthLoading:", adminAuthLoading, "isAdminAuthenticated:", isAdminAuthenticated);
-    if (!adminAuthLoading) {
-      setInitialLoadDone(true); // Mark that the initial auth check from context is done
+    console.log("AdminDashboard:EFFECT[adminAuthLoading, isAdminAuthenticated, adminUser]: adminAuthLoading:", adminAuthLoading, "isAdminAuthenticated:", isAdminAuthenticated, "adminUser Exists:", !!adminUser);
+    if (!adminAuthLoading) { // Only proceed when context has finished its initial loading
       if (!isAdminAuthenticated) {
         console.log("AdminDashboard:EFFECT: Not authenticated after initial load, redirecting to /login.");
         router.push('/login?redirect=/admin/dashboard');
+      } else if (adminUser) { // Authenticated and adminUser object is available
+        console.log("AdminDashboard:EFFECT: Authenticated and adminUser present, calling fetchAdminPageData.");
+        fetchAdminPageData();
+      } else {
+        // This case (isAdminAuthenticated true but adminUser is null) should ideally not happen if context is correct
+        console.warn("AdminDashboard:EFFECT: isAdminAuthenticated is true, but adminUser is null. This might indicate a state issue in AdminAuthContext. Not fetching page data.");
+        setPageDataLoading(false); // Ensure page loading stops
       }
     }
-  }, [adminAuthLoading, isAdminAuthenticated, router]);
-
-  useEffect(() => {
-    console.log("AdminDashboard:EFFECT[isAdminAuthenticated, adminUser, fetchAdminPageData]: isAdminAuthenticated:", isAdminAuthenticated, "adminUser Exists:", !!adminUser);
-    if (isAdminAuthenticated && adminUser) {
-      console.log("AdminDashboard:EFFECT: Authenticated and adminUser present, calling fetchAdminPageData.");
-      fetchAdminPageData();
-    } else if (isAdminAuthenticated && !adminUser) {
-        console.warn("AdminDashboard:EFFECT: isAdminAuthenticated is true, but adminUser is null. This might be a race condition or state issue.");
-        // Potentially trigger a re-fetch or logout if this state persists
-    }
-  }, [isAdminAuthenticated, adminUser, fetchAdminPageData]);
+  }, [adminAuthLoading, isAdminAuthenticated, adminUser, router, fetchAdminPageData]);
 
 
   const totalPointsInBusiness = users.reduce((total, user) => {
@@ -107,9 +100,9 @@ export default function AdminDashboardPage() {
     }
   };
 
-  // Combined loading check: Initial auth check from context OR page-specific data loading
-  if (adminAuthLoading || (initialLoadDone && isAdminAuthenticated && pageDataLoading && !managedBusiness)) {
-    console.log("AdminDashboard:RENDER: Showing SKELETON. adminAuthLoading:", adminAuthLoading, "initialLoadDone:", initialLoadDone, "isAdminAuthenticated:", isAdminAuthenticated, "pageDataLoading:", pageDataLoading, "managedBusinessExists:", !!managedBusiness);
+  // Initial loading state: Auth context is loading OR auth is done, user is authenticated, but page data is still loading.
+  if (adminAuthLoading || (isAdminAuthenticated && pageDataLoading && !managedBusiness && adminUser) ) {
+    console.log("AdminDashboard:RENDER: Showing SKELETON. adminAuthLoading:", adminAuthLoading, "isAdminAuthenticated:", isAdminAuthenticated, "pageDataLoading:", pageDataLoading, "managedBusinessExists:", !!managedBusiness, "adminUserExists:", !!adminUser);
     return (
       <div className="w-full space-y-8 animate-pulse">
         <div className="text-left pb-4 border-b border-border">
@@ -136,9 +129,10 @@ export default function AdminDashboardPage() {
     );
   }
   
-  // After initial auth load, if not authenticated, show redirecting message (though useEffect should handle it)
-  if (initialLoadDone && !isAdminAuthenticated) {
-    console.log("AdminDashboard:RENDER: Initial load done, NOT authenticated. Showing redirect message.");
+  // After initial auth load from context, if not authenticated, show redirecting message.
+  // The useEffect should handle the actual redirection.
+  if (!adminAuthLoading && !isAdminAuthenticated) {
+    console.log("AdminDashboard:RENDER: Initial auth load done, NOT authenticated. Showing redirect message.");
     return (
         <div className="flex flex-col items-center justify-center min-h-[calc(100vh-150px)]">
             <Loader2 className="h-16 w-16 animate-spin text-primary mb-4" />
@@ -147,9 +141,9 @@ export default function AdminDashboardPage() {
     );
   }
   
-  // If authenticated, but business data couldn't be loaded after trying
-  if (initialLoadDone && isAdminAuthenticated && !pageDataLoading && !managedBusiness) {
-     console.log("AdminDashboard:RENDER: Authenticated, page data NOT loading, but managedBusiness is NULL. Showing error.");
+  // If authenticated, but business data couldn't be loaded after trying (and page data loading is complete)
+  if (isAdminAuthenticated && !pageDataLoading && !managedBusiness) {
+     console.log("AdminDashboard:RENDER: Authenticated, page data NOT loading, but managedBusiness is NULL. Showing error for missing business data.");
      return (
         <div className="w-full space-y-8 text-center py-10">
             <AlertTriangle className="h-20 w-20 mx-auto text-destructive mb-4" />
@@ -163,19 +157,20 @@ export default function AdminDashboardPage() {
      );
   }
   
-  // If we reach here and isAdminAuthenticated is false, it implies a state inconsistency or edge case not caught above.
-  // This is a fallback. The useEffect should handle redirection more proactively.
-  if (!isAdminAuthenticated) {
-    console.log("AdminDashboard:RENDER: Fallback - isAdminAuthenticated is false. This shouldn't ideally be reached if initialLoadDone logic is correct.");
-     return (
+  // Fallback if for some reason we reach here and adminUser is null, but authenticated.
+  // This should ideally be caught by previous conditions or context logic.
+  if (isAdminAuthenticated && !adminUser) {
+      console.warn("AdminDashboard:RENDER: isAdminAuthenticated true, but adminUser is null. Showing loading/error. This indicates an issue with AdminAuthContext state propagation.");
+       return (
         <div className="flex flex-col items-center justify-center min-h-[calc(100vh-150px)]">
-            <p className="text-muted-foreground">Verifying authentication...</p>
+            <Loader2 className="h-16 w-16 animate-spin text-primary mb-4" />
+            <p className="text-muted-foreground">Verifying admin details...</p>
         </div>
     );
   }
 
 
-  // Normal render if all data is available
+  // Normal render if authenticated, adminUser, and managedBusiness are available
   console.log("AdminDashboard:RENDER: Rendering NORMAL dashboard content. AdminUser:", adminUser, "ManagedBusiness:", managedBusiness);
   return (
     <div className="w-full space-y-8">
@@ -213,3 +208,4 @@ export default function AdminDashboardPage() {
     </div>
   );
 }
+
