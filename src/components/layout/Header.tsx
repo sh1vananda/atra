@@ -3,7 +3,7 @@
 
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Award, LogIn, LogOut, UserCircle, UserPlus, LayoutDashboard, Building, Sun, Moon, ShoppingBag, Star, History as HistoryIcon, Sparkles as OffersIcon } from 'lucide-react';
+import { Award, LogIn, LogOut, UserCircle, UserPlus, LayoutDashboard, Sun, Moon, ShoppingBag, Star, History as HistoryIcon, Sparkles as OffersIcon } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -17,15 +17,22 @@ export function Header() {
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
-  const { isAuthenticated: isCustomerAuth, loading: customerLoading, logout: customerLogout } = useAuth();
-  const { isAdminAuthenticated, loading: adminLoading, logout: adminLogout } = useAdminAuth();
+  const { isAuthenticated: isCustomerAuth, loading: customerLoading, logout: customerLogout, user: customerUser } = useAuth();
+  const { isAdminAuthenticated, loading: adminLoading, logout: adminLogout, adminUser } = useAdminAuth();
 
   useEffect(() => setMounted(true), []);
 
   const combinedLoading = customerLoading || adminLoading;
   
   const titleText = "ATRA";
-  const titleHref = "/";
+  let titleHref = "/"; // Default for non-logged-in users
+
+  if (isAdminAuthenticated) {
+    titleHref = "/admin/dashboard";
+  } else if (isCustomerAuth) {
+    titleHref = "/loyalty";
+  }
+  
   const displayIcon = <Award className="h-7 w-7 sm:h-8 sm:w-8" />;
   
   if (!mounted) {
@@ -52,7 +59,7 @@ export function Header() {
   return (
     <header className="bg-card border-b border-border shadow-sm sticky top-0 z-50">
       <div className="w-full px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
-        <Link href={titleHref} className="flex items-center gap-2 text-primary hover:opacity-80 transition-opacity" aria-label="Go to homepage">
+        <Link href={titleHref} className="flex items-center gap-2 text-primary hover:opacity-80 transition-opacity" aria-label={`Go to ${isAdminAuthenticated ? 'Admin Dashboard' : isCustomerAuth ? 'My Loyalty Page' : 'Homepage'}`}>
           {displayIcon}
           <h1 className="text-xl sm:text-2xl font-headline font-semibold">{titleText}</h1>
         </Link>
@@ -78,7 +85,7 @@ export function Header() {
                 </Button>
               </>
             ) : (
-              pathname !== '/login' && ( // Show 'Customer Site' link if not on general login page where business tab is present
+              pathname !== '/login' && ( 
                  <Button variant="ghost" asChild>
                    <Link href="/">Customer Site</Link>
                  </Button>
