@@ -1,6 +1,13 @@
+
+"use client";
+
+import { useEffect } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
+import { useRouter } from 'next/navigation';
 import { HistoryListItem, type HistoryEntry } from '@/components/history/HistoryListItem';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { ScrollText } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const mockHistory: HistoryEntry[] = [
   {
@@ -41,6 +48,51 @@ const mockHistory: HistoryEntry[] = [
 ];
 
 export default function HistoryPage() {
+  const { isAuthenticated, loading } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!loading && !isAuthenticated) {
+      router.push('/login?redirect=/history');
+    }
+  }, [loading, isAuthenticated, router]);
+
+  if (loading || !isAuthenticated) {
+    return (
+      <div className="space-y-8">
+        <div className="text-center">
+          <Skeleton className="h-10 w-1/2 mx-auto mb-2" />
+          <Skeleton className="h-6 w-3/4 mx-auto" />
+        </div>
+        <Card className="shadow-lg">
+          <CardHeader className="flex flex-row items-center justify-between">
+            <div>
+              <Skeleton className="h-7 w-48 mb-1" />
+              <Skeleton className="h-4 w-64" />
+            </div>
+            <Skeleton className="h-8 w-8" />
+          </CardHeader>
+          <CardContent>
+            <ul className="space-y-4">
+              {[...Array(3)].map((_, i) => (
+                <li key={i} className="flex items-center justify-between p-4 border rounded-lg">
+                  <div className="flex items-center gap-4">
+                    <Skeleton className="h-8 w-8 rounded-full" />
+                    <div>
+                      <Skeleton className="h-5 w-40 mb-1" />
+                      <Skeleton className="h-4 w-52" />
+                    </div>
+                  </div>
+                  <Skeleton className="h-6 w-20" />
+                </li>
+              ))}
+            </ul>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-8">
        <div className="text-center">

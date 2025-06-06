@@ -1,15 +1,69 @@
+
+"use client";
+
+import { useEffect } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
+import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { QrCode, Edit3, Star } from 'lucide-react';
 import Image from 'next/image';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function LoyaltyPage() {
+  const { isAuthenticated, loading } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!loading && !isAuthenticated) {
+      router.push('/login?redirect=/loyalty');
+    }
+  }, [loading, isAuthenticated, router]);
+
   // Mock data
   const currentPoints = 280;
   const pointsToNextReward = 500;
   const progress = (currentPoints / pointsToNextReward) * 100;
+
+  if (loading || !isAuthenticated) {
+    return (
+      <div className="space-y-8">
+        <Card className="shadow-lg">
+          <CardHeader>
+            <Skeleton className="h-8 w-3/5 mb-2" />
+            <Skeleton className="h-4 w-4/5" />
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="text-center">
+              <Skeleton className="h-12 w-24 mx-auto mb-1" />
+              <Skeleton className="h-4 w-16 mx-auto" />
+            </div>
+            <div>
+              <div className="flex justify-between mb-1">
+                <Skeleton className="h-4 w-1/3" />
+                <Skeleton className="h-4 w-1/4" />
+              </div>
+              <Skeleton className="h-4 w-full rounded-full" />
+              <Skeleton className="h-3 w-1/2 mx-auto mt-1" />
+            </div>
+            <Skeleton className="aspect-[16/10] w-full max-w-md mx-auto rounded-xl" />
+          </CardContent>
+        </Card>
+         <Card>
+          <CardHeader>
+            <Skeleton className="h-7 w-2/5 mb-1" />
+            <Skeleton className="h-4 w-3/5" />
+          </CardHeader>
+          <CardContent className="grid md:grid-cols-2 gap-6">
+            <Skeleton className="h-60 rounded-lg" />
+            <Skeleton className="h-60 rounded-lg" />
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">
