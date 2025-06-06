@@ -23,7 +23,7 @@ const generateJoinCode = (length = 6): string => {
 interface AdminAuthContextType {
   adminUser: AdminUser | null;
   isAdminAuthenticated: boolean;
-  loading: boolean; // Renamed from adminAuthLoading for clarity within this context
+  loading: boolean;
   login: (email: string, pass: string) => Promise<void>;
   logout: () => void;
   signupBusiness: (businessName: string, email: string, pass: string) => Promise<void>;
@@ -35,7 +35,7 @@ const AdminAuthContext = createContext<AdminAuthContextType | undefined>(undefin
 export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
   const [adminUser, setAdminUser] = useState<AdminUser | null>(null);
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true); // adminAuthLoading
   const router = useRouter();
   const { toast } = useToast();
 
@@ -57,7 +57,7 @@ export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
               console.log(`AdminAuth:EVENT: Admin profile HAS businessId: ${adminProfileData.businessId}. Setting admin state.`);
               setAdminUser({
                 uid: firebaseAuthUser.uid,
-                email: firebaseAuthUser.email || adminProfileData.email || '', // Prioritize firebaseAuthUser.email
+                email: firebaseAuthUser.email || adminProfileData.email || '',
                 businessId: adminProfileData.businessId,
               });
               setIsAdminAuthenticated(true);
@@ -92,7 +92,7 @@ export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
       console.log("AdminAuth:EFFECT: Unsubscribing from onAuthStateChanged.");
       unsubscribe();
     };
-  }, [toast]); // router removed as it's not directly used for navigation inside this effect
+  }, [toast]);
 
   const login = useCallback(async (email: string, pass: string) => {
     console.log("AdminAuth:ACTION:login: Attempt for email:", email);
@@ -100,7 +100,7 @@ export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       await signInWithEmailAndPassword(auth, email, pass);
       console.log("AdminAuth:ACTION:login: Firebase signInWithEmailAndPassword successful for", email);
-      // onAuthStateChanged will handle setting user state and loading. Redirection handled by UI.
+      // onAuthStateChanged will handle setting user state and loading. UI will handle redirect.
     } catch (error: any) {
       console.error("AdminAuth:ACTION:login: Firebase signInWithEmailAndPassword failed:", error);
       let errorMessage = "Invalid admin email or password.";
@@ -118,7 +118,8 @@ export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
       toast({ title: "Login Failed", description: errorMessage, variant: "destructive" });
       setAdminUser(null);
       setIsAdminAuthenticated(false);
-      setLoading(false); 
+    } finally {
+        setLoading(false); // Ensure loading is false after attempt
     }
   }, [toast]);
 
@@ -148,10 +149,7 @@ export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
         }
         attempts++;
       }
-      if (codeExists) {
-        console.error("AdminAuth:ACTION:signupBusiness: Failed to generate a unique join code after 10 attempts.");
-        throw new Error("Failed to generate a unique join code. Please try again.");
-      }
+      if (codeExists) throw new Error("Failed to generate a unique join code after 10 attempts.");
       console.log(`AdminAuth:ACTION:signupBusiness: Unique join code generated: ${joinCode}`);
       
       const businessData = {
@@ -161,16 +159,15 @@ export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
         rewards: [],
         ownerUid: adminAuthUser.uid,
         createdAt: serverTimestamp(),
-        id: '' // Placeholder, will be updated
+        id: '' 
       };
       const tempNewBusinessRef = await addDoc(businessesCollectionRef, businessData);
       newBusinessRefId = tempNewBusinessRef.id;
-      await updateDoc(doc(db, 'businesses', newBusinessRefId), { id: newBusinessRefId }); // Set the ID field
+      await updateDoc(doc(db, 'businesses', newBusinessRefId), { id: newBusinessRefId });
       console.log("AdminAuth:ACTION:signupBusiness: Business document created:", newBusinessRefId);
 
       const adminProfileData = {
-        uid: adminAuthUser.uid, // Not strictly needed as it's doc ID, but good for consistency
-        email: email,
+        email: email, // Storing email here as well
         businessId: newBusinessRefId,
       };
       await setDoc(doc(db, 'admins', adminAuthUser.uid), adminProfileData);
@@ -178,7 +175,7 @@ export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
       
       toast({ title: "Business Registered!", description: `${businessName} is now part of ATRA.` });
       console.log("AdminAuth:ACTION:signupBusiness: Signup fully successful.");
-      // onAuthStateChanged will handle setting the admin state. Redirection handled by UI.
+      // onAuthStateChanged will handle setting the admin state. UI handles redirect.
     } catch (error: any) {
       console.error("AdminAuth:ACTION:signupBusiness: FAILED:", error);
       let errorMessage = "Could not register business.";
@@ -190,21 +187,21 @@ export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
           default: errorMessage = error.message || "An authentication error occurred during signup.";
         }
       } else { 
-         errorMessage = error.message || "An unexpected error occurred during registration. Please check the details and try again.";
+         errorMessage = error.message || "An unexpected error occurred during registration.";
       }
       toast({ title: "Registration Failed", description: errorMessage, variant: "destructive" });
 
       if (adminAuthUser) {
         if (newBusinessRefId) {
-          console.log("AdminAuth:ACTION:signupBusiness:ROLLBACK: Deleting business doc:", newBusinessRefId);
+          console.log("AdminAuth:ROLLBACK: Deleting business doc:", newBusinessRefId);
           try { await deleteDoc(doc(db, 'businesses', newBusinessRefId)); } 
           catch (e) { console.error("AdminAuth:ROLLBACK: Failed to delete business doc:", e); }
         }
-        console.log("AdminAuth:ACTION:signupBusiness:ROLLBACK: Deleting Auth user:", adminAuthUser.uid);
+        console.log("AdminAuth:ROLLBACK: Deleting Auth user:", adminAuthUser.uid);
         try { await deleteUser(adminAuthUser); } 
         catch (e) { 
           console.error("AdminAuth:ROLLBACK: Failed to delete Auth user:", e);
-          toast({ title: "Account Cleanup Issue", description: `The user account for ${email} might still exist after a failed registration. Please check Firebase console or contact support. Error: ${ (e as Error).message }`, variant: "destructive", duration: 10000 });
+          toast({ title: "Account Cleanup Issue", description: `The user account for ${email} might still exist. Error: ${ (e as Error).message }`, variant: "destructive", duration: 10000 });
         }
       }
     } finally {
@@ -221,12 +218,11 @@ export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
       await signOut(auth);
       console.log("AdminAuth:ACTION:logout: Firebase signOut successful.");
       toast({ title: "Logged Out", description: `Admin ${currentAdminEmail || ''} logged out.`});
-      // onAuthStateChanged will clear user state. Router push in login page or dashboard.
     } catch (error: any) {
       console.error("AdminAuth:ACTION:logout: Failed:", error);
       toast({ title: "Logout Failed", description: error.message || "Could not log out.", variant: "destructive"});
     } finally {
-      // onAuthStateChanged will set loading to false after processing the null user
+      // onAuthStateChanged will clear user state and set loading to false.
     }
   }, [toast, adminUser?.email]);
 
@@ -234,32 +230,33 @@ export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
     const currentAdminUid = adminUser?.uid;
     const currentBusinessId = adminUser?.businessId;
 
+    // This check is now more critical because dependencies for this useCallback are minimal.
     if (!currentAdminUid || !currentBusinessId) {
-      console.warn("AdminAuth:ACTION:getManagedBusiness: Aborting - adminUser UID or businessId missing. AdminUser:", adminUser);
-      if (!loading && isAdminAuthenticated) {
-         toast({ title: "Data Error", description: "Admin user details are incomplete. Cannot fetch business.", variant: "destructive" });
-      }
+      console.warn("AdminAuth:getManagedBusiness: Aborting - adminUser UID or businessId missing. AdminUser:", adminUser);
+      // Avoid toasting if context itself is still loading or user isn't meant to be authenticated yet.
+      // The calling component (AdminDashboardPage) should handle UI for missing business data.
       return null;
     }
     
-    console.log(`AdminAuth:ACTION:getManagedBusiness: Fetching business: ${currentBusinessId} for admin UID: ${currentAdminUid}`);
+    console.log(`AdminAuth:getManagedBusiness: Fetching business: ${currentBusinessId} for admin UID: ${currentAdminUid}`);
     const businessDocRef = doc(db, 'businesses', currentBusinessId);
     try {
       const businessDocSnap = await getDoc(businessDocRef);
       if (businessDocSnap.exists()) {
-        console.log("AdminAuth:ACTION:getManagedBusiness: Business data FOUND:", businessDocSnap.id);
+        console.log("AdminAuth:getManagedBusiness: Business data FOUND:", businessDocSnap.id);
         return { id: businessDocSnap.id, ...businessDocSnap.data() } as Business;
       } else {
-        console.warn("AdminAuth:ACTION:getManagedBusiness: Business data NOT FOUND for ID:", currentBusinessId);
-        toast({ title: "Error", description: "Managed business data not found in database.", variant: "destructive" });
+        console.warn("AdminAuth:getManagedBusiness: Business data NOT FOUND for ID:", currentBusinessId);
+        // Toasting here might be too frequent if called in a loop. Let dashboard handle UI.
         return null;
       }
     } catch (error: any) {
-      console.error("AdminAuth:ACTION:getManagedBusiness: Error fetching business:", error);
+      console.error("AdminAuth:getManagedBusiness: Error fetching business:", error);
       toast({ title: "Fetch Error", description: `Could not fetch business details: ${error.message || 'Unknown error'}.`, variant: "destructive" });
       return null;
     }
-  }, [adminUser?.uid, adminUser?.businessId, toast, loading, isAdminAuthenticated]); // Added loading and isAdminAuthenticated
+  }, [adminUser?.uid, adminUser?.businessId, toast]);
+
 
   const contextValue = useMemo(() => ({
     adminUser,
@@ -285,5 +282,4 @@ export const useAdminAuth = () => {
   }
   return context;
 };
-
     

@@ -23,12 +23,14 @@ export default function AdminDashboardPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [pageDataLoading, setPageDataLoading] = useState(true); 
   const [managedBusiness, setManagedBusiness] = useState<Business | null>(null);
-  const [fetchDataTrigger, setFetchDataTrigger] = useState(0); // Used to explicitly trigger data fetching
+  const [hasFetchedData, setHasFetchedData] = useState(false); // New flag
 
+  // Simplified data fetching function
   const fetchAdminPageData = useCallback(async () => {
     if (!adminUser?.uid || !adminUser?.businessId) {
-      console.log("AdminDashboard: fetchAdminPageData - Aborting, adminUser or critical details (uid/businessId) missing.", adminUser);
-      setPageDataLoading(false); 
+      console.log("AdminDashboard: fetchAdminPageData - Aborting, adminUser or critical details missing.");
+      setPageDataLoading(false);
+      setHasFetchedData(true); // Mark as attempted
       return;
     }
 
@@ -41,7 +43,6 @@ export default function AdminDashboardPage() {
       console.log("AdminDashboard: fetchAdminPageData - Business details fetched (could be null):", businessDetails);
 
       if (businessDetails) {
-        console.log("AdminDashboard: fetchAdminPageData - Fetching users for businessId:", businessDetails.id);
         const allUsersFromDb = await getAllMockUsers();
         const enrolledUsers = allUsersFromDb.filter(user =>
           user.memberships?.some(m => m.businessId === businessDetails.id)
@@ -49,7 +50,6 @@ export default function AdminDashboardPage() {
         setUsers(enrolledUsers);
         console.log(`AdminDashboard: fetchAdminPageData - Found ${enrolledUsers.length} enrolled users.`);
       } else {
-        console.log("AdminDashboard: fetchAdminPageData - No business details found, clearing users list.");
         setUsers([]); 
       }
     } catch (error) {
@@ -64,36 +64,37 @@ export default function AdminDashboardPage() {
     } finally {
         console.log("AdminDashboard: fetchAdminPageData - Finished. Setting pageDataLoading to false.");
         setPageDataLoading(false);
+        setHasFetchedData(true); // Mark as completed/attempted
     }
   }, [adminUser?.uid, adminUser?.businessId, getManagedBusiness, getAllMockUsers, toast]);
 
-  // Effect to handle authentication status and decide if data fetching should be triggered
-  useEffect(() => {
-    console.log(`AdminDashboard:EFFECT[auth-check]: adminAuthLoading: ${adminAuthLoading}, isAdminAuthenticated: ${isAdminAuthenticated}, adminUser?.uid: ${adminUser?.uid}`);
-    if (!adminAuthLoading) { 
-      if (!isAdminAuthenticated) {
-        console.log("AdminDashboard:EFFECT[auth-check]: Not authenticated, redirecting to /login.");
-        router.push('/login?redirect=/admin/dashboard');
-      } else if (adminUser?.uid && adminUser?.businessId) { 
-        console.log("AdminDashboard:EFFECT[auth-check]: Authenticated and adminUser valid. Triggering data fetch.");
-        setFetchDataTrigger(prev => prev + 1); // Increment to trigger fetch effect
-      } else if (isAdminAuthenticated && (!adminUser?.uid || !adminUser?.businessId)) {
-        console.warn("AdminDashboard:EFFECT[auth-check]: Authenticated but adminUser details (uid/businessId) are missing. This is an inconsistent state.");
-        setPageDataLoading(false); 
-        // Potentially show an error to the user or redirect.
-        // For now, rely on the managedBusiness check later to show an error.
-      }
-    }
-  }, [adminAuthLoading, isAdminAuthenticated, adminUser?.uid, adminUser?.businessId, router]);
 
-  // Effect to call fetchAdminPageData when fetchDataTrigger changes
+  // Effect to handle authentication and trigger initial data fetch
   useEffect(() => {
-    // Only fetch if triggered AND adminUser details are present (as a safeguard)
-    if (fetchDataTrigger > 0 && adminUser?.uid && adminUser?.businessId) {
-      console.log(`AdminDashboard:EFFECT[fetch-data]: Triggered (count: ${fetchDataTrigger}). Calling fetchAdminPageData.`);
-      fetchAdminPageData();
+    console.log(`AdminDashboard:EFFECT[Auth&InitialFetch]: adminAuthLoading: ${adminAuthLoading}, isAdminAuthenticated: ${isAdminAuthenticated}, adminUser UID: ${adminUser?.uid}, hasFetchedData: ${hasFetchedData}`);
+    
+    if (adminAuthLoading) {
+      console.log("AdminDashboard:EFFECT[Auth&InitialFetch]: Auth context is loading. Waiting...");
+      return; // Wait for auth context to finish loading
     }
-  }, [fetchDataTrigger, adminUser?.uid, adminUser?.businessId, fetchAdminPageData]);
+
+    if (!isAdminAuthenticated) {
+      console.log("AdminDashboard:EFFECT[Auth&InitialFetch]: Not authenticated, redirecting to /login.");
+      router.push('/login?redirect=/admin/dashboard');
+      return;
+    }
+
+    // If authenticated and adminUser is present with necessary details, and data hasn't been fetched yet
+    if (isAdminAuthenticated && adminUser?.uid && adminUser?.businessId && !hasFetchedData) {
+      console.log("AdminDashboard:EFFECT[Auth&InitialFetch]: Authenticated, adminUser valid, and data not yet fetched. Calling fetchAdminPageData.");
+      fetchAdminPageData();
+    } else if (isAdminAuthenticated && adminUser && !adminUser.businessId) {
+        console.warn("AdminDashboard:EFFECT[Auth&InitialFetch]: Authenticated but adminUser is missing businessId. Cannot fetch data.");
+        setPageDataLoading(false); // Stop loading visuals for page data
+        setHasFetchedData(true); // Consider this an attempt, though it will fail to fetch business data
+    }
+
+  }, [adminAuthLoading, isAdminAuthenticated, adminUser, router, fetchAdminPageData, hasFetchedData]);
 
 
   const totalPointsInBusiness = users.reduce((total, user) => {
@@ -115,10 +116,9 @@ export default function AdminDashboardPage() {
   };
 
   const handleUserTableUpdate = useCallback(() => {
-    console.log("AdminDashboard: UserTable onUserUpdate -> Triggering data re-fetch.");
-    setFetchDataTrigger(prev => prev + 1); // Increment to trigger fetch effect
+    console.log("AdminDashboard: UserTable onUserUpdate -> Triggering data re-fetch by resetting hasFetchedData.");
+    setHasFetchedData(false); // This will cause the main useEffect to re-trigger fetchAdminPageData
   }, []);
-
 
   // Render 1: Auth context is still determining auth status
   if (adminAuthLoading) {
@@ -135,7 +135,7 @@ export default function AdminDashboardPage() {
   
   // Render 2: Auth context loaded, but user is NOT authenticated admin (redirect is handled by useEffect)
   if (!adminAuthLoading && !isAdminAuthenticated) { 
-    console.log("AdminDashboard:RENDER: NOT authenticated (redirecting).");
+    console.log("AdminDashboard:RENDER: NOT authenticated (redirecting via useEffect).");
     return (
         <div className="flex flex-col items-center justify-center min-h-[calc(100vh-150px)]">
             <Loader2 className="h-16 w-16 animate-spin text-primary mb-4" />
@@ -144,32 +144,32 @@ export default function AdminDashboardPage() {
     );
   }
 
-  // Render 3: Authenticated, but page-specific data (business, users) is still loading
-  // OR adminUser is not fully populated yet (though this should be less likely with the new effect logic)
+  // Render 3: Authenticated, but page-specific data is still loading (initial fetch or re-fetch)
   if (isAdminAuthenticated && pageDataLoading) { 
-     console.log("AdminDashboard:RENDER: SKELETON (Page data loading). adminUser valid:", !!(adminUser?.uid && adminUser?.businessId));
+     console.log("AdminDashboard:RENDER: SKELETON (Page data loading). AdminUser UID:", adminUser?.uid);
      return (
       <div className="w-full space-y-8 animate-pulse">
         <div className="text-left pb-4 border-b border-border"> <Skeleton className="h-8 w-1/2 mb-2" /> <Skeleton className="h-5 w-3/4" /> </div>
-        <Card className="bg-accent/10 border-accent"> <CardHeader> <Skeleton className="h-7 w-1/3 mb-1" /> <Skeleton className="h-4 w-2/3" /> </CardHeader> <CardContent className="flex items-center justify-between"> <Skeleton className="h-10 w-1/4" /> <Skeleton className="h-9 w-24" /> </CardContent> </Card>
+        {adminUser?.businessId && <Card className="bg-accent/10 border-accent"> <CardHeader> <Skeleton className="h-7 w-1/3 mb-1" /> <Skeleton className="h-4 w-2/3" /> </CardHeader> <CardContent className="flex items-center justify-between"> <Skeleton className="h-10 w-1/4" /> <Skeleton className="h-9 w-24" /> </CardContent> </Card>}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3"> {[1,2,3].map(i => ( <Card key={i}> <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"> <Skeleton className="h-5 w-2/5"/> <Skeleton className="h-4 w-4"/> </CardHeader> <CardContent> <Skeleton className="h-8 w-1/2 mb-1"/> <Skeleton className="h-3 w-3/5"/> </CardContent> </Card> ))} </div>
         <Card> <CardHeader> <Skeleton className="h-8 w-2/5 mb-1" /> <Skeleton className="h-4 w-3/5" /> </CardHeader> <CardContent> <Skeleton className="h-10 w-full mb-4" /> <Skeleton className="h-64 w-full" /> </CardContent> </Card>
       </div>
     );
   }
   
-  // Render 4: Authenticated, page data finished loading, but managedBusiness is NULL (problem fetching it or inconsistent adminUser state).
-  if (isAdminAuthenticated && !pageDataLoading && !managedBusiness) {
-     console.log("AdminDashboard:RENDER: ERROR (Managed business is null after data load attempt). AdminUser:", adminUser);
+  // Render 4: Authenticated, data fetch attempted (hasFetchedData is true), pageDataLoading is false, but managedBusiness is NULL.
+  // This implies an issue fetching business details or adminUser.businessId was missing.
+  if (isAdminAuthenticated && hasFetchedData && !pageDataLoading && !managedBusiness) {
+     console.log("AdminDashboard:RENDER: ERROR (Managed business is null after data load attempt). AdminUser Business ID:", adminUser?.businessId);
      return (
         <div className="w-full space-y-8 text-center py-10">
             <AlertTriangle className="h-20 w-20 mx-auto text-destructive mb-4" />
             <h2 className="text-2xl font-semibold text-destructive">Business Data Not Found</h2>
             <p className="text-muted-foreground">We could not load the details for your managed business (Admin Business ID: {adminUser?.businessId || "Unknown"}).</p>
-            <p className="text-muted-foreground">This may be due to a temporary issue, incorrect data configuration, or your admin profile lacking a business ID.</p>
+            <p className="text-muted-foreground">This may be due to a temporary issue, incorrect data configuration, or your admin profile lacking a valid business ID.</p>
             <Button onClick={() => { 
-                console.log("AdminDashboard: Retry fetchAdminPageData clicked"); 
-                setFetchDataTrigger(prev => prev + 1); // Re-trigger fetch
+                console.log("AdminDashboard: Retry fetchAdminPageData clicked by resetting hasFetchedData."); 
+                setHasFetchedData(false); // This will re-trigger the main useEffect to call fetchAdminPageData
             }} className="mt-4">
                 <Loader2 className="mr-2 h-4 w-4 animate-spin hidden" /> 
                 Try Reloading Data
@@ -178,9 +178,9 @@ export default function AdminDashboardPage() {
      );
   }
 
-  // Render 5: Normal dashboard content (all checks passed, data loaded)
-  if (isAdminAuthenticated && !pageDataLoading && managedBusiness) {
-    console.log("AdminDashboard:RENDER: NORMAL dashboard content. AdminUser:", adminUser, "ManagedBusiness:", managedBusiness);
+  // Render 5: Normal dashboard content (all checks passed, data loaded, managedBusiness exists)
+  if (isAdminAuthenticated && hasFetchedData && !pageDataLoading && managedBusiness) {
+    console.log("AdminDashboard:RENDER: NORMAL dashboard content. AdminUser UID:", adminUser?.uid, "ManagedBusiness Name:", managedBusiness.name);
     return (
       <div className="w-full space-y-8">
         <div className="text-left pb-4 border-b border-border">
@@ -218,8 +218,8 @@ export default function AdminDashboardPage() {
     );
   }
 
-  // Fallback if none of the above conditions are met (should ideally not be reached)
-  console.log("AdminDashboard:RENDER: Fallback - no suitable render condition met.");
+  // Fallback if none of the above conditions are met (should ideally not be reached if logic is sound)
+  console.warn("AdminDashboard:RENDER: Fallback - no suitable render condition met. This indicates a potential logic flaw in conditional rendering. States:", {adminAuthLoading, isAdminAuthenticated, pageDataLoading, hasFetchedData, managedBusinessExists: !!managedBusiness});
   return (
     <div className="flex flex-col items-center justify-center min-h-[calc(100vh-150px)]">
       <Loader2 className="h-16 w-16 animate-spin text-primary mb-4" />
@@ -227,5 +227,4 @@ export default function AdminDashboardPage() {
     </div>
   );
 }
-
     
