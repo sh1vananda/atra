@@ -62,9 +62,13 @@ export default function AdminDashboardPage() {
   }, 0);
 
 
-  if (adminLoading || !isAdminAuthenticated) {
+  if (adminLoading || !isAdminAuthenticated || !adminUser) {
     return (
       <div className="space-y-8">
+        <div className="text-left pb-4 border-b">
+            <Skeleton className="h-8 w-1/2 mb-2" />
+            <Skeleton className="h-5 w-3/4" />
+        </div>
         <Card>
           <CardHeader>
             <Skeleton className="h-8 w-2/5 mb-1" />
@@ -81,7 +85,7 @@ export default function AdminDashboardPage() {
 
   return (
     <div className="space-y-8">
-      <div className="text-left">
+      <div className="text-left pb-4 border-b">
         <h1 className="text-3xl font-headline font-bold text-primary mb-1">
            <Building className="inline-block h-8 w-8 mr-2 align-text-bottom" /> 
            {managedBusinessName || adminUser?.businessName || 'Admin Dashboard'}

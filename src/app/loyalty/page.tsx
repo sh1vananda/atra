@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { QrCode, Edit3, Star, Briefcase } from 'lucide-react';
+import { QrCode, Edit3, Star, Briefcase, User } from 'lucide-react';
 import Image from 'next/image';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { UserMembership } from '@/types/user';
@@ -83,6 +83,10 @@ export default function LoyaltyPage() {
   if (loading || !isAuthenticated || !user) {
     return (
       <div className="space-y-8">
+        <div className="text-left mb-6">
+            <Skeleton className="h-8 w-1/2 mb-2" />
+            <Skeleton className="h-5 w-3/4" />
+        </div>
         <Skeleton className="h-10 w-1/2 mx-auto mb-2" />
         <Skeleton className="h-6 w-3/4 mx-auto mb-6" />
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -118,9 +122,12 @@ export default function LoyaltyPage() {
 
   return (
     <div className="space-y-12">
-      <div className="text-center">
-        <h1 className="text-4xl font-headline font-bold text-primary mb-2">Your Loyalty Cards</h1>
-        <p className="text-lg text-muted-foreground">Track your points and progress with each business.</p>
+      <div className="text-left pb-4 border-b">
+        <h1 className="text-3xl font-headline font-bold text-primary mb-1">
+          <User className="inline-block h-8 w-8 mr-2 align-text-bottom" /> 
+          Welcome back, {user.name}!
+        </h1>
+        <p className="text-lg text-muted-foreground">Here are your loyalty cards. Track your points and progress.</p>
       </div>
 
       {memberships.length > 0 ? (
@@ -174,4 +181,3 @@ export default function LoyaltyPage() {
     </div>
   );
 }
-

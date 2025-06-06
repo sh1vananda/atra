@@ -1,5 +1,5 @@
 
-"use client"; // Required for usePathname
+"use client"; 
 
 import type { Metadata } from 'next';
 import './globals.css';
@@ -10,11 +10,6 @@ import { AuthProvider } from '@/contexts/AuthContext';
 import { AdminAuthProvider } from '@/contexts/AdminAuthContext';
 import { usePathname } from 'next/navigation';
 
-// Metadata should be defined outside the component if it's static
-// export const metadata: Metadata = { ... };
-// However, since RootLayout is now a client component due to usePathname,
-// metadata should be handled in a parent server component or moved to specific page.tsx files.
-// For now, we'll keep it simple and you can add metadata to individual page.tsx files as needed.
 
 export default function RootLayout({
   children,
@@ -27,7 +22,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
-        <title>Loyalty Leap</title>{/* Basic title, can be overridden by pages */}
+        <title>Loyalty Leap</title> {/* Basic title, can be overridden by pages */}
         <meta name="description" content="Your Digital Loyalty Platform" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
@@ -36,11 +31,11 @@ export default function RootLayout({
       <body className="font-body antialiased flex flex-col min-h-screen bg-muted/40">
         <AdminAuthProvider>
           <AuthProvider>
-            {!isAdminRoute && <Header />}
+            <Header /> {/* Unified Header */}
             <main className={`flex-grow container mx-auto px-4 py-8 ${isAdminRoute ? 'bg-muted/40' : 'bg-background'}`}>
               {children}
             </main>
-            {!isAdminRoute && <Footer />}
+            {!isAdminRoute && <Footer />} {/* Footer only for non-admin routes */}
             <Toaster />
           </AuthProvider>
         </AdminAuthProvider>
