@@ -57,24 +57,26 @@ export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
             if (adminProfileData.businessId && typeof adminProfileData.businessId === 'string') {
               setAdminUser({
                 uid: firebaseAuthUser.uid,
-                email: firebaseAuthUser.email || '', 
+                email: firebaseAuthUser.email || '',
                 businessId: adminProfileData.businessId,
               });
               setIsAdminAuthenticated(true);
             } else {
+              // Exists in 'admins' but no businessId or invalid type, treat as not a valid admin setup
               setAdminUser(null);
               setIsAdminAuthenticated(false);
             }
           } else {
+            // Not in 'admins' collection, so not an admin user for this context
             setAdminUser(null);
             setIsAdminAuthenticated(false);
           }
         } catch (error) {
           setAdminUser(null);
           setIsAdminAuthenticated(false);
-          toast({ title: "Profile Error", description: "Could not fetch admin profile.", variant: "destructive" });
+          toast({ title: "Profile Error", description: "Could not fetch admin profile data.", variant: "destructive" });
         } finally {
-          setLoading(false);
+          setLoading(false); // Critical: set loading false after all checks
         }
       } else {
         setAdminUser(null);
@@ -83,12 +85,13 @@ export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
       }
     });
     return () => unsubscribe();
-  }, [toast]);
+  }, [toast]); // toast is stable
 
   const login = useCallback(async (email: string, pass: string) => {
     setLoading(true);
     try {
       await signInWithEmailAndPassword(auth, email, pass);
+      // onAuthStateChanged will handle setting adminUser and loading state
     } catch (error: any) {
       let errorMessage = "Invalid admin email or password.";
        if (error.code) {
@@ -103,9 +106,9 @@ export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
         }
       }
       toast({ title: "Login Failed", description: errorMessage, variant: "destructive" });
-    } finally {
-      setLoading(false);
+      setLoading(false); // Ensure loading is false on login failure
     }
+    // No setLoading(false) here on success, onAuthStateChanged handles it
   }, [toast]);
 
   const signupBusiness = useCallback(async (businessName: string, email: string, pass: string): Promise<{success: boolean; message?: string}> => {
@@ -120,7 +123,7 @@ export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
       let joinCode = generateJoinCode();
       let attempts = 0;
       const businessesColRef = collection(db, 'businesses');
-      while (attempts < 10) { 
+      while (attempts < 10) {
         const q = query(businessesColRef, where("joinCode", "==", joinCode));
         const querySnapshot = await getDocs(q);
         if (querySnapshot.empty) break;
@@ -133,7 +136,7 @@ export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
         name: businessName,
         description: `Welcome to ${businessName}'s loyalty program!`,
         joinCode: joinCode,
-        rewards: [], 
+        rewards: [],
         ownerUid: fbAdminAuthUser.uid,
         createdAt: serverTimestamp(),
       });
@@ -141,22 +144,23 @@ export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
       await updateDoc(doc(db, 'businesses', newBusinessId), { id: newBusinessId });
 
       await setDoc(doc(db, 'admins', fbAdminAuthUser.uid), {
-        email: fbAdminAuthUser.email || email, 
+        email: fbAdminAuthUser.email || email,
         businessId: newBusinessId,
       });
-      
+
       toast({ title: "Business Registered!", description: `${businessName} is now part of ATRA.`, variant: "default" });
+      // onAuthStateChanged will set adminUser and loading state
       return { success: true };
     } catch (error: any) {
       let errorMessage = "Could not register business.";
-       if (error.code) { 
+       if (error.code) {
         switch (error.code) {
           case 'auth/email-already-in-use': errorMessage = 'This email is already in use.'; break;
           case 'auth/weak-password': errorMessage = 'Password is too weak (min 6 chars).'; break;
           case 'auth/invalid-email': errorMessage = 'The email address is not valid.'; break;
           default: errorMessage = error.message || "Auth error during signup.";
         }
-      } else { 
+      } else {
          errorMessage = error.message || "Unexpected error during registration.";
       }
       toast({ title: "Registration Failed", description: errorMessage, variant: "destructive" });
@@ -164,21 +168,22 @@ export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
       if (fbAdminAuthUser) {
         if (newBusinessId) {
           try { await deleteDoc(doc(db, 'businesses', newBusinessId)); }
-          catch (e) { /* empty */ }
+          catch (e) { /* Silently ignore */ }
         }
-        try { await deleteFirebaseAuthUser(fbAdminAuthUser); } 
-        catch (e) { /* empty */ }
+        try { await deleteFirebaseAuthUser(fbAdminAuthUser); }
+        catch (e) { /* Silently ignore */ }
       }
+      setLoading(false); // Ensure loading is false on signup failure
       return { success: false, message: errorMessage };
-    } finally {
-        setLoading(false);
     }
+    // No setLoading(false) here on success, onAuthStateChanged handles it
   }, [toast]);
 
   const logout = useCallback(async () => {
     const currentAdminEmail = adminUser?.email;
     try {
       await signOut(auth);
+      // onAuthStateChanged will set adminUser to null and loading to false
       toast({ title: "Logged Out", description: `Admin ${currentAdminEmail || ''} logged out successfully.`});
     } catch (error: any) {
       toast({ title: "Logout Failed", description: error.message || "Could not log out.", variant: "destructive"});
@@ -201,7 +206,7 @@ export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
       toast({ title: "Fetch Error", description: `Could not fetch business details: ${error.message || 'Unknown error'}.`, variant: "destructive" });
       return null;
     }
-  }, [adminUser?.businessId, adminUser?.uid, toast]);
+  }, [adminUser?.businessId, toast]);
 
   const addRewardToBusiness = useCallback(async (businessId: string, rewardData: Omit<Reward, 'id'>): Promise<boolean> => {
     if (!businessId) {
@@ -216,14 +221,14 @@ export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
             return false;
         }
         const businessData = businessSnap.data() as Business;
-        const newRewardId = doc(collection(db, 'rewards_placeholder_ids')).id; 
+        const newRewardId = doc(collection(db, 'rewards_placeholder_ids')).id;
         const newReward: Reward = {
             id: newRewardId,
             title: rewardData.title,
             description: rewardData.description,
             pointsCost: rewardData.pointsCost,
             category: rewardData.category,
-            icon: rewardData.icon || '', 
+            icon: rewardData.icon || '', // Ensure icon is not undefined
         };
         const updatedRewards = [...(businessData.rewards || []), newReward];
         await updateDoc(businessDocRef, { rewards: updatedRewards });
@@ -256,9 +261,9 @@ export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
         const updatedRewardsList = [...(businessData.rewards || [])];
         updatedRewardsList[rewardIndex] = {
             ...updatedReward,
-            icon: updatedReward.icon || '',
+            icon: updatedReward.icon || '', // Ensure icon is not undefined
         };
-        
+
         await updateDoc(businessDocRef, { rewards: updatedRewardsList });
         toast({ title: "Reward Updated", description: `${updatedReward.title} has been updated.`, variant: "default"});
         return true;
@@ -282,7 +287,7 @@ export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
         }
         const businessData = businessSnap.data() as Business;
         const updatedRewardsList = (businessData.rewards || []).filter(r => r.id !== rewardId);
-        
+
         await updateDoc(businessDocRef, { rewards: updatedRewardsList });
         toast({ title: "Reward Deleted", description: `The reward has been deleted successfully.`});
         return true;
@@ -296,6 +301,7 @@ export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
     if (!businessId) return [];
     try {
       const appealsRef = collection(db, 'purchaseAppeals');
+      // Ensure Firestore indexes are set up for this query: businessId ASC, status ASC, submittedAt DESC
       const q = query(appealsRef, where("businessId", "==", businessId), where("status", "==", "pending"), orderBy("submittedAt", "desc"));
       const querySnapshot = await getDocs(q);
       const appeals: PurchaseAppeal[] = [];
@@ -304,7 +310,7 @@ export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
       });
       return appeals;
     } catch (error: any) {
-      toast({ title: "Error Fetching Appeals", description: error.message || "Could not load purchase appeals.", variant: "destructive" });
+      toast({ title: "Error Fetching Appeals", description: "Could not load purchase appeals. Ensure Firestore indexes are configured if prompted in console.", variant: "destructive" });
       return [];
     }
   }, [toast]);
@@ -322,19 +328,38 @@ export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
         const userDocSnap = await getDoc(userDocRef);
         if (!userDocSnap.exists()) {
             toast({title: "Error", description: "User profile not found.", variant: "destructive"});
-            return false;
+            // Still mark appeal as approved even if user doc not found, to clear it from queue
+             batch.update(appealDocRef, {
+                status: 'approved',
+                reviewedAt: serverTimestamp(),
+                adminReviewedBy: adminUser.uid,
+                pointsAwarded: pointsToAward // Log how many points were intended
+            });
+            await batch.commit();
+            toast({title: "Appeal Approved (User Not Found)", description: `Appeal marked as approved, but user ${itemDetails.userId} profile missing. No points awarded.`, variant: "default"});
+            return true;
         }
         const userData = userDocSnap.data() as User;
         const membershipIndex = userData.memberships?.findIndex(m => m.businessId === itemDetails.businessId);
 
         if (membershipIndex === undefined || membershipIndex === -1 || !userData.memberships) {
             toast({title: "Error", description: "User membership with this business not found.", variant: "destructive"});
-            return false;
+            // Mark appeal as approved but note no points action
+             batch.update(appealDocRef, {
+                status: 'approved',
+                reviewedAt: serverTimestamp(),
+                adminReviewedBy: adminUser.uid,
+                pointsAwarded: 0,
+                notes: "User membership not found at time of approval."
+            });
+            await batch.commit();
+            toast({title: "Appeal Approved (Membership Error)", description: "User membership not found. Appeal approved, 0 points awarded.", variant: "default"});
+            return true;
         }
 
         const updatedMembership = { ...userData.memberships[membershipIndex] };
         updatedMembership.pointsBalance = (updatedMembership.pointsBalance || 0) + pointsToAward;
-        
+
         const newPurchaseEntry: MockPurchase = {
             id: `appeal-${appealId}`,
             item: itemDetails.item,
@@ -345,17 +370,18 @@ export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
             appealId: appealId,
         };
         updatedMembership.purchases = [newPurchaseEntry, ...(updatedMembership.purchases || [])].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-        
+
         const updatedMemberships = [...userData.memberships];
         updatedMemberships[membershipIndex] = updatedMembership;
 
-        batch.update(appealDocRef, { 
-            status: 'approved', 
+        batch.update(appealDocRef, {
+            status: 'approved',
             reviewedAt: serverTimestamp(),
-            adminReviewedBy: adminUser.uid 
+            adminReviewedBy: adminUser.uid,
+            pointsAwarded: pointsToAward
         });
         batch.update(userDocRef, { memberships: updatedMemberships });
-        
+
         await batch.commit();
         toast({title: "Appeal Approved", description: `${pointsToAward} points awarded to the user.`, variant: "default"});
         return true;
@@ -376,47 +402,36 @@ export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
 
     try {
         const userDocSnap = await getDoc(userDocRef);
-        if (!userDocSnap.exists()) {
-            // If user doesn't exist, just update appeal status.
-            batch.update(appealDocRef, {
-              status: 'rejected',
-              rejectionReason: rejectionReason,
-              reviewedAt: serverTimestamp(),
-              adminReviewedBy: adminUser.uid,
-            });
-            await batch.commit();
-            toast({title: "Appeal Rejected", description: "User profile not found, appeal marked as rejected.", variant: "default"});
-            return true;
-        }
+        if (userDocSnap.exists()) {
+            const userData = userDocSnap.data() as User;
+            const membershipIndex = userData.memberships?.findIndex(m => m.businessId === itemDetails.businessId);
 
-        const userData = userDocSnap.data() as User;
-        const membershipIndex = userData.memberships?.findIndex(m => m.businessId === itemDetails.businessId);
-
-        if (membershipIndex !== undefined && membershipIndex !== -1 && userData.memberships) {
-            // Add a record of the rejected appeal to user's history for transparency
-            const updatedMembership = { ...userData.memberships[membershipIndex] };
-            const rejectedPurchaseEntry: MockPurchase = {
-                id: `appeal-${appealId}-rejected`,
-                item: `Appeal Rejected: ${itemDetails.item}`,
-                amount: itemDetails.amount,
-                date: new Date().toISOString(),
-                pointsEarned: 0,
-                status: 'rejected',
-                appealId: appealId,
-            };
-            updatedMembership.purchases = [rejectedPurchaseEntry, ...(updatedMembership.purchases || [])].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-            const updatedMemberships = [...userData.memberships];
-            updatedMemberships[membershipIndex] = updatedMembership;
-            batch.update(userDocRef, { memberships: updatedMemberships });
+            if (membershipIndex !== undefined && membershipIndex !== -1 && userData.memberships) {
+                const updatedMembership = { ...userData.memberships[membershipIndex] };
+                const rejectedPurchaseEntry: MockPurchase = {
+                    id: `appeal-${appealId}-rejected`,
+                    item: `Appeal Rejected: ${itemDetails.item}`,
+                    amount: itemDetails.amount,
+                    date: new Date().toISOString(),
+                    pointsEarned: 0,
+                    status: 'rejected',
+                    appealId: appealId,
+                };
+                updatedMembership.purchases = [rejectedPurchaseEntry, ...(updatedMembership.purchases || [])].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+                const updatedMemberships = [...userData.memberships];
+                updatedMemberships[membershipIndex] = updatedMembership;
+                batch.update(userDocRef, { memberships: updatedMemberships });
+            }
         }
-        
-        batch.update(appealDocRef, { 
-            status: 'rejected', 
+        // If user or membership doesn't exist, still mark appeal as rejected.
+
+        batch.update(appealDocRef, {
+            status: 'rejected',
             rejectionReason: rejectionReason,
             reviewedAt: serverTimestamp(),
-            adminReviewedBy: adminUser.uid 
+            adminReviewedBy: adminUser.uid
         });
-        
+
         await batch.commit();
         toast({title: "Appeal Rejected", description: "The purchase appeal has been rejected.", variant: "default"});
         return true;

@@ -9,7 +9,7 @@ import React, { createContext, useContext, useEffect, useState, useCallback, use
 import { auth, db } from '@/lib/firebase';
 import type { User, MockPurchase, UserMembership } from '@/types/user';
 import type { Business, Reward } from '@/types/business';
-import type { PurchaseAppeal } from '@/types/appeal'; // Import Appeal type
+import type { PurchaseAppeal } from '@/types/appeal';
 import { useToast } from '@/hooks/use-toast';
 
 interface SubmitAppealData {
@@ -28,9 +28,9 @@ interface AuthContextType {
   login: (email: string, pass: string) => Promise<void>;
   logout: () => Promise<void>;
   signup: (name: string, email: string, pass: string) => Promise<void>;
-  submitPurchaseAppeal: (appealData: SubmitAppealData) => Promise<boolean>; // Changed from addMockPurchaseToUser
+  submitPurchaseAppeal: (appealData: SubmitAppealData) => Promise<boolean>;
   joinBusinessByCode: (businessCode: string) => Promise<{ success: boolean; message: string }>;
-  getAllMockUsers: () => Promise<User[]>; 
+  getAllMockUsers: () => Promise<User[]>;
   getBusinessById: (businessId: string) => Promise<Business | null>;
   redeemReward: (userId: string, businessId: string, reward: Reward, currentUserPointsForBusiness: number) => Promise<boolean>;
 }
@@ -53,6 +53,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           if (adminProfileSnap.exists()) {
             setUser(null);
             setIsAuthenticated(false);
+            setLoading(false); // Admin user, not a customer
           } else {
             const userDocRef = doc(db, 'users', firebaseAuthUser.uid);
             const userDocSnap = await getDoc(userDocRef);
@@ -60,16 +61,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
               setUser({ id: firebaseAuthUser.uid, ...userDocSnap.data() } as User);
               setIsAuthenticated(true);
             } else {
+              // User exists in Firebase Auth but not in 'users' collection (edge case, e.g., partial signup)
               setUser(null);
               setIsAuthenticated(false);
             }
+            setLoading(false);
           }
         } catch (error) {
           setUser(null);
           setIsAuthenticated(false);
-          toast({ title: "Profile Check Error", description: "Could not verify user type.", variant: "destructive" });
-        } finally {
           setLoading(false);
+          toast({ title: "Profile Check Error", description: "Could not verify user type during auth state change.", variant: "destructive" });
         }
       } else {
         setUser(null);
@@ -78,12 +80,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     });
     return () => unsubscribe();
-  }, [toast]);
+  }, [toast]); // toast is stable
 
   const login = useCallback(async (email: string, pass: string) => {
     setLoading(true);
     try {
       await signInWithEmailAndPassword(auth, email, pass);
+      // onAuthStateChanged will handle setting user and loading states
     } catch (error: any) {
       let errorMessage = "Invalid email or password.";
        if (error.code) {
@@ -98,8 +101,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
       }
       toast({ title: "Login Failed", description: errorMessage, variant: "destructive" });
-      setLoading(false); 
+      setLoading(false); // Ensure loading is false on login failure
     }
+    // No setLoading(false) here on success, onAuthStateChanged handles it
   }, [toast]);
 
   const signup = useCallback(async (name: string, email: string, pass: string) => {
@@ -116,8 +120,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       };
       await setDoc(doc(db, 'users', fbAuthUser.uid), newUserProfile);
       toast({ title: "Signup Successful!", description: "Welcome to ATRA!", variant: "default" });
-    } catch (error: any)
-     {
+      // onAuthStateChanged will set user and loading state
+    } catch (error: any) {
       let errorMessage = "Could not create account.";
        if (error.code) {
         switch (error.code) {
@@ -130,19 +134,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
          errorMessage = error.message || "An unexpected error occurred during signup.";
       }
       toast({ title: "Signup Failed", description: errorMessage, variant: "destructive" });
-      if (fbAuthUser) { 
+      if (fbAuthUser) {
         try { await deleteFirebaseAuthUser(fbAuthUser); }
-        catch (deleteError: any) { /* empty */ }
+        catch (deleteError: any) { /* Silently ignore delete error */ }
       }
-    } finally {
-        setLoading(false);
+      setLoading(false); // Ensure loading is false on signup failure
     }
+    // No setLoading(false) here on success, onAuthStateChanged handles it
   }, [toast]);
 
   const logout = useCallback(async () => {
     const currentCustomerEmail = user?.email;
     try {
       await signOut(auth);
+      // onAuthStateChanged will set user to null and loading to false
       toast({ title: "Logged Out", description: `Customer ${currentCustomerEmail || ''} logged out.` });
     } catch (error: any) {
       toast({ title: "Logout Failed", description: error.message || "Could not log out.", variant: "destructive" });
@@ -171,10 +176,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
     const appealsCollectionRef = collection(db, 'purchaseAppeals');
     try {
-      const newAppealPayload: Omit<PurchaseAppeal, 'id' | 'submittedAt'> = {
+      const newAppealPayload: Omit<PurchaseAppeal, 'id' | 'submittedAt' | 'reviewedAt' | 'adminReviewedBy' | 'rejectionReason'> = {
         userId: user.id,
         userName: user.name,
-        userEmail: user.email,
+        userEmail: user.email || '',
         businessId: appealData.businessId,
         businessName: appealData.businessName,
         item: appealData.item,
@@ -187,7 +192,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         ...newAppealPayload,
         submittedAt: serverTimestamp(),
       });
-      // No toast here; dialog will show one upon successful return.
       return true;
     } catch (error: any) {
       toast({ title: "Appeal Submission Failed", description: error.message || "Could not submit your appeal.", variant: "destructive" });
@@ -204,48 +208,48 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       const querySnapshot = await getDocs(q);
       if (querySnapshot.empty) return { success: false, message: "Invalid business code." };
-      
+
       const businessToJoinDoc = querySnapshot.docs[0];
       const businessToJoin = { id: businessToJoinDoc.id, ...businessToJoinDoc.data() } as Business;
-      
+
       const userDocRef = doc(db, 'users', user.id);
-      const userDocSnap = await getDoc(userDocRef);
+      const userDocSnap = await getDoc(userDocRef); // Re-fetch user fresh to avoid race conditions
       if (!userDocSnap.exists()) return { success: false, message: "User profile not found."};
       const currentUserData = userDocSnap.data() as User;
 
       const isAlreadyMember = currentUserData.memberships?.some(m => m.businessId === businessToJoin.id);
       if (isAlreadyMember) return { success: false, message: `You are already a member of ${businessToJoin.name}.` };
 
-      const welcomeBonusPoints = 50; // Default welcome bonus
+      const welcomeBonusPoints = 50;
       const newMembership: UserMembership = {
         businessId: businessToJoin.id,
         businessName: businessToJoin.name,
         pointsBalance: welcomeBonusPoints,
-        purchases: [{ 
-          id: `wb-${Date.now()}`, 
-          item: "Welcome Bonus", 
-          amount: 0, 
-          date: new Date().toISOString(), 
+        purchases: [{
+          id: `wb-${Date.now()}`,
+          item: "Welcome Bonus",
+          amount: 0,
+          date: new Date().toISOString(),
           pointsEarned: welcomeBonusPoints,
-          status: 'approved' // Welcome bonus is auto-approved
+          status: 'approved'
         }],
       };
-      
-      await updateDoc(userDocRef, { 
-        memberships: arrayUnion(newMembership) 
+
+      await updateDoc(userDocRef, {
+        memberships: arrayUnion(newMembership)
       });
-      
-      setUser(prevUser => prevUser ? ({ 
-        ...prevUser, 
-        memberships: [...(prevUser.memberships || []), newMembership] 
+
+      setUser(prevUser => prevUser ? ({
+        ...prevUser,
+        memberships: [...(prevUser.memberships || []), newMembership]
       }) : null);
-      
+
       return { success: true, message: `Successfully joined ${businessToJoin.name} (+${welcomeBonusPoints} points)!` };
     } catch (error: any) {
       return { success: false, message: `Failed to join program: ${error.message || 'Unknown error'}` };
     }
   }, [user, toast]);
-  
+
   const redeemReward = useCallback(async (userId: string, businessId: string, reward: Reward, currentUserPointsForBusiness: number): Promise<boolean> => {
     if (currentUserPointsForBusiness < reward.pointsCost) {
         toast({ title: "Insufficient Points", description: `You need ${reward.pointsCost} points, but only have ${currentUserPointsForBusiness}.`, variant: "destructive" });
@@ -254,7 +258,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     const userDocRef = doc(db, 'users', userId);
     try {
-        const userDocSnap = await getDoc(userDocRef);
+        const userDocSnap = await getDoc(userDocRef); // Fetch fresh user data
         if (!userDocSnap.exists()) {
             toast({ title: "Error", description: "User not found.", variant: "destructive" });
             return false;
@@ -266,7 +270,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             toast({ title: "Error", description: "Membership not found for this business.", variant: "destructive" });
             return false;
         }
-        
+
         const updatedMembership = { ...userData.memberships[membershipIndex] };
         updatedMembership.pointsBalance = (updatedMembership.pointsBalance || 0) - reward.pointsCost;
         const redemptionPurchase: MockPurchase = {
@@ -275,7 +279,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             amount: 0,
             date: new Date().toISOString(),
             pointsEarned: -reward.pointsCost,
-            status: 'approved', // Redemptions are auto-approved actions
+            status: 'approved',
         };
         updatedMembership.purchases = [redemptionPurchase, ...(updatedMembership.purchases || [])].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
@@ -284,17 +288,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
         await updateDoc(userDocRef, { memberships: updatedMemberships });
 
-        if (user && user.id === userId) {
-            setUser(prev => prev ? { ...prev, memberships: updatedMemberships } : null);
-        }
-        
-        return true;
+        setUser(prev => prev && prev.id === userId ? { ...prev, memberships: updatedMemberships } : prev);
 
+        return true;
     } catch (error: any) {
         toast({ title: "Redemption Failed", description: error.message || "Could not redeem reward.", variant: "destructive" });
         return false;
     }
-  }, [toast, user]);
+  }, [toast]);
 
 
   const getAllMockUsers = useCallback(async (): Promise<User[]> => {

@@ -25,12 +25,12 @@ export default function LoginPage() {
   const searchParams = useSearchParams();
   const redirectPath = searchParams.get('redirect');
 
-  const isSystemBusy = customerAuthLoading || adminAuthLoading;
+  const isOverallPageLoading = customerAuthLoading || adminAuthLoading;
 
   useEffect(() => {
     if (!customerAuthLoading && isCustomerAuth) {
-      // Only redirect if the intended path is NOT an admin path,
-      // or if there's no specific redirect path (go to default customer page)
+      // If customer is authenticated and context is done loading:
+      // Only redirect if there's no specific redirect OR if the redirect is NOT an admin path.
       if (!redirectPath || !redirectPath.startsWith('/admin')) {
         const targetPath = redirectPath && redirectPath.startsWith('/') ? redirectPath : '/loyalty';
         router.push(targetPath);
@@ -40,6 +40,8 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (!adminAuthLoading && isAdminAuthenticated) {
+      // If admin is authenticated and context is done loading:
+      // Redirect to admin dashboard or specified admin redirect path.
       const targetPath = redirectPath && redirectPath.startsWith('/admin') ? redirectPath : '/admin/dashboard';
       router.push(targetPath);
     }
@@ -55,8 +57,8 @@ export default function LoginPage() {
     await adminLogin(adminEmail, adminPassword);
   };
 
-  // Render a loader if either auth system is busy AND the user isn't already authenticated and pending redirect.
-  if (isSystemBusy && !((!customerAuthLoading && isCustomerAuth) || (!adminAuthLoading && isAdminAuthenticated))) {
+  // If either context is actively verifying/logging in, show a general loader.
+  if (isOverallPageLoading && !((!customerAuthLoading && isCustomerAuth) || (!adminAuthLoading && isAdminAuthenticated))) {
     return (
         <div className="flex flex-col items-center justify-center min-h-[calc(100vh-var(--header-height,80px)-6rem)]">
             <Loader2 className="h-16 w-16 animate-spin text-primary mb-4" />
@@ -65,7 +67,8 @@ export default function LoginPage() {
     );
   }
 
-  // If already authenticated (and not loading), redirection useEffects should handle it.
+  // If already authenticated and context is NOT loading, redirection useEffects should handle it.
+  // This message indicates redirection is about to happen.
   if ((!customerAuthLoading && isCustomerAuth && (!redirectPath || !redirectPath.startsWith('/admin'))) || (!adminAuthLoading && isAdminAuthenticated)) {
      return (
         <div className="flex flex-col items-center justify-center min-h-[calc(100vh-var(--header-height,80px)-6rem)]">
@@ -75,6 +78,7 @@ export default function LoginPage() {
     );
   }
 
+  // If not loading and not authenticated, show login form.
   return (
     <div className="flex flex-grow flex-col items-center justify-center py-8 sm:py-12">
       <Card className="w-full max-w-md shadow-xl">
@@ -86,14 +90,14 @@ export default function LoginPage() {
         <CardContent>
           <Tabs defaultValue="customer" className="w-full">
             <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="customer">
+              <TabsTrigger value="customer" aria-label="Login as Customer">
                 <User className="mr-2 h-4 w-4" /> Customer
               </TabsTrigger>
-              <TabsTrigger value="business">
+              <TabsTrigger value="business" aria-label="Login as Business">
                 <Briefcase className="mr-2 h-4 w-4" /> Business
               </TabsTrigger>
             </TabsList>
-            
+
             <TabsContent value="customer" className="mt-6">
               <form onSubmit={handleCustomerSubmit} className="space-y-6">
                 <div className="space-y-2">
@@ -106,6 +110,7 @@ export default function LoginPage() {
                     onChange={(e) => setCustomerEmail(e.target.value)}
                     required
                     disabled={customerAuthLoading}
+                    aria-required="true"
                   />
                 </div>
                 <div className="space-y-2">
@@ -118,6 +123,7 @@ export default function LoginPage() {
                     onChange={(e) => setCustomerPassword(e.target.value)}
                     required
                     disabled={customerAuthLoading}
+                    aria-required="true"
                   />
                 </div>
                 <Button type="submit" disabled={customerAuthLoading} className="w-full bg-primary hover:bg-primary/90 text-base py-3">
@@ -151,6 +157,7 @@ export default function LoginPage() {
                     onChange={(e) => setAdminEmail(e.target.value)}
                     required
                     disabled={adminAuthLoading}
+                    aria-required="true"
                   />
                 </div>
                 <div className="space-y-2">
@@ -163,6 +170,7 @@ export default function LoginPage() {
                     onChange={(e) => setAdminPassword(e.target.value)}
                     required
                     disabled={adminAuthLoading}
+                    aria-required="true"
                   />
                 </div>
                 <Button type="submit" disabled={adminAuthLoading} className="w-full bg-primary hover:bg-primary/90 text-base py-3">
