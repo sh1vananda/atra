@@ -12,23 +12,23 @@ export default {
     container: {
       center: true,
       padding: {
-        DEFAULT: '1rem', // Slightly less default padding for mobile
+        DEFAULT: '1rem',
         sm: '2rem',
       },
       screens: {
-        '2xl': '1440px', // Max container width
+        '2xl': '1440px',
       },
     },
     extend: {
       borderRadius: {
         xl: `calc(var(--radius) + 4px)`,
-        lg: `var(--radius)`, // Default is 0.75rem from globals.css
-        md: `calc(var(--radius) - 2px)`, // Slightly less reduction
+        lg: `var(--radius)`,
+        md: `calc(var(--radius) - 2px)`,
         sm: `calc(var(--radius) - 4px)`,
       },
       fontFamily: {
         body: ['Inter', 'sans-serif'],
-        headline: ['Inter', 'sans-serif'], // Can be a different display font if desired
+        headline: ['Inter', 'sans-serif'],
         code: ['monospace'],
       },
       colors: {
