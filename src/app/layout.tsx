@@ -26,7 +26,7 @@ export default function RootLayout({
 
   const mainClassName = cn(
     "flex-grow w-full max-w-7xl mx-auto py-8 sm:py-10 px-4 sm:px-6 lg:px-8",
-    "bg-background" // Always apply bg-background to main content area
+    // bg-background is applied to body, not needed here explicitly if body has it.
   );
   
   return (
@@ -40,8 +40,8 @@ export default function RootLayout({
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
       </head>
       <body className={cn(
-        "font-body antialiased flex flex-col min-h-screen text-foreground",
-        "bg-background" // Ensure body also gets a base background
+        "font-body antialiased flex flex-col min-h-screen" 
+        // bg-background and text-foreground are applied via @layer base in globals.css
       )}>
         <ThemeProvider
             attribute="class"
