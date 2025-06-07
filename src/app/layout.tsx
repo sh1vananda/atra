@@ -23,31 +23,26 @@ export default function RootLayout({
   }, []);
 
   const isAdminRoute = hasMounted ? pathname.startsWith('/admin') : false;
-  // Auth pages (login/signup) will use the default background gradient
   const isAuthRoute = hasMounted ? (pathname === '/login' || pathname === '/signup') : false;
 
-  let mainBgClass = 'bg-background'; // Default for most customer-facing pages
-  if (isAdminRoute) {
-    mainBgClass = 'bg-muted/40'; // Slightly different background for admin section
-  } else if (isAuthRoute) {
-     // Gradient for login/signup pages, consistent in light/dark
-    mainBgClass = 'bg-gradient-to-br from-slate-50 via-gray-100 to-indigo-100 dark:from-slate-900 dark:via-gray-800 dark:to-indigo-950';
-  }
+  // Use theme-based background, it will switch with light/dark mode.
+  // Shadcn often uses bg-background for main content areas.
+  // Specific pages might override this with bg-card or bg-muted if needed.
+  const mainBgClass = 'bg-background'; 
 
-  // Main content padding adjusted for a slightly more spacious feel
-  const mainClassName = `flex-grow w-full max-w-7xl mx-auto py-8 sm:py-10 px-4 sm:px-6 lg:px-8 ${mainBgClass}`;
+  const mainClassName = `flex-grow w-full max-w-7xl mx-auto py-6 sm:py-8 px-4 sm:px-6 lg:px-8 ${mainBgClass}`;
   
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        <title>Loyalty Leap - Your Digital Loyalty Platform</title> {/* Updated Title */}
+        <title>Loyalty Leap - Your Digital Loyalty Platform</title>
         <meta name="description" content="Elevate customer relationships with Loyalty Leap, your all-in-one platform for digital loyalty programs." />
         <link rel="icon" href="/favicon.ico" sizes="any" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
       </head>
-      <body className="font-body antialiased flex flex-col min-h-screen bg-background text-foreground selection:bg-primary/25 selection:text-primary-foreground"> {/* Primary foreground for selection text for better contrast */}
+      <body className="font-body antialiased flex flex-col min-h-screen bg-background text-foreground">
         <ThemeProvider
             attribute="class"
             defaultTheme="system"

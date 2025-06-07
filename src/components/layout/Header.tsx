@@ -35,18 +35,18 @@ export function Header() {
     }
   }
   
-  const displayIcon = <Award className="h-7 w-7 sm:h-8 sm:w-8 text-primary" />;
+  const displayIcon = <Award className="h-6 w-6 text-primary" />; // Standard size
   
-  if (!mounted) { // Skeleton for initial load to prevent layout shift
+  if (!mounted) { 
     return (
       <header className="bg-card border-b border-border shadow-sm sticky top-0 z-50">
-        <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-4 flex items-center justify-between">
+        <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between">
           <div className="flex items-center gap-2 text-primary">
             {displayIcon}
-            <h1 className="text-xl sm:text-2xl font-headline font-semibold">{titleText}</h1>
+            <h1 className="text-xl font-semibold">{titleText}</h1>
           </div>
-          <nav className="flex items-center gap-1 sm:gap-2">
-            <Skeleton className="h-9 w-9 rounded-full" /> 
+          <nav className="flex items-center gap-2">
+            <Skeleton className="h-9 w-9 rounded-md" /> 
             <Skeleton className="h-9 w-20 rounded-md hidden sm:block" />
             <Skeleton className="h-9 w-20 rounded-md hidden sm:block" />
           </nav>
@@ -61,38 +61,38 @@ export function Header() {
 
   return (
     <header className={cn(
-      "sticky top-0 z-50 border-b shadow-subtle",
+      "sticky top-0 z-50 border-b shadow-sm", // Standard shadow
       "bg-card text-card-foreground" 
     )}>
       <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between">
-        <Link href={titleHref} className="flex items-center gap-2.5 hover:opacity-80 transition-opacity" aria-label={`Go to ${isAdminAuthenticated ? 'Admin Dashboard' : isCustomerAuth ? 'My Loyalty Page' : 'Homepage'}`}>
+        <Link href={titleHref} className="flex items-center gap-2 hover:opacity-80 transition-opacity" aria-label={`Go to ${isAdminAuthenticated ? 'Admin Dashboard' : isCustomerAuth ? 'My Loyalty Page' : 'Homepage'}`}>
           {displayIcon}
-          <h1 className="text-xl sm:text-2xl font-headline font-bold text-primary hover:text-primary/80 transition-colors duration-300">{titleText}</h1>
+          <h1 className="text-xl font-semibold text-primary">{titleText}</h1>
         </Link>
         
         <nav className="flex items-center gap-1.5 sm:gap-2">
           {combinedLoading ? (
             <>
-              <Skeleton className="h-10 w-10 rounded-lg sm:w-24" />
-              <Skeleton className="h-10 w-20 rounded-lg hidden sm:block" />
+              <Skeleton className="h-9 w-9 sm:w-20 rounded-md" />
+              <Skeleton className="h-9 w-20 rounded-md hidden sm:block" />
             </>
           ) : currentAdminRoute ? (
             isAdminAuthenticated ? (
               <>
-                <Button variant="ghost" size="default" asChild className={cn("font-semibold", pathname === "/admin/dashboard" && "bg-primary/10 text-primary")}>
+                <Button variant="ghost" size="sm" asChild className={cn(pathname === "/admin/dashboard" && "bg-accent text-accent-foreground")}>
                   <Link href="/admin/dashboard" aria-label="Admin Dashboard">
-                    <LayoutDashboard className="h-5 w-5 sm:mr-2" />
+                    <LayoutDashboard className="h-4 w-4 sm:mr-2" />
                     <span className="hidden sm:inline">Dashboard</span>
                   </Link>
                 </Button>
-                <Button variant="outline" size="default" onClick={adminLogout} aria-label="Logout from admin account">
-                  <LogOut className="h-5 w-5 sm:mr-2" />
+                <Button variant="outline" size="sm" onClick={adminLogout} aria-label="Logout from admin account">
+                  <LogOut className="h-4 w-4 sm:mr-2" />
                   <span className="hidden sm:inline">Logout</span>
                 </Button>
               </>
             ) : (
               !isLoginPage && !isSignupPage && ( 
-                 <Button variant="ghost" size="default" asChild className="font-semibold">
+                 <Button variant="ghost" size="sm" asChild>
                    <Link href="/">Customer Site</Link>
                  </Button>
               )
@@ -100,19 +100,19 @@ export function Header() {
           ) : (
             isCustomerAuth ? (
               <>
-                <Button variant="ghost" size="sm" asChild className={cn("font-medium", pathname === "/loyalty" ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-foreground")}>
+                <Button variant="ghost" size="sm" asChild className={cn(pathname === "/loyalty" ? "bg-accent text-accent-foreground" : "text-muted-foreground hover:text-foreground")}>
                   <Link href="/loyalty"><ShoppingBag className="h-4 w-4 mr-1.5"/>Loyalty</Link>
                 </Button>
-                <Button variant="ghost" size="sm" asChild className={cn("font-medium", pathname === "/rewards" ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-foreground")}>
+                <Button variant="ghost" size="sm" asChild className={cn(pathname === "/rewards" ? "bg-accent text-accent-foreground" : "text-muted-foreground hover:text-foreground")}>
                   <Link href="/rewards"><Star className="h-4 w-4 mr-1.5"/>Rewards</Link>
                 </Button>
-                <Button variant="ghost" size="sm" asChild className={cn("font-medium", pathname === "/history" ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-foreground")}>
+                <Button variant="ghost" size="sm" asChild className={cn(pathname === "/history" ? "bg-accent text-accent-foreground" : "text-muted-foreground hover:text-foreground")}>
                   <Link href="/history"><HistoryIcon className="h-4 w-4 mr-1.5"/>History</Link>
                 </Button>
-                <Button variant="ghost" size="sm" asChild className={cn("font-medium", pathname === "/offers" ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-foreground")}>
+                <Button variant="ghost" size="sm" asChild className={cn(pathname === "/offers" ? "bg-accent text-accent-foreground" : "text-muted-foreground hover:text-foreground")}>
                   <Link href="/offers"><OffersIcon className="h-4 w-4 mr-1.5"/>Offers</Link>
                 </Button>
-                <Button variant="ghost" size="icon" asChild className={cn("rounded-full text-muted-foreground hover:text-foreground", pathname === "/profile" ? "bg-primary/10 ring-2 ring-primary/30 !text-primary" : "")}>
+                <Button variant="ghost" size="icon" asChild className={cn("rounded-full text-muted-foreground hover:text-foreground", pathname === "/profile" ? "bg-accent text-accent-foreground" : "")}>
                   <Link href="/profile" aria-label="View your profile">
                     <UserCircle className="h-5 w-5" />
                   </Link>
@@ -121,15 +121,15 @@ export function Header() {
             ) : (
              !isLoginPage && !isSignupPage && (
               <>
-                <Button variant="ghost" size="default" asChild className="font-semibold">
+                <Button variant="ghost" size="sm" asChild>
                   <Link href="/login" aria-label="Login page">
-                    <LogIn className="h-5 w-5 sm:mr-2" />
+                    <LogIn className="h-4 w-4 sm:mr-2" />
                     <span className="hidden sm:inline">Login</span>
                   </Link>
                 </Button>
-                <Button variant="default" size="default" asChild className="font-semibold">
+                <Button variant="default" size="sm" asChild>
                   <Link href="/signup" aria-label="Signup page">
-                    <UserPlus className="h-5 w-5 sm:mr-2" />
+                    <UserPlus className="h-4 w-4 sm:mr-2" />
                     <span className="hidden sm:inline">Sign Up</span>
                   </Link>
                 </Button>
