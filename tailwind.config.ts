@@ -59,9 +59,9 @@ export default {
         },
       },
       borderRadius: {
-        lg: 'var(--radius)',
-        md: 'calc(var(--radius) - 2px)',
-        sm: 'calc(var(--radius) - 4px)',
+        lg: 'var(--radius)', /* Will be 0.65rem */
+        md: 'calc(var(--radius) - 0.15rem)', /* 0.5rem */
+        sm: 'calc(var(--radius) - 0.3rem)', /* 0.35rem */
       },
       fontFamily: {
         body: ['Inter', 'sans-serif'],
@@ -92,7 +92,7 @@ export default {
         'fade-in': 'fadeIn 0.5s ease-out forwards',
         'scale-in': 'scaleIn 0.3s ease-out forwards',
       },
-       boxShadow: { // Reverted to standard shadows
+       boxShadow: {
         sm: '0 1px 2px 0 rgb(0 0 0 / 0.05)',
         DEFAULT: '0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1)',
         md: '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)',
@@ -101,7 +101,7 @@ export default {
         '2xl': '0 25px 50px -12px rgb(0 0 0 / 0.25)',
         inner: 'inset 0 2px 4px 0 rgb(0 0 0 / 0.05)',
       },
-      transitionTimingFunction: { // Keep for potential future use
+      transitionTimingFunction: {
         'expo-in-out': 'cubic-bezier(0.87, 0, 0.13, 1)',
       }
     },
