@@ -91,11 +91,11 @@ export default function LoginPage() {
 
   return (
     <div className="flex flex-grow flex-col items-center justify-center py-8 sm:py-12">
-      <Card className="w-full max-w-md shadow-xl">
+      <Card className="w-full max-w-md shadow-xl mt-8 sm:mt-0"> {/* Added margin top for smaller screens */}
         <CardHeader className="text-center">
           <LogIn className="mx-auto h-10 w-10 text-primary mb-2" />
           <CardTitle className="font-headline text-3xl">Account Login</CardTitle>
-          <CardDescription>Access your ATRA customer or business account.</CardDescription>
+          <CardDescription>Access your Loyalty Leap customer or business account.</CardDescription>
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="customer" className="w-full">
@@ -119,7 +119,7 @@ export default function LoginPage() {
                     value={customerEmail}
                     onChange={(e) => setCustomerEmail(e.target.value)}
                     required
-                    disabled={customerAuthLoading} // Technically, if we reach here, customerAuthLoading is false
+                    disabled={customerAuthLoading} 
                     aria-required="true"
                   />
                 </div>
@@ -132,12 +132,12 @@ export default function LoginPage() {
                     value={customerPassword}
                     onChange={(e) => setCustomerPassword(e.target.value)}
                     required
-                    disabled={customerAuthLoading} // Same as above
+                    disabled={customerAuthLoading} 
                     aria-required="true"
                   />
                 </div>
                 <Button type="submit" disabled={customerAuthLoading} className="w-full bg-primary hover:bg-primary/90 text-base py-3">
-                  {customerAuthLoading ? ( // This specific loader might not show if the page-level loader is active
+                  {customerAuthLoading ? ( 
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                       Logging in...
@@ -166,7 +166,7 @@ export default function LoginPage() {
                     value={adminEmail}
                     onChange={(e) => setAdminEmail(e.target.value)}
                     required
-                    disabled={adminAuthLoading} // Same as above
+                    disabled={adminAuthLoading} 
                     aria-required="true"
                   />
                 </div>
@@ -179,12 +179,12 @@ export default function LoginPage() {
                     value={adminPassword}
                     onChange={(e) => setAdminPassword(e.target.value)}
                     required
-                    disabled={adminAuthLoading} // Same as above
+                    disabled={adminAuthLoading} 
                     aria-required="true"
                   />
                 </div>
                 <Button type="submit" disabled={adminAuthLoading} className="w-full bg-primary hover:bg-primary/90 text-base py-3">
-                  {adminAuthLoading ? ( // This specific loader might not show
+                  {adminAuthLoading ? ( 
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                       Logging in...
@@ -207,5 +207,3 @@ export default function LoginPage() {
     </div>
   );
 }
-
-    

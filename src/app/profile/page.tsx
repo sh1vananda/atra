@@ -103,7 +103,7 @@ export default function ProfilePage() {
                         <Briefcase className="h-7 w-7 text-primary" />
                         <span className="font-semibold text-lg text-foreground">{membership.businessName}</span>
                       </div>
-                      <span className="text-lg font-bold text-accent bg-accent/10 px-3 py-1 rounded-full">{membership.pointsBalance} PTS</span>
+                      <span className="text-lg font-bold text-accent-foreground bg-accent/20 px-3 py-1 rounded-full">{membership.pointsBalance} PTS</span>
                     </div>
                      <Button asChild variant="link" size="sm" className="mt-2 p-0 h-auto text-primary hover:text-primary/80 transition-colors">
                        <Link href={`/rewards?businessId=${membership.businessId}`}>View Rewards <ExternalLink className="ml-1.5 h-3.5 w-3.5"/></Link>

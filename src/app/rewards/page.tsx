@@ -131,7 +131,7 @@ export default function RewardsPage() {
           <p className="text-lg text-muted-foreground">
             Redeem your points for these exclusive rewards.
           </p>
-          <p className="text-xl font-semibold text-accent mt-3">
+          <p className="text-xl font-semibold text-accent-foreground bg-accent/10 px-3 py-1.5 rounded-md inline-block mt-3">
             Your Points: {userPointsForSelectedBusiness}
           </p>
         </div>
@@ -173,7 +173,7 @@ export default function RewardsPage() {
           {enrolledBusinessesWithDetails.map((business) => (
             <Card 
               key={business.id} 
-              className="bg-card hover:shadow-xl transition-shadow duration-300 cursor-pointer group"
+              className="bg-card hover:shadow-xl transition-shadow duration-300 cursor-pointer group transform hover:-translate-y-1"
               onClick={() => handleSelectBusiness(business)}
               role="button"
               tabIndex={0}

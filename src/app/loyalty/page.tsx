@@ -184,7 +184,7 @@ export default function LoyaltyPage() {
           ))}
         </div>
       ) : (
-        <Card className="shadow-lg text-center py-10 sm:py-12 bg-card">
+        <Card className="shadow-lg text-center py-10 sm:py-12 bg-card transform hover:-translate-y-1 transition-transform duration-300">
           <CardHeader>
             <ShoppingBag className="h-16 w-16 mx-auto text-primary mb-4 opacity-70" />
             <CardTitle className="font-headline text-2xl sm:text-3xl">No Loyalty Programs Joined</CardTitle>

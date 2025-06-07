@@ -58,7 +58,7 @@ export function RewardCard({ reward, businessId, userPointsInBusiness, onRewardR
           </div>
         ),
         description: `You've successfully redeemed "${reward.title}".`,
-        variant: "default" // Green background for success
+        variant: "default"
       });
       onRewardRedeemed(); 
     }
@@ -80,8 +80,8 @@ export function RewardCard({ reward, businessId, userPointsInBusiness, onRewardR
         <CardDescription className="min-h-[40px] line-clamp-2 text-sm">{reward.description}</CardDescription>
       </CardContent>
       <CardFooter className="flex flex-col items-start sm:flex-row sm:items-center sm:justify-between pt-4 border-t mt-auto gap-3 sm:gap-2">
-        <p className="text-xl font-semibold text-accent">
-          {reward.pointsCost} <span className="text-sm font-normal text-muted-foreground">Points</span>
+        <p className="text-lg font-semibold text-accent-foreground bg-accent/10 px-2.5 py-1 rounded-md inline-block">
+          {reward.pointsCost} <span className="text-xs font-normal">Points</span>
         </p>
         <Button 
           onClick={handleRedeem} 
@@ -99,4 +99,3 @@ export function RewardCard({ reward, businessId, userPointsInBusiness, onRewardR
     </Card>
   );
 }
-

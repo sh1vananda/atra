@@ -9,12 +9,12 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { UserTable } from '@/components/admin/UserTable';
 import { useAuth as useCustomerAuth } from '@/contexts/AuthContext';
 import type { User } from '@/types/user';
-import { Users, ShoppingCart, BarChart3, Building, KeyRound, Copy, Loader2, AlertTriangle, Gift, ListChecks } from 'lucide-react';
+import { Users, ShoppingCart, BarChart3, Building, KeyRound, Copy, Loader2, Gift, ListChecks } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import type { Business } from '@/types/business';
 import { ManageRewardsSection } from '@/components/admin/ManageRewardsSection';
-import { PurchaseAppealsSection } from '@/components/admin/PurchaseAppealsSection'; // Import new component
+import { PurchaseAppealsSection } from '@/components/admin/PurchaseAppealsSection'; 
 
 type AdminDashboardView = "userManagement" | "rewardManagement" | "purchaseAppeals";
 
@@ -163,7 +163,7 @@ export default function AdminDashboardPage() {
   if (hasFetchedInitialData && !pageDataLoading && !managedBusiness) {
      return (
         <div className="w-full space-y-8 text-center py-10">
-            <AlertTriangle className="h-20 w-20 mx-auto text-destructive mb-4" />
+            <Building className="h-20 w-20 mx-auto text-destructive mb-4" /> {/* Changed Icon */}
             <h2 className="text-2xl font-semibold text-destructive">Business Data Not Found</h2>
             <p className="text-muted-foreground">We could not load the details for your managed business (ID: {adminUser?.businessId || "Unknown"}).</p>
             <p className="text-muted-foreground">Ensure your admin account is correctly linked to a business.</p>
