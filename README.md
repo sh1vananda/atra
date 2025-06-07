@@ -1,2 +1,2 @@
-# Built on Firebase Studio
+# Built using Firebase Studio
 
