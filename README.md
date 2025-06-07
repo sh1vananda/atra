@@ -1,2 +1,2 @@
-# Built using Firebase Studio
+## This project is mainly built to explore and experiment with Firebase Studio and also other Firebase services 
 
