@@ -82,6 +82,7 @@ export default function HomePage() {
                 width={600}
                 height={450}
                 className="object-cover w-full h-full"
+                unoptimized={true}
               />
             </div>
           </div>
@@ -103,6 +104,7 @@ export default function HomePage() {
                 width={600}
                 height={450}
                 className="object-cover w-full h-full"
+                unoptimized={true}
               />
             </div>
             <div className="space-y-6 md:order-first">
