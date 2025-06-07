@@ -9,6 +9,7 @@ import { AdminAuthProvider } from '@/contexts/AdminAuthContext';
 import { usePathname } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { ThemeProvider } from "next-themes";
+import { cn } from '@/lib/utils';
 
 export default function RootLayout({
   children,
@@ -23,26 +24,32 @@ export default function RootLayout({
   }, []);
 
   const isAdminRoute = hasMounted ? pathname.startsWith('/admin') : false;
-  const isAuthRoute = hasMounted ? (pathname === '/login' || pathname === '/signup') : false;
+  const isAuthPage = hasMounted ? (pathname === '/login' || pathname === '/signup') : false;
 
-  // Use theme-based background, it will switch with light/dark mode.
-  // Shadcn often uses bg-background for main content areas.
-  // Specific pages might override this with bg-card or bg-muted if needed.
-  const mainBgClass = 'bg-background'; 
+  // Default main background for content pages
+  const mainBgClass = 'bg-background';
+  // Special gradient background for auth pages
+  const authPageBgClass = 'bg-gradient-to-br from-slate-100 via-gray-50 to-stone-100 dark:from-slate-900 dark:via-zinc-900 dark:to-neutral-950';
 
-  const mainClassName = `flex-grow w-full max-w-7xl mx-auto py-6 sm:py-8 px-4 sm:px-6 lg:px-8 ${mainBgClass}`;
+  const mainClassName = cn(
+    "flex-grow w-full max-w-7xl mx-auto py-8 sm:py-10 px-4 sm:px-6 lg:px-8",
+    isAuthPage ? '' : mainBgClass // Apply default bg only if not an auth page
+  );
   
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        <title>Loyalty Leap - Your Digital Loyalty Platform</title>
-        <meta name="description" content="Elevate customer relationships with Loyalty Leap, your all-in-one platform for digital loyalty programs." />
+        <title>Loyalty Leap | Digital Loyalty & Rewards Platform</title>
+        <meta name="description" content="Elevate customer relationships with Loyalty Leap, your all-in-one platform for digital loyalty programs, personalized rewards, and insightful analytics." />
         <link rel="icon" href="/favicon.ico" sizes="any" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
       </head>
-      <body className="font-body antialiased flex flex-col min-h-screen bg-background text-foreground">
+      <body className={cn(
+        "font-body antialiased flex flex-col min-h-screen text-foreground",
+        isAuthPage ? authPageBgClass : 'bg-background' // Body gets the special bg for auth pages
+      )}>
         <ThemeProvider
             attribute="class"
             defaultTheme="system"

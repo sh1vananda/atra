@@ -3,42 +3,38 @@
 @tailwind components;
 @tailwind utilities;
 
-body {
-  font-family: 'Inter', Arial, Helvetica, sans-serif;
-}
-
 @layer base {
   :root {
-    /* Standard Light Mode */
-    --background-hsl: 0 0% 100%; /* white */
-    --foreground-hsl: 222 84% 4.9%; /* almost black */
+    /* Light Mode - Creative Freedom Theme */
+    --background-hsl: 210 60% 98%; /* Light cool gray */
+    --foreground-hsl: 220 15% 25%; /* Dark gray for text */
 
-    --card-hsl: 0 0% 100%;
-    --card-foreground-hsl: 222 84% 4.9%;
+    --card-hsl: 0 0% 100%; /* White */
+    --card-foreground-hsl: 220 15% 25%;
 
     --popover-hsl: 0 0% 100%;
-    --popover-foreground-hsl: 222 84% 4.9%;
+    --popover-foreground-hsl: 220 15% 25%;
 
-    --primary-hsl: 222 47.4% 11.2%; /* dark blue */
-    --primary-foreground-hsl: 210 40% 98%; /* light gray */
+    --primary-hsl: 217 91% 60%; /* Vibrant Blue */
+    --primary-foreground-hsl: 0 0% 100%; /* White */
 
-    --secondary-hsl: 210 40% 96.1%; /* light gray */
-    --secondary-foreground-hsl: 222 47.4% 11.2%; /* dark blue */
+    --secondary-hsl: 220 15% 90%; /* Light gray for secondary elements */
+    --secondary-foreground-hsl: 220 15% 35%; /* Darker gray for secondary text */
 
-    --muted-hsl: 210 40% 96.1%;
-    --muted-foreground-hsl: 215 20.2% 65.1%; /* mid gray */
+    --muted-hsl: 220 15% 94%;
+    --muted-foreground-hsl: 220 10% 45%; /* Mid gray for muted text */
 
-    --accent-hsl: 210 40% 96.1%;
-    --accent-foreground-hsl: 222 47.4% 11.2%;
+    --accent-hsl: 158 70% 45%; /* Modern Teal/Green */
+    --accent-foreground-hsl: 0 0% 100%; /* White */
 
-    --destructive-hsl: 0 84.2% 60.2%; /* red */
-    --destructive-foreground-hsl: 210 40% 98%;
+    --destructive-hsl: 0 72% 51%; /* Bright Red */
+    --destructive-foreground-hsl: 0 0% 100%;
 
-    --border-hsl: 214.3 31.8% 91.4%; /* light gray border */
-    --input-hsl: 214.3 31.8% 91.4%;
-    --ring-hsl: 222 84% 4.9%;
+    --border-hsl: 220 13% 88%; /* Light gray border */
+    --input-hsl: 220 13% 92%; /* Slightly off-white for inputs */
+    --ring-hsl: 217 91% 68%; /* Ring color based on primary */
 
-    --radius: 0.5rem;
+    --radius: 0.75rem; /* Default border radius (rounded-lg) */
 
     /* Actual color properties for light mode */
     --background: hsl(var(--background-hsl));
@@ -62,43 +58,43 @@ body {
     --ring: hsl(var(--ring-hsl));
 
     --chart-1: hsl(var(--primary-hsl));
-    --chart-2: 160 60% 45%; /* A distinct green for charts */
+    --chart-2: hsl(var(--accent-hsl));
     --chart-3: 35 92% 60%;
     --chart-4: 265 89% 70%;
     --chart-5: 195 89% 60%;
   }
 
   .dark {
-    /* Standard Dark Mode */
-    --background-hsl-dark: 222 84% 4.9%; /* almost black */
-    --foreground-hsl-dark: 210 40% 98%; /* light gray */
+    /* Dark Mode - Creative Freedom Theme */
+    --background-hsl-dark: 220 18% 11%; /* Very dark desaturated blue/gray */
+    --foreground-hsl-dark: 210 30% 90%; /* Light gray for text */
 
-    --card-hsl-dark: 222 84% 4.9%;
-    --card-foreground-hsl-dark: 210 40% 98%;
+    --card-hsl-dark: 220 18% 15%; /* Slightly lighter than bg for cards */
+    --card-foreground-hsl-dark: 210 30% 90%;
 
-    --popover-hsl-dark: 222 84% 4.9%;
-    --popover-foreground-hsl-dark: 210 40% 98%;
+    --popover-hsl-dark: 220 18% 15%;
+    --popover-foreground-hsl-dark: 210 30% 90%;
 
-    --primary-hsl-dark: 210 40% 98%; /* light gray */
-    --primary-foreground-hsl-dark: 222 47.4% 11.2%; /* dark blue */
+    --primary-hsl-dark: 217 91% 68%; /* Brighter blue for dark mode contrast */
+    --primary-foreground-hsl-dark: 220 15% 15%; /* Dark text on bright blue */
 
-    --secondary-hsl-dark: 217.2 32.6% 17.5%; /* dark grayish blue */
-    --secondary-foreground-hsl-dark: 210 40% 98%;
+    --secondary-hsl-dark: 220 15% 20%; /* Darker gray for secondary elements */
+    --secondary-foreground-hsl-dark: 210 30% 75%; /* Lighter gray for secondary text */
 
-    --muted-hsl-dark: 217.2 32.6% 17.5%;
-    --muted-foreground-hsl-dark: 215 20.2% 65.1%; /* mid gray */
+    --muted-hsl-dark: 220 15% 18%;
+    --muted-foreground-hsl-dark: 210 25% 55%; /* Mid-dark gray for muted text */
 
-    --accent-hsl-dark: 217.2 32.6% 17.5%;
-    --accent-foreground-hsl-dark: 210 40% 98%;
+    --accent-hsl-dark: 158 70% 55%; /* Brighter Teal/Green for dark mode */
+    --accent-foreground-hsl-dark: 220 15% 15%; /* Dark text on bright accent */
 
-    --destructive-hsl-dark: 0 62.8% 30.6%; /* dark red */
-    --destructive-foreground-hsl-dark: 210 40% 98%;
+    --destructive-hsl-dark: 0 65% 55%; /* Visible red for dark mode */
+    --destructive-foreground-hsl-dark: 0 0% 100%;
 
-    --border-hsl-dark: 217.2 32.6% 17.5%;
-    --input-hsl-dark: 217.2 32.6% 17.5%;
-    --ring-hsl-dark: 210 40% 98%;
+    --border-hsl-dark: 220 15% 25%; /* Subtle dark border */
+    --input-hsl-dark: 220 15% 22%; /* Dark input fields */
+    --ring-hsl-dark: 217 91% 60%; /* Ring color for dark mode */
 
-    /* Actual color properties for dark mode */
+    /* Actual color properties for dark mode - CRITICAL OVERRIDES */
     --background: hsl(var(--background-hsl-dark));
     --foreground: hsl(var(--foreground-hsl-dark));
     --card: hsl(var(--card-hsl-dark));
@@ -120,20 +116,27 @@ body {
     --ring: hsl(var(--ring-hsl-dark));
 
     --chart-1: hsl(var(--primary-hsl-dark));
-    --chart-2: 160 70% 55%; /* A distinct bright green for charts */
+    --chart-2: hsl(var(--accent-hsl-dark));
     --chart-3: 35 80% 65%;
     --chart-4: 265 80% 70%;
     --chart-5: 195 80% 65%;
   }
-}
 
-@layer base {
-  * {
-    @apply border-border;
-  }
+  /* Base body styles */
   body {
-    @apply bg-background text-foreground;
-    @apply antialiased;
+    @apply bg-background text-foreground font-body antialiased;
+    /* Ensure smooth font rendering */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Apply a default border to elements that might need it, but not globally to '*' */
+  /* This avoids the "everything outlined" look if backgrounds fail */
+  /* Shadcn components typically handle their own borders */
+
+   /* Custom selection color */
+  ::selection {
+    @apply bg-primary/70 text-primary-foreground;
   }
 }
 
@@ -145,5 +148,23 @@ body {
     to {
       transform: rotate(360deg);
     }
+  }
+
+  /* Simple fade-in animation */
+  .fade-in {
+    animation: fadeInAnimation 0.5s ease-out forwards;
+  }
+  @keyframes fadeInAnimation {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Simple scale-in animation */
+  .scale-in {
+    animation: scaleInAnimation 0.3s ease-out forwards;
+  }
+  @keyframes scaleInAnimation {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
   }
 }
