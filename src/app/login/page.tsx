@@ -1,6 +1,7 @@
 
 "use client";
 
+import { Suspense } from 'react'; // Import Suspense
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
@@ -13,7 +14,8 @@ import { Loader2, LogIn, User, Briefcase, Building } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 
-export default function LoginPage() {
+// Renamed original LoginPage to LoginCore
+function LoginCore() {
   const [customerEmail, setCustomerEmail] = useState('');
   const [customerPassword, setCustomerPassword] = useState('');
   const [adminEmail, setAdminEmail] = useState('');
@@ -22,7 +24,7 @@ export default function LoginPage() {
   const { login: customerLogin, loading: customerAuthLoading, isAuthenticated: isCustomerAuth } = useAuth();
   const { login: adminLogin, loading: adminAuthLoading, isAdminAuthenticated } = useAdminAuth();
   const router = useRouter();
-  const searchParams = useSearchParams();
+  const searchParams = useSearchParams(); // This hook needs Suspense
   const redirectPath = searchParams.get('redirect');
 
   useEffect(() => {
@@ -46,7 +48,6 @@ export default function LoginPage() {
   // --- Revised Rendering Logic ---
 
   // Case 1: Customer is authenticated and context is done loading (and not an admin redirect from customer login attempt)
-  // The redirection useEffect for customer should be firing or about to fire. Show "Redirecting...".
   if (!customerAuthLoading && isCustomerAuth && (!redirectPath || !redirectPath.startsWith('/admin'))) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[calc(100vh-var(--header-height,80px)-6rem)]">
@@ -57,7 +58,6 @@ export default function LoginPage() {
   }
 
   // Case 2: Admin is authenticated and context is done loading
-  // The redirection useEffect for admin should be firing or about to fire. Show "Redirecting...".
   if (!adminAuthLoading && isAdminAuthenticated) {
      return (
         <div className="flex flex-col items-center justify-center min-h-[calc(100vh-var(--header-height,80px)-6rem)]">
@@ -68,7 +68,6 @@ export default function LoginPage() {
   }
   
   // Case 3: If either context is still loading (and we haven't met conditions for an immediate redirect display)
-  // This means we are actively verifying auth state or fetching profiles.
   if (customerAuthLoading || adminAuthLoading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[calc(100vh-var(--header-height,80px)-6rem)]">
@@ -90,8 +89,8 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex flex-grow flex-col items-center justify-center py-8 sm:py-12">
-      <Card className="w-full max-w-md shadow-xl mt-8 sm:mt-0">
+    <div className="flex flex-grow flex-col items-center justify-center py-8 sm:py-12 mt-8 sm:mt-0">
+      <Card className="w-full max-w-md shadow-xl">
         <CardHeader className="text-center">
           <LogIn className="mx-auto h-10 w-10 text-primary mb-2" />
           <CardTitle className="font-headline text-3xl">Account Login</CardTitle>
@@ -205,5 +204,19 @@ export default function LoginPage() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+// New default export for the page
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex flex-col items-center justify-center min-h-[calc(100vh-var(--header-height,80px)-6rem)]">
+        <Loader2 className="h-16 w-16 animate-spin text-primary mb-4" />
+        <p className="text-muted-foreground">Loading login page...</p>
+      </div>
+    }>
+      <LoginCore />
+    </Suspense>
   );
 }
