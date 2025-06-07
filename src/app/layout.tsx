@@ -1,4 +1,3 @@
-
 "use client";
 
 import './globals.css';
@@ -23,17 +22,11 @@ export default function RootLayout({
     setHasMounted(true);
   }, []);
 
-  const isAdminRoute = hasMounted ? pathname.startsWith('/admin') : false;
   const isAuthPage = hasMounted ? (pathname === '/login' || pathname === '/signup') : false;
-
-  // Default main background for content pages
-  const mainBgClass = 'bg-background';
-  // Special gradient background for auth pages
-  const authPageBgClass = 'bg-gradient-to-br from-slate-100 via-gray-50 to-stone-100 dark:from-slate-900 dark:via-zinc-900 dark:to-neutral-950';
 
   const mainClassName = cn(
     "flex-grow w-full max-w-7xl mx-auto py-8 sm:py-10 px-4 sm:px-6 lg:px-8",
-    isAuthPage ? '' : mainBgClass // Apply default bg only if not an auth page
+    "bg-background" // Always apply bg-background to main content area
   );
   
   return (
@@ -48,7 +41,7 @@ export default function RootLayout({
       </head>
       <body className={cn(
         "font-body antialiased flex flex-col min-h-screen text-foreground",
-        isAuthPage ? authPageBgClass : 'bg-background' // Body gets the special bg for auth pages
+        "bg-background" // Ensure body also gets a base background
       )}>
         <ThemeProvider
             attribute="class"

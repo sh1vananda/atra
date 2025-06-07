@@ -1,4 +1,3 @@
-
 "use client";
 
 import Link from 'next/link';
@@ -35,15 +34,15 @@ export function Header() {
     }
   }
   
-  const displayIcon = <Award className="h-7 w-7 text-primary" />; // Slightly larger icon
+  const displayIcon = <Award className="h-6 w-6 text-primary" />;
   
   if (!mounted) { 
     return (
-      <header className="bg-card border-b border-border shadow-subtle sticky top-0 z-50 h-16">
+      <header className="bg-card border-b border-border shadow-sm sticky top-0 z-50 h-16">
         <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex items-center justify-between">
-          <div className="flex items-center gap-2.5 text-primary"> {/* Increased gap slightly */}
+          <div className="flex items-center gap-2 text-primary">
             {displayIcon}
-            <h1 className="text-2xl font-bold font-headline">{titleText}</h1> {/* Bolder headline font */}
+            <h1 className="text-xl font-bold font-headline">{titleText}</h1>
           </div>
           <nav className="flex items-center gap-2">
             <Skeleton className="h-9 w-9 rounded-md" /> 
@@ -61,13 +60,13 @@ export function Header() {
 
   return (
     <header className={cn(
-      "sticky top-0 z-50 border-b shadow-subtle h-16", 
+      "sticky top-0 z-50 border-b shadow-sm h-16", 
       "bg-card text-card-foreground" 
     )}>
       <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex items-center justify-between">
-        <Link href={titleHref} className="flex items-center gap-2.5 hover:opacity-80 transition-opacity" aria-label={`Go to ${isAdminAuthenticated ? 'Admin Dashboard' : isCustomerAuth ? 'My Loyalty Page' : 'Homepage'}`}>
+        <Link href={titleHref} className="flex items-center gap-2 hover:opacity-80 transition-opacity" aria-label={`Go to ${isAdminAuthenticated ? 'Admin Dashboard' : isCustomerAuth ? 'My Loyalty Page' : 'Homepage'}`}>
           {displayIcon}
-          <h1 className="text-2xl font-bold font-headline text-primary">{titleText}</h1>
+          <h1 className="text-xl font-bold font-headline text-primary">{titleText}</h1>
         </Link>
         
         <nav className="flex items-center gap-1 sm:gap-1.5">
