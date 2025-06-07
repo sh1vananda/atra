@@ -1,3 +1,4 @@
+
 import type {Config} from 'tailwindcss';
 
 export default {
@@ -9,45 +10,52 @@ export default {
   ],
   theme: {
     extend: {
+      borderRadius: { // Updated from theme to here for ShadCN consistency
+        lg: "var(--radius)", // Matches globals.css --radius
+        md: "calc(var(--radius) - 0.25rem)", // Adjusted md based on new lg
+        sm: "calc(var(--radius) - 0.5rem)", // Adjusted sm based on new lg
+        xl: "calc(var(--radius) + 0.25rem)", // Added xl
+        '2xl': "calc(var(--radius) + 0.5rem)", // Added 2xl
+      },
       fontFamily: {
         body: ['Inter', 'sans-serif'],
         headline: ['Inter', 'sans-serif'],
         code: ['monospace'],
       },
       colors: {
-        background: 'hsl(var(--background))',
-        foreground: 'hsl(var(--foreground))',
+        background: 'hsl(var(--background-hsl))', // Use HSL vars
+        foreground: 'hsl(var(--foreground-hsl))',
         card: {
-          DEFAULT: 'hsl(var(--card))',
-          foreground: 'hsl(var(--card-foreground))',
+          DEFAULT: 'hsl(var(--card-hsl))',
+          foreground: 'hsl(var(--card-foreground-hsl))',
         },
         popover: {
-          DEFAULT: 'hsl(var(--popover))',
-          foreground: 'hsl(var(--popover-foreground))',
+          DEFAULT: 'hsl(var(--popover-hsl))',
+          foreground: 'hsl(var(--popover-foreground-hsl))',
         },
         primary: {
-          DEFAULT: 'hsl(var(--primary))',
-          foreground: 'hsl(var(--primary-foreground))',
+          DEFAULT: 'hsl(var(--primary-hsl))',
+          foreground: 'hsl(var(--primary-foreground-hsl))',
         },
         secondary: {
-          DEFAULT: 'hsl(var(--secondary))',
-          foreground: 'hsl(var(--secondary-foreground))',
+          DEFAULT: 'hsl(var(--secondary-hsl))',
+          foreground: 'hsl(var(--secondary-foreground-hsl))',
         },
         muted: {
-          DEFAULT: 'hsl(var(--muted))',
-          foreground: 'hsl(var(--muted-foreground))',
+          DEFAULT: 'hsl(var(--muted-hsl))',
+          foreground: 'hsl(var(--muted-foreground-hsl))',
         },
         accent: {
-          DEFAULT: 'hsl(var(--accent))',
-          foreground: 'hsl(var(--accent-foreground))',
+          DEFAULT: 'hsl(var(--accent-hsl))',
+          foreground: 'hsl(var(--accent-foreground-hsl))',
         },
         destructive: {
-          DEFAULT: 'hsl(var(--destructive))',
-          foreground: 'hsl(var(--destructive-foreground))',
+          DEFAULT: 'hsl(var(--destructive-hsl))',
+          foreground: 'hsl(var(--destructive-foreground-hsl))',
         },
-        border: 'hsl(var(--border))',
-        input: 'hsl(var(--input))',
-        ring: 'hsl(var(--ring))',
+        border: 'hsl(var(--border-hsl))',
+        input: 'hsl(var(--input-hsl))',
+        ring: 'hsl(var(--ring-hsl))',
         chart: {
           '1': 'hsl(var(--chart-1))',
           '2': 'hsl(var(--chart-2))',
@@ -55,7 +63,7 @@ export default {
           '4': 'hsl(var(--chart-4))',
           '5': 'hsl(var(--chart-5))',
         },
-        sidebar: {
+        sidebar: { // Ensure these use HSL vars from globals.css
           DEFAULT: 'hsl(var(--sidebar-background))',
           foreground: 'hsl(var(--sidebar-foreground))',
           primary: 'hsl(var(--sidebar-primary))',
@@ -66,11 +74,9 @@ export default {
           ring: 'hsl(var(--sidebar-ring))',
         },
       },
-      borderRadius: {
-        lg: 'var(--radius)',
-        md: 'calc(var(--radius) - 2px)',
-        sm: 'calc(var(--radius) - 4px)',
-      },
+      // Removed borderRadius from here as it's better defined in globals.css as --radius and used in components.
+      // However, ShadCN components might use their own radius variables, so adjusting here might be necessary if overrides are needed.
+      // For now, the global --radius is updated, and Card/Button components use rounded-xl/rounded-lg.
       keyframes: {
         'accordion-down': {
           from: {
@@ -93,6 +99,15 @@ export default {
         'accordion-down': 'accordion-down 0.2s ease-out',
         'accordion-up': 'accordion-up 0.2s ease-out',
       },
+      backdropBlur: { // Ensuring backdrop blur utilities are available
+        xs: '2px',
+        sm: '4px',
+        md: '8px',
+        lg: '12px',
+        xl: '16px',
+        '2xl': '24px',
+        '3xl': '40px',
+      }
     },
   },
   plugins: [require('tailwindcss-animate')],

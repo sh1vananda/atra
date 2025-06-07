@@ -1,3 +1,4 @@
+
 import * as React from "react"
 
 import { cn } from "@/lib/utils"
@@ -9,7 +10,10 @@ const Card = React.forwardRef<
   <div
     ref={ref}
     className={cn(
-      "rounded-lg border bg-card text-card-foreground shadow-sm",
+      "rounded-xl border text-card-foreground shadow-lg", // Use larger radius, stronger shadow
+      "bg-card/80 dark:bg-card/60", // Semi-transparent card background
+      "backdrop-blur-md", // Frosted glass effect for modern feel
+      "border-white/20 dark:border-zinc-700/30", // Subtle border for glass definition
       className
     )}
     {...props}

@@ -3,7 +3,7 @@
 
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Award, LogIn, LogOut, UserCircle, UserPlus, LayoutDashboard, Sun, Moon, ShoppingBag, Star, History as HistoryIcon, Sparkles as OffersIcon, Settings } from 'lucide-react';
+import { Award, LogIn, LogOut, UserCircle, UserPlus, LayoutDashboard, Sun, Moon, ShoppingBag, Star, History as HistoryIcon, Sparkles as OffersIcon } from 'lucide-react'; // Removed Settings icon as it's not used here
 import { useAuth } from '@/contexts/AuthContext';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -17,13 +17,8 @@ export function Header() {
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
-  const { isAuthenticated: isCustomerAuth, loading: customerLoading, user: customerUser } = useAuth(); // Removed customerLogout for now as it's in the Profile page
-  const { isAdminAuthenticated, loading: adminLoading, adminUser } = useAdminAuth(); // Removed adminLogout for now
-
-  // Combined logout for simplicity if one is needed directly in header later, but typically handled on profile/settings pages.
-  const customerLogout = useAuth().logout;
-  const adminLogout = useAdminAuth().logout;
-
+  const { isAuthenticated: isCustomerAuth, loading: customerLoading, user: customerUser, logout: customerLogout } = useAuth();
+  const { isAdminAuthenticated, loading: adminLoading, adminUser, logout: adminLogout } = useAdminAuth();
 
   useEffect(() => setMounted(true), []);
 
@@ -32,7 +27,7 @@ export function Header() {
   const titleText = "ATRA";
   let titleHref = "/"; 
 
-  if (mounted) { // Only determine titleHref after client has mounted to avoid hydration mismatch with auth states
+  if (mounted) {
     if (isAdminAuthenticated) {
       titleHref = "/admin/dashboard";
     } else if (isCustomerAuth) {
@@ -44,7 +39,7 @@ export function Header() {
   
   if (!mounted) {
     return (
-      <header className="bg-card border-b border-border shadow-sm sticky top-0 z-50">
+      <header className="bg-card/80 dark:bg-card/60 backdrop-blur-lg border-b border-white/20 dark:border-white/10 shadow-sm sticky top-0 z-50">
         <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-4 flex items-center justify-between">
           <div className="flex items-center gap-2 text-primary">
             {displayIcon}
@@ -65,11 +60,15 @@ export function Header() {
   const isSignupPage = pathname === '/signup';
 
   return (
-    <header className="bg-card border-b border-border shadow-sm sticky top-0 z-50">
+    <header className={cn(
+      "sticky top-0 z-50 border-b shadow-md", // Added shadow-md for more depth
+      "bg-card/80 dark:bg-card/70 backdrop-blur-lg", // Glassmorphism for header
+      "border-white/10 dark:border-zinc-700/20" // Subtle border for glass
+    )}>
       <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-4 flex items-center justify-between">
         <Link href={titleHref} className="flex items-center gap-2 hover:opacity-80 transition-opacity" aria-label={`Go to ${isAdminAuthenticated ? 'Admin Dashboard' : isCustomerAuth ? 'My Loyalty Page' : 'Homepage'}`}>
           {displayIcon}
-          <h1 className="text-xl sm:text-2xl font-headline font-semibold text-primary">{titleText}</h1>
+          <h1 className="text-xl sm:text-2xl font-headline font-semibold text-primary hover:text-glow-primary transition-all duration-300">{titleText}</h1>
         </Link>
         
         <nav className="flex items-center gap-1 sm:gap-2">
@@ -81,7 +80,7 @@ export function Header() {
           ) : currentAdminRoute ? (
             isAdminAuthenticated ? (
               <>
-                <Button variant="ghost" size="sm" asChild className={cn("font-medium", pathname === "/admin/dashboard" && "bg-secondary text-secondary-foreground")}>
+                <Button variant="ghost" size="sm" asChild className={cn("font-medium", pathname === "/admin/dashboard" && "bg-primary/10 text-primary")}>
                   <Link href="/admin/dashboard" aria-label="Admin Dashboard">
                     <LayoutDashboard className="h-5 w-5 sm:mr-1.5" />
                     <span className="hidden sm:inline">Dashboard</span>
@@ -114,15 +113,16 @@ export function Header() {
                 <Button variant="ghost" size="sm" asChild className={cn("font-medium", pathname === "/offers" ? "bg-primary/10 text-primary" : "")}>
                   <Link href="/offers"><OffersIcon className="h-4 w-4 mr-1 sm:mr-1.5"/>Offers</Link>
                 </Button>
-                <Button variant="ghost" size="icon" asChild className={cn("rounded-full", pathname === "/profile" ? "bg-primary/10 ring-2 ring-primary/50" : "")}>
+                <Button variant="ghost" size="icon" asChild className={cn("rounded-full", pathname === "/profile" ? "bg-primary/10 ring-2 ring-primary/30" : "")}>
                   <Link href="/profile" aria-label="View your profile">
                     <UserCircle className="h-5 w-5" />
                   </Link>
                 </Button>
-                <Button variant="outline" size="sm" onClick={customerLogout} aria-label="Logout from your account">
+                {/* Logout button can be moved to profile page if header space is tight */}
+                {/* <Button variant="outline" size="sm" onClick={customerLogout} aria-label="Logout from your account">
                   <LogOut className="h-5 w-5 sm:mr-1" />
                   <span className="hidden sm:inline">Logout</span>
-                </Button>
+                </Button> */}
               </>
             ) : (
              !isLoginPage && !isSignupPage && (
@@ -133,7 +133,7 @@ export function Header() {
                     <span className="hidden sm:inline">Login</span>
                   </Link>
                 </Button>
-                <Button variant="default" size="sm" asChild className="font-medium bg-primary hover:bg-primary/90">
+                <Button variant="default" size="sm" asChild className="font-medium">
                   <Link href="/signup" aria-label="Signup page">
                     <UserPlus className="h-5 w-5 sm:mr-1.5" />
                     <span className="hidden sm:inline">Sign Up</span>
@@ -148,7 +148,7 @@ export function Header() {
             size="icon"
             onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
             aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
-            className="ml-1 sm:ml-2"
+            className="ml-1 sm:ml-2 rounded-full" // Rounded full for theme toggle
           >
             <Sun className="h-5 w-5 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
             <Moon className="absolute h-5 w-5 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
