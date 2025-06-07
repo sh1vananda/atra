@@ -203,7 +203,7 @@ export default function AdminDashboardPage() {
               <CardDescription className="text-primary-foreground/80 pt-1">Share this code with customers to join your loyalty program.</CardDescription>
             </CardHeader>
             <CardContent className="text-center">
-              <div className="bg-background/10 backdrop-blur-sm text-primary-foreground inline-block px-6 py-3 rounded-lg shadow-inner">
+              <div className="bg-black/25 backdrop-blur-sm text-primary-foreground inline-block px-8 py-4 rounded-lg shadow-inner shadow-black/20">
                 <p className="text-5xl sm:text-6xl font-bold tracking-wider">
                   {managedBusiness.joinCode}
                 </p>
