@@ -119,7 +119,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         memberships: [],
       };
       await setDoc(doc(db, 'users', fbAuthUser.uid), newUserProfile);
-      toast({ title: "Signup Successful!", description: "Welcome to ATRA!", variant: "default" });
+      toast({ title: "Signup Successful!", description: "Welcome to Keeva!", variant: "default" });
       // onAuthStateChanged will set user and loading state
     } catch (error: any) {
       let errorMessage = "Could not create account.";

@@ -148,7 +148,7 @@ export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
         businessId: newBusinessId,
       });
 
-      toast({ title: "Business Registered!", description: `${businessName} is now part of ATRA.`, variant: "default" });
+      toast({ title: "Business Registered!", description: `${businessName} is now part of Keeva.`, variant: "default" });
       // onAuthStateChanged will set adminUser and loading state
       return { success: true };
     } catch (error: any) {

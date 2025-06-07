@@ -91,11 +91,11 @@ export default function LoginPage() {
 
   return (
     <div className="flex flex-grow flex-col items-center justify-center py-8 sm:py-12">
-      <Card className="w-full max-w-md shadow-xl mt-8 sm:mt-0"> {/* Added margin top for smaller screens */}
+      <Card className="w-full max-w-md shadow-xl mt-8 sm:mt-0">
         <CardHeader className="text-center">
           <LogIn className="mx-auto h-10 w-10 text-primary mb-2" />
           <CardTitle className="font-headline text-3xl">Account Login</CardTitle>
-          <CardDescription>Access your Loyalty Leap customer or business account.</CardDescription>
+          <CardDescription>Access your Keeva customer or business account.</CardDescription>
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="customer" className="w-full">

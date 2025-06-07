@@ -2,8 +2,8 @@
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'ATRA - Admin',
-  description: 'Manage your ATRA Program',
+  title: 'Keeva - Admin',
+  description: 'Manage your Keeva Program',
 };
 
 export default function AdminLayout({

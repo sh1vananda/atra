@@ -35,10 +35,10 @@ export default function HomePage() {
         <div className="container mx-auto px-4 text-center relative z-10">
           <ShieldCheck className="h-20 w-20 sm:h-24 sm:w-24 text-primary mx-auto mb-6 opacity-80" />
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-headline font-bold text-primary mb-6">
-            Welcome to Loyalty Leap!
+            Welcome to Keeva!
           </h1>
           <p className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
-            Elevate your customer relationships and reward loyalty. Loyalty Leap is your all-in-one platform for digital loyalty programs, personalized rewards, and insightful analytics.
+            Elevate your customer relationships and reward loyalty. Keeva is your all-in-one platform for digital loyalty programs, personalized rewards, and insightful analytics.
           </p>
           <div className="mt-10 flex flex-col sm:flex-row justify-center items-center gap-4 sm:gap-6">
             <Button asChild size="lg" className="bg-primary hover:bg-primary/90 text-lg px-8 py-3.5 w-full sm:w-auto">
@@ -64,7 +64,7 @@ export default function HomePage() {
                 <Users className="h-8 w-8" /> Your Personalized Loyalty Hub
               </h3>
               <p className="text-muted-foreground leading-relaxed text-lg">
-                With Loyalty Leap, managing your rewards across all your favorite enrolled businesses is effortless. Track points, redeem exciting rewards, and receive tailored offers, all in one place.
+                With Keeva, managing your rewards across all your favorite enrolled businesses is effortless. Track points, redeem exciting rewards, and receive tailored offers, all in one place.
               </p>
               <ul className="space-y-3 text-lg">
                 <li className="flex items-start gap-3"><CheckCircle className="h-6 w-6 text-accent flex-shrink-0 mt-1" /><span>Single account point collection.</span></li>
@@ -78,7 +78,7 @@ export default function HomePage() {
             <div className="rounded-xl overflow-hidden shadow-2xl transform hover:scale-105 transition-transform duration-300">
               <Image
                 src="https://placehold.co/600x450.png"
-                alt="Customer using Loyalty Leap app on phone"
+                alt="Customer using Keeva app on phone"
                 width={600}
                 height={450}
                 className="object-cover w-full h-full"
@@ -100,7 +100,7 @@ export default function HomePage() {
             <div className="rounded-xl overflow-hidden shadow-2xl md:order-last transform hover:scale-105 transition-transform duration-300">
               <Image
                 src="https://placehold.co/600x450.png"
-                alt="Business dashboard analytics on Loyalty Leap"
+                alt="Business dashboard analytics on Keeva"
                 width={600}
                 height={450}
                 className="object-cover w-full h-full"
@@ -112,7 +112,7 @@ export default function HomePage() {
                 <Briefcase className="h-8 w-8" /> Tools for Growth & Engagement
               </h3>
               <p className="text-muted-foreground leading-relaxed text-lg">
-                Loyalty Leap provides businesses with intuitive tools to create digital loyalty programs, manage customer activity, and gain valuable insights to tailor offers and boost retention.
+                Keeva provides businesses with intuitive tools to create digital loyalty programs, manage customer activity, and gain valuable insights to tailor offers and boost retention.
               </p>
                <ul className="space-y-3 text-lg">
                 <li className="flex items-start gap-3"><CheckCircle className="h-6 w-6 text-primary flex-shrink-0 mt-1" /><span>Effortless loyalty program creation.</span></li>
@@ -131,7 +131,7 @@ export default function HomePage() {
       <section className="py-10">
         <div className="container mx-auto px-4">
             <div className="text-center mb-12 sm:mb-16">
-                <h2 className="text-3xl sm:text-4xl font-headline font-semibold text-foreground">Key Features of Loyalty Leap</h2>
+                <h2 className="text-3xl sm:text-4xl font-headline font-semibold text-foreground">Key Features of Keeva</h2>
             </div>
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
                 <FeatureCard icon={CreditCard} title="Unified Points" description="Collect and manage loyalty points from various businesses all in one digital wallet." />
@@ -148,7 +148,7 @@ export default function HomePage() {
       {/* Call to Action Section */}
       <section className="py-12 sm:py-16 text-center bg-gradient-to-r from-primary via-blue-600 to-indigo-700 text-primary-foreground rounded-lg shadow-xl">
         <div className="container mx-auto px-4">
-          <h2 className="text-3xl sm:text-4xl font-headline font-semibold mb-4">Ready to Leap into Loyalty?</h2>
+          <h2 className="text-3xl sm:text-4xl font-headline font-semibold mb-4">Ready to Leap into Loyalty with Keeva?</h2>
           <p className="text-lg sm:text-xl opacity-90 max-w-xl mx-auto mb-8">
             Join users and businesses benefiting from a smarter, simpler way to manage loyalty.
           </p>

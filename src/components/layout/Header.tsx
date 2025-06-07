@@ -3,7 +3,7 @@
 
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Award, LogIn, LogOut, UserCircle, UserPlus, LayoutDashboard, Sun, Moon, ShoppingBag, Star, History as HistoryIcon, Sparkles as OffersIcon } from 'lucide-react'; // Award for Loyalty Leap
+import { Award, LogIn, LogOut, UserCircle, UserPlus, LayoutDashboard, Sun, Moon, ShoppingBag, Star, History as HistoryIcon, Sparkles as OffersIcon } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -24,7 +24,7 @@ export function Header() {
 
   const combinedLoading = customerLoading || adminLoading;
   
-  const titleText = "Loyalty Leap"; 
+  const titleText = "Keeva"; 
   let titleHref = "/"; 
 
   if (mounted) {
@@ -61,7 +61,7 @@ export function Header() {
 
   return (
     <header className={cn(
-      "sticky top-0 z-50 border-b shadow-sm h-16", 
+      "sticky top-0 z-50 border-b shadow-subtle h-16", 
       "bg-card text-card-foreground" 
     )}>
       <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex items-center justify-between">
