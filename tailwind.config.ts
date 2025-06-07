@@ -98,15 +98,8 @@ export default {
         'accordion-down': 'accordion-down 0.2s ease-out',
         'accordion-up': 'accordion-up 0.2s ease-out',
       },
-      backdropBlur: { 
-        xs: '2px',
-        sm: '4px',
-        md: '8px',
-        lg: '12px',
-        xl: '16px',
-        '2xl': '24px',
-        '3xl': '40px',
-      }
+      // Removed explicit backdropBlur from here as standard Tailwind includes them
+      // and they are no longer used by default in Card/Dialog.
     },
   },
   plugins: [require('tailwindcss-animate')],

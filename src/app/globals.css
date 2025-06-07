@@ -9,7 +9,7 @@ body {
 
 @layer base {
   :root {
-    /* LIGHT MODE HSL DEFINITIONS (Restored & Enhanced) */
+    /* Standard Light Mode HSL Definitions */
     --background-hsl: 0 0% 100%;        /* White */
     --foreground-hsl: 222 84% 5%;       /* Dark Blue/Black */
     --card-hsl: 0 0% 100%;              /* White */
@@ -30,7 +30,7 @@ body {
     --input-hsl: 214 32% 91%;           /* Light gray input */
     --ring-hsl: 217 89% 61%;            /* Ring matches primary */
 
-    /* LIGHT MODE ACTUAL COLOR PROPERTIES */
+    /* Light Mode Actual Color Properties */
     --background: hsl(var(--background-hsl));
     --foreground: hsl(var(--foreground-hsl));
     --card: hsl(var(--card-hsl));
@@ -56,9 +56,9 @@ body {
     --chart-3: 197 37% 24%;
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
-    --radius: 0.75rem;
+    --radius: 0.75rem; /* Kept modern radius */
 
-    /* Sidebar variables for LIGHT MODE */
+    /* Sidebar variables for Light Mode */
     --sidebar-background-hsl: var(--background-hsl);
     --sidebar-foreground-hsl: var(--foreground-hsl);
     --sidebar-primary-hsl: var(--primary-hsl);
@@ -79,28 +79,28 @@ body {
   }
 
   .dark {
-    /* "GREAT" DARK MODE HSL DEFINITIONS (Target Theme) */
-    --background-hsl-dark: 220 25% 6%;        /* Very Dark Navy/Charcoal */
-    --foreground-hsl-dark: 210 30% 96%;      /* Off-white */
-    --card-hsl-dark: 220 25% 10%;             /* Slightly lighter than bg */
-    --card-foreground-hsl-dark: 210 30% 92%;  /* Softer off-white for card text */
-    --popover-hsl-dark: 220 25% 10%;          /* Consistent with cards */
-    --popover-foreground-hsl-dark: 210 30% 92%;
-    --primary-hsl-dark: 217 80% 55%;          /* Deeper Blue */
-    --primary-foreground-hsl-dark: 0 0% 100%; /* White */
-    --secondary-hsl-dark: 220 20% 15%;        /* Darker subtle elements */
-    --secondary-foreground-hsl-dark: 210 30% 80%;/* Lighter gray for secondary text */
-    --muted-hsl-dark: 220 20% 13%;            /* Very subtle darker shade */
-    --muted-foreground-hsl-dark: 210 25% 60%; /* Medium-dark gray for muted text */
-    --accent-hsl-dark: 145 50% 35%;           /* Deeper Green */
-    --accent-foreground-hsl-dark: 0 0% 100%;   /* White */
-    --destructive-hsl-dark: 0 70% 45%;          /* Visible red */
-    --destructive-foreground-hsl-dark: 0 0% 98%;/* Off-white for destructive text */
-    --border-hsl-dark: 220 20% 20%;           /* Subtle dark border */
-    --input-hsl-dark: 220 20% 18%;            /* Dark input fields */
-    --ring-hsl-dark: 217 80% 55%;             /* Matches new dark primary */
+    /* Standard Dark Mode HSL Definitions */
+    --background-hsl-dark: 215 28% 17%;      /* Dark Slate Blue */
+    --foreground-hsl-dark: 210 40% 98%;      /* Off-white */
+    --card-hsl-dark: 215 28% 22%;           /* Slightly Lighter Slate Blue */
+    --card-foreground-hsl-dark: 210 40% 98%;
+    --popover-hsl-dark: 215 28% 22%;
+    --popover-foreground-hsl-dark: 210 40% 98%;
+    --primary-hsl-dark: 217 89% 61%;        /* Vibrant Blue (consistent with light) */
+    --primary-foreground-hsl-dark: 0 0% 100%;
+    --secondary-hsl-dark: 215 20% 25%;       /* Darker Gray */
+    --secondary-foreground-hsl-dark: 210 40% 90%;
+    --muted-hsl-dark: 215 20% 25%;
+    --muted-foreground-hsl-dark: 210 20% 75%;
+    --accent-hsl-dark: 145 58% 42%;          /* Vibrant Green (consistent with light) */
+    --accent-foreground-hsl-dark: 0 0% 100%;
+    --destructive-hsl-dark: 0 70% 50%;       /* Visible Red */
+    --destructive-foreground-hsl-dark: 0 0% 98%;
+    --border-hsl-dark: 215 20% 30%;          /* Darker Border */
+    --input-hsl-dark: 215 20% 30%;
+    --ring-hsl-dark: 217 89% 61%;
 
-    /* DARK MODE ACTUAL COLOR PROPERTY OVERRIDES - THIS IS CRUCIAL */
+    /* Dark Mode Actual Color Property Overrides */
     --background: hsl(var(--background-hsl-dark));
     --foreground: hsl(var(--foreground-hsl-dark));
     --card: hsl(var(--card-hsl-dark));
@@ -121,7 +121,7 @@ body {
     --input: hsl(var(--input-hsl-dark));
     --ring: hsl(var(--ring-hsl-dark));
 
-    /* Sidebar variables for DARK MODE - using dark HSLs */
+    /* Sidebar variables for Dark Mode */
     --sidebar-background-hsl: var(--background-hsl-dark);
     --sidebar-foreground-hsl: var(--foreground-hsl-dark);
     --sidebar-primary-hsl: var(--primary-hsl-dark);
@@ -144,14 +144,14 @@ body {
 
 @layer base {
   * {
-    @apply border-border; /* This will now correctly use the themed --border variable */
+    @apply border-border;
   }
   body {
-    @apply bg-background text-foreground; /* This will now correctly use themed --background and --foreground */
+    @apply bg-background text-foreground;
   }
 }
 
-/* Custom animation for slow spin */
+/* Custom animation for slow spin - kept as it's generally useful */
 @layer utilities {
   .animate-spin-slow {
     animation: spin-slow 5s linear infinite;
@@ -160,18 +160,5 @@ body {
     to {
       transform: rotate(360deg);
     }
-  }
-  .text-glow-primary {
-    /* Uses themed --primary-hsl and --primary-hsl-dark via var(--primary) */
-    text-shadow: 0 0 5px hsla(var(--primary-hsl), 0.5), 0 0 15px hsla(var(--primary-hsl), 0.3);
-  }
-  .dark .text-glow-primary {
-    text-shadow: 0 0 8px hsla(var(--primary-hsl-dark), 0.7), 0 0 20px hsla(var(--primary-hsl-dark), 0.5);
-  }
-  .text-glow-accent {
-     text-shadow: 0 0 5px hsla(var(--accent-hsl), 0.5), 0 0 15px hsla(var(--accent-hsl), 0.3);
-  }
-  .dark .text-glow-accent {
-     text-shadow: 0 0 8px hsla(var(--accent-hsl-dark), 0.7), 0 0 20px hsla(var(--accent-hsl-dark), 0.5);
   }
 }

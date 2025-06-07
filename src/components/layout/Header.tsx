@@ -3,7 +3,7 @@
 
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Award, LogIn, LogOut, UserCircle, UserPlus, LayoutDashboard, Sun, Moon, ShoppingBag, Star, History as HistoryIcon, Sparkles as OffersIcon } from 'lucide-react'; // Removed Settings icon as it's not used here
+import { Award, LogIn, LogOut, UserCircle, UserPlus, LayoutDashboard, Sun, Moon, ShoppingBag, Star, History as HistoryIcon, Sparkles as OffersIcon } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -39,7 +39,7 @@ export function Header() {
   
   if (!mounted) {
     return (
-      <header className="bg-card/80 dark:bg-card/60 backdrop-blur-lg border-b border-white/20 dark:border-white/10 shadow-sm sticky top-0 z-50">
+      <header className="bg-card border-b border-border shadow-sm sticky top-0 z-50">
         <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-4 flex items-center justify-between">
           <div className="flex items-center gap-2 text-primary">
             {displayIcon}
@@ -61,14 +61,13 @@ export function Header() {
 
   return (
     <header className={cn(
-      "sticky top-0 z-50 border-b shadow-md", // Added shadow-md for more depth
-      "bg-card/80 dark:bg-card/70 backdrop-blur-lg", // Glassmorphism for header
-      "border-white/10 dark:border-zinc-700/20" // Subtle border for glass
+      "sticky top-0 z-50 border-b shadow-sm", // Simplified shadow
+      "bg-card text-card-foreground" // Solid, theme-aware background
     )}>
       <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-4 flex items-center justify-between">
         <Link href={titleHref} className="flex items-center gap-2 hover:opacity-80 transition-opacity" aria-label={`Go to ${isAdminAuthenticated ? 'Admin Dashboard' : isCustomerAuth ? 'My Loyalty Page' : 'Homepage'}`}>
           {displayIcon}
-          <h1 className="text-xl sm:text-2xl font-headline font-semibold text-primary hover:text-glow-primary transition-all duration-300">{titleText}</h1>
+          <h1 className="text-xl sm:text-2xl font-headline font-semibold text-primary hover:text-primary/80 transition-colors duration-300">{titleText}</h1>
         </Link>
         
         <nav className="flex items-center gap-1 sm:gap-2">
@@ -118,11 +117,6 @@ export function Header() {
                     <UserCircle className="h-5 w-5" />
                   </Link>
                 </Button>
-                {/* Logout button can be moved to profile page if header space is tight */}
-                {/* <Button variant="outline" size="sm" onClick={customerLogout} aria-label="Logout from your account">
-                  <LogOut className="h-5 w-5 sm:mr-1" />
-                  <span className="hidden sm:inline">Logout</span>
-                </Button> */}
               </>
             ) : (
              !isLoginPage && !isSignupPage && (
@@ -148,7 +142,7 @@ export function Header() {
             size="icon"
             onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
             aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
-            className="ml-1 sm:ml-2 rounded-full" // Rounded full for theme toggle
+            className="ml-1 sm:ml-2 rounded-full"
           >
             <Sun className="h-5 w-5 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
             <Moon className="absolute h-5 w-5 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
