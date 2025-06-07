@@ -79,7 +79,7 @@ export default function AdminDashboardPage() {
   }, [adminAuthLoading, isAdminAuthenticated, adminUser, router, fetchAdminPageData, hasFetchedInitialData]);
 
   const handleDataRefreshNeeded = useCallback(() => {
-    setHasFetchedInitialData(false);
+    setHasFetchedInitialData(false); // This will trigger fetchAdminPageData in the useEffect
   }, []);
 
   const totalPointsInBusiness = useMemo(() => users.reduce((total, user) => {
@@ -105,7 +105,7 @@ export default function AdminDashboardPage() {
 
   const StatCard = ({ title, value, icon: Icon, onClick }: { title: string; value: string | number; icon: React.ElementType; onClick?: () => void }) => (
     <Card
-        className={`bg-card shadow hover:shadow-xl transition-all duration-300 ease-in-out ${onClick ? 'cursor-pointer hover:border-primary hover:scale-[1.03] hover:ring-2 hover:ring-primary hover:ring-offset-1' : 'hover:shadow-lg'}`}
+        className={`bg-card shadow-md hover:shadow-xl transition-all duration-300 ease-in-out ${onClick ? 'cursor-pointer hover:border-primary hover:scale-[1.03] hover:ring-2 hover:ring-primary hover:ring-offset-1' : 'hover:shadow-lg'}`}
         onClick={onClick}
         role={onClick ? "button" : undefined}
         tabIndex={onClick ? 0 : undefined}
@@ -132,7 +132,7 @@ export default function AdminDashboardPage() {
       <div className="w-full space-y-8 animate-pulse">
         <div className="text-left pb-4 border-b border-border"> <Skeleton className="h-8 w-1/2 mb-2" /> <Skeleton className="h-5 w-3/4" /> </div>
         <div className="flex flex-wrap gap-2 mb-6"> <Skeleton className="h-10 w-40" /> <Skeleton className="h-10 w-44" /> <Skeleton className="h-10 w-48" /> </div>
-        <Card className="bg-accent/10 border-accent"> <CardHeader> <Skeleton className="h-7 w-1/3 mb-1" /> <Skeleton className="h-4 w-2/3" /> </CardHeader> <CardContent className="flex items-center justify-between"> <Skeleton className="h-10 w-1/4" /> <Skeleton className="h-9 w-24" /> </CardContent> </Card>
+        <Card className="bg-card border-border shadow-lg"> <CardHeader> <Skeleton className="h-7 w-1/3 mb-1" /> <Skeleton className="h-4 w-2/3" /> </CardHeader> <CardContent className="flex items-center justify-between"> <Skeleton className="h-10 w-1/4" /> <Skeleton className="h-9 w-24" /> </CardContent> </Card>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3"> {[1,2,3].map(i => ( <Card key={i}> <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"> <Skeleton className="h-5 w-2/5"/> <Skeleton className="h-4 w-4"/> </CardHeader> <CardContent> <Skeleton className="h-8 w-1/2 mb-1"/> <Skeleton className="h-3 w-3/5"/> </CardContent> </Card> ))} </div>
         <Card> <CardHeader> <Skeleton className="h-8 w-2/5 mb-1" /> <Skeleton className="h-4 w-3/5" /> </CardHeader> <CardContent> <Skeleton className="h-10 w-full mb-4" /> <Skeleton className="h-64 w-full" /> </CardContent> </Card>
       </div>
@@ -153,7 +153,7 @@ export default function AdminDashboardPage() {
       <div className="w-full space-y-8 animate-pulse">
         <div className="text-left pb-4 border-b border-border"> <Skeleton className="h-8 w-1/2 mb-2" /> <Skeleton className="h-5 w-3/4" /> </div>
         <div className="flex flex-wrap gap-2 mb-6"> <Skeleton className="h-10 w-40" /> <Skeleton className="h-10 w-44" /> <Skeleton className="h-10 w-48" /> </div>
-        {(adminUser?.businessId || managedBusiness) && <Card className="bg-accent/10 border-accent"> <CardHeader> <Skeleton className="h-7 w-1/3 mb-1" /> <Skeleton className="h-4 w-2/3" /> </CardHeader> <CardContent className="flex items-center justify-between"> <Skeleton className="h-10 w-1/4" /> <Skeleton className="h-9 w-24" /> </CardContent> </Card>}
+        {(adminUser?.businessId || managedBusiness) && <Card className="bg-card border-border shadow-lg"> <CardHeader> <Skeleton className="h-7 w-1/3 mb-1" /> <Skeleton className="h-4 w-2/3" /> </CardHeader> <CardContent className="flex items-center justify-between"> <Skeleton className="h-10 w-1/4" /> <Skeleton className="h-9 w-24" /> </CardContent> </Card>}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3"> {[1,2,3].map(i => ( <Card key={i}> <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"> <Skeleton className="h-5 w-2/5"/> <Skeleton className="h-4 w-4"/> </CardHeader> <CardContent> <Skeleton className="h-8 w-1/2 mb-1"/> <Skeleton className="h-3 w-3/5"/> </CardContent> </Card> ))} </div>
         <Card> <CardHeader> <Skeleton className="h-8 w-2/5 mb-1" /> <Skeleton className="h-4 w-3/5" /> </CardHeader> <CardContent> <Skeleton className="h-10 w-full mb-4" /> <Skeleton className="h-64 w-full" /> </CardContent> </Card>
       </div>
@@ -186,14 +186,36 @@ export default function AdminDashboardPage() {
         </div>
 
         {managedBusiness.joinCode && (
-          <Card className="bg-accent/10 border-accent shadow-md">
-            <CardHeader>
-              <CardTitle className="font-headline text-xl sm:text-2xl flex items-center text-accent"> <KeyRound className="h-6 w-6 mr-2" /> Your Business Join Code </CardTitle>
-              <CardDescription className="text-accent/80"> Share this code with customers to join your loyalty program.</CardDescription>
+          <Card className="bg-gradient-to-br from-primary via-primary/90 to-blue-700 text-primary-foreground shadow-xl rounded-xl p-6 hover:shadow-2xl transition-shadow duration-300 ease-in-out">
+            <CardHeader className="pb-4">
+              <div className="flex items-center justify-between">
+                <CardTitle className="font-headline text-xl sm:text-2xl flex items-center">
+                  <KeyRound className="h-7 w-7 mr-3" /> Your Business Join Code
+                </CardTitle>
+                <Copy 
+                  className="h-7 w-7 cursor-pointer hover:text-primary-foreground/80 transition-colors active:scale-90" 
+                  onClick={handleCopyJoinCode}
+                  aria-label="Copy join code"
+                  tabIndex={0}
+                  onKeyDown={(e) => e.key === 'Enter' && handleCopyJoinCode()}
+                />
+              </div>
+              <CardDescription className="text-primary-foreground/80 pt-1">Share this code with customers to join your loyalty program.</CardDescription>
             </CardHeader>
-            <CardContent className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-              <p className="text-3xl font-bold text-accent tracking-wider bg-accent/20 px-4 py-2 rounded-md self-start sm:self-center"> {managedBusiness.joinCode} </p>
-              <Button variant="outline" size="sm" onClick={handleCopyJoinCode} className="text-accent border-accent hover:bg-accent/20 self-stretch sm:self-auto transition-all active:scale-95"> <Copy className="mr-2 h-4 w-4" /> Copy Code </Button>
+            <CardContent className="text-center">
+              <div className="bg-background/10 backdrop-blur-sm text-primary-foreground inline-block px-6 py-3 rounded-lg shadow-inner">
+                <p className="text-5xl sm:text-6xl font-bold tracking-wider">
+                  {managedBusiness.joinCode}
+                </p>
+              </div>
+              <Button 
+                variant="secondary" 
+                size="lg" 
+                onClick={handleCopyJoinCode} 
+                className="mt-6 w-full sm:w-auto bg-primary-foreground text-primary hover:bg-primary-foreground/90 transition-all active:scale-95"
+              > 
+                <Copy className="mr-2 h-5 w-5" /> Copy Code 
+              </Button>
             </CardContent>
           </Card>
         )}
@@ -265,5 +287,3 @@ export default function AdminDashboardPage() {
     </div>
   );
 }
-
-    
