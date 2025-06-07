@@ -9,25 +9,25 @@ body {
 
 @layer base {
   :root {
-    --background-hsl: 208 27% 95%; /* For hsla() */
-    --foreground-hsl: 215 25% 27%; /* For hsla() */
-    --card-hsl: 0 0% 100%; /* For hsla() */
-    --card-foreground-hsl: 215 25% 27%; /* For hsla() */
-    --popover-hsl: 0 0% 100%; /* For hsla() */
-    --popover-foreground-hsl: 215 25% 27%; /* For hsla() */
-    --primary-hsl: 217 89% 61%; /* For hsla() */
-    --primary-foreground-hsl: 0 0% 100%; /* For hsla() */
-    --secondary-hsl: 216 34% 90%; /* For hsla() */
-    --secondary-foreground-hsl: 215 25% 27%; /* For hsla() */
-    --muted-hsl: 216 34% 95%; /* For hsla() */
-    --muted-foreground-hsl: 215 15% 55%; /* For hsla() */
-    --accent-hsl: 145 58% 42%; /* For hsla() */
-    --accent-foreground-hsl: 0 0% 100%; /* For hsla() */
-    --destructive-hsl: 0 72% 51%; /* For hsla() */
-    --destructive-foreground-hsl: 0 0% 100%; /* For hsla() */
-    --border-hsl: 214 20% 85%; /* For hsla() */
-    --input-hsl: 214 20% 85%; /* For hsla() */
-    --ring-hsl: 217 89% 61%; /* For hsla() */
+    --background-hsl: 208 27% 95%;
+    --foreground-hsl: 215 25% 27%;
+    --card-hsl: 0 0% 100%;
+    --card-foreground-hsl: 215 25% 27%;
+    --popover-hsl: 0 0% 100%;
+    --popover-foreground-hsl: 215 25% 27%;
+    --primary-hsl: 217 89% 61%;
+    --primary-foreground-hsl: 0 0% 100%;
+    --secondary-hsl: 216 34% 90%;
+    --secondary-foreground-hsl: 215 25% 27%;
+    --muted-hsl: 216 34% 95%;
+    --muted-foreground-hsl: 215 15% 55%;
+    --accent-hsl: 145 58% 42%;
+    --accent-foreground-hsl: 0 0% 100%;
+    --destructive-hsl: 0 72% 51%;
+    --destructive-foreground-hsl: 0 0% 100%;
+    --border-hsl: 214 20% 85%;
+    --input-hsl: 214 20% 85%;
+    --ring-hsl: 217 89% 61%;
 
     --background: hsl(var(--background-hsl));
     --foreground: hsl(var(--foreground-hsl));
@@ -53,9 +53,8 @@ body {
     --chart-3: 197 37% 24%;
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
-    --radius: 0.75rem; /* Increased base radius */
+    --radius: 0.75rem;
 
-    /* Sidebar variables using HSL for consistency */
     --sidebar-background: hsl(var(--background-hsl));
     --sidebar-foreground: hsl(var(--foreground-hsl));
     --sidebar-primary: hsl(var(--primary-hsl));
@@ -67,26 +66,25 @@ body {
   }
 
   .dark {
-    --background-hsl-dark: 215 28% 17%; /* For hsla() */
-    --foreground-hsl-dark: 210 40% 98%; /* For hsla() */
-    /* Card in dark mode: a bit lighter than pure background for the glass effect to pop */
-    --card-hsl-dark: 215 28% 22%; /* Adjusted for glass, For hsla() */
-    --card-foreground-hsl-dark: 210 40% 98%; /* For hsla() */
-    --popover-hsl-dark: 215 28% 22%; /* For hsla() */
-    --popover-foreground-hsl-dark: 210 40% 98%; /* For hsla() */
-    --primary-hsl-dark: 217 89% 61%; /* For hsla() */
-    --primary-foreground-hsl-dark: 0 0% 100%; /* For hsla() */
-    --secondary-hsl-dark: 215 20% 25%; /* For hsla() */
-    --secondary-foreground-hsl-dark: 210 40% 98%; /* For hsla() */
-    --muted-hsl-dark: 215 20% 25%; /* For hsla() */
-    --muted-foreground-hsl-dark: 210 20% 75%; /* For hsla() */
-    --accent-hsl-dark: 145 58% 42%; /* For hsla() */
-    --accent-foreground-hsl-dark: 0 0% 100%; /* For hsla() */
-    --destructive-hsl-dark: 0 63% 31%; /* For hsla() */
-    --destructive-foreground-hsl-dark: 210 40% 98%; /* For hsla() */
-    --border-hsl-dark: 215 20% 30%; /* For hsla() */
-    --input-hsl-dark: 215 20% 30%; /* For hsla() */
-    --ring-hsl-dark: 217 89% 61%; /* For hsla() */
+    --background-hsl-dark: 215 28% 17%;
+    --foreground-hsl-dark: 210 40% 98%;
+    --card-hsl-dark: 215 28% 22%; /* Base for dark glass panels */
+    --card-foreground-hsl-dark: 210 40% 98%;
+    --popover-hsl-dark: 215 28% 22%; /* Dark popovers to match cards */
+    --popover-foreground-hsl-dark: 210 40% 98%;
+    --primary-hsl-dark: 217 89% 61%;
+    --primary-foreground-hsl-dark: 0 0% 100%;
+    --secondary-hsl-dark: 215 20% 25%;
+    --secondary-foreground-hsl-dark: 210 40% 98%;
+    --muted-hsl-dark: 215 20% 25%;
+    --muted-foreground-hsl-dark: 210 20% 75%;
+    --accent-hsl-dark: 145 58% 42%;
+    --accent-foreground-hsl-dark: 0 0% 100%;
+    --destructive-hsl-dark: 0 63% 31%; /* Darker red */
+    --destructive-foreground-hsl-dark: 210 40% 98%;
+    --border-hsl-dark: 215 20% 30%;
+    --input-hsl-dark: 215 20% 30%;
+    --ring-hsl-dark: 217 89% 61%;
 
     --background: hsl(var(--background-hsl-dark));
     --foreground: hsl(var(--foreground-hsl-dark));
@@ -108,7 +106,6 @@ body {
     --input: hsl(var(--input-hsl-dark));
     --ring: hsl(var(--ring-hsl-dark));
 
-    /* Sidebar variables using HSL for consistency */
     --sidebar-background: hsl(var(--background-hsl-dark));
     --sidebar-foreground: hsl(var(--foreground-hsl-dark));
     --sidebar-primary: hsl(var(--primary-hsl-dark));
@@ -126,9 +123,6 @@ body {
   }
   body {
     @apply bg-background text-foreground;
-    /* Optional: Add a very subtle noise or gradient background for overall depth */
-    /* background-image: radial-gradient(hsla(var(--foreground-hsl), 0.03) 1px, transparent 1px);
-    background-size: 16px 16px; */
   }
 }
 
@@ -146,12 +140,12 @@ body {
     text-shadow: 0 0 5px hsla(var(--primary-hsl), 0.5), 0 0 15px hsla(var(--primary-hsl), 0.3);
   }
   .dark .text-glow-primary {
-    text-shadow: 0 0 8px hsla(var(--primary-hsl), 0.7), 0 0 20px hsla(var(--primary-hsl), 0.5);
+    text-shadow: 0 0 8px hsla(var(--primary-hsl-dark), 0.7), 0 0 20px hsla(var(--primary-hsl-dark), 0.5);
   }
   .text-glow-accent {
      text-shadow: 0 0 5px hsla(var(--accent-hsl), 0.5), 0 0 15px hsla(var(--accent-hsl), 0.3);
   }
   .dark .text-glow-accent {
-     text-shadow: 0 0 8px hsla(var(--accent-hsl), 0.7), 0 0 20px hsla(var(--accent-hsl), 0.5);
+     text-shadow: 0 0 8px hsla(var(--accent-hsl-dark), 0.7), 0 0 20px hsla(var(--accent-hsl-dark), 0.5);
   }
 }
