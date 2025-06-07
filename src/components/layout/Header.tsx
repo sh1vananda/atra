@@ -61,8 +61,8 @@ export function Header() {
 
   return (
     <header className={cn(
-      "sticky top-0 z-50 border-b shadow-sm", // Simplified shadow
-      "bg-card text-card-foreground" // Solid, theme-aware background
+      "sticky top-0 z-50 border-b shadow-sm", 
+      "bg-card text-card-foreground" 
     )}>
       <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-4 flex items-center justify-between">
         <Link href={titleHref} className="flex items-center gap-2 hover:opacity-80 transition-opacity" aria-label={`Go to ${isAdminAuthenticated ? 'Admin Dashboard' : isCustomerAuth ? 'My Loyalty Page' : 'Homepage'}`}>

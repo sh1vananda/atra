@@ -10,7 +10,7 @@ const Card = React.forwardRef<
   <div
     ref={ref}
     className={cn(
-      "rounded-xl border bg-card text-card-foreground shadow-lg", // Kept modern radius and shadow
+      "rounded-lg border bg-card text-card-foreground shadow-sm", // Standard ShadCN card
       className
     )}
     {...props}
@@ -31,13 +31,13 @@ const CardHeader = React.forwardRef<
 CardHeader.displayName = "CardHeader"
 
 const CardTitle = React.forwardRef<
-  HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement>
+  HTMLDivElement, // Corrected: Was HTMLParagraphElement, should be div for CardTitle
+  React.HTMLAttributes<HTMLHeadingElement> // Corrected: Should be HTMLHeadingElement for a title
 >(({ className, ...props }, ref) => (
-  <div
+  <h3 // Changed from div to h3 for semantic correctness of a title
     ref={ref}
     className={cn(
-      "text-2xl font-semibold leading-none tracking-tight",
+      "text-2xl font-semibold leading-none tracking-tight", // Standard ShadCN title
       className
     )}
     {...props}
@@ -46,10 +46,10 @@ const CardTitle = React.forwardRef<
 CardTitle.displayName = "CardTitle"
 
 const CardDescription = React.forwardRef<
-  HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement>
+  HTMLParagraphElement, // Correct, CardDescription is typically a p tag
+  React.HTMLAttributes<HTMLParagraphElement>
 >(({ className, ...props }, ref) => (
-  <div
+  <p // Changed from div to p for semantic correctness
     ref={ref}
     className={cn("text-sm text-muted-foreground", className)}
     {...props}
