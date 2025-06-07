@@ -95,7 +95,7 @@ export default function LoginPage() {
         <CardHeader className="text-center">
           <LogIn className="mx-auto h-10 w-10 text-primary mb-2" />
           <CardTitle className="font-headline text-3xl">Account Login</CardTitle>
-          <CardDescription>Access your Keeva customer or business account.</CardDescription>
+          <CardDescription>Access your ATRA customer or business account.</CardDescription>
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="customer" className="w-full">

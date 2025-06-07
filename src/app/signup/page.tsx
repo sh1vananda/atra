@@ -44,7 +44,7 @@ export default function SignupPage() {
         <CardHeader className="text-center">
           <UserPlus className="mx-auto h-10 w-10 sm:h-12 sm:w-12 text-primary mb-2" />
           <CardTitle className="font-headline text-3xl">Create an Account</CardTitle>
-          <CardDescription>Join Keeva as a customer or register your business.</CardDescription>
+          <CardDescription>Join ATRA as a customer or register your business.</CardDescription>
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="customer" className="w-full">

@@ -24,7 +24,7 @@ export function Header() {
 
   const combinedLoading = customerLoading || adminLoading;
   
-  const titleText = "Keeva"; 
+  const titleText = "ATRA"; 
   let titleHref = "/"; 
 
   if (mounted) {

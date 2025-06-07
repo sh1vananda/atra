@@ -33,8 +33,8 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        <title>Keeva | Digital Loyalty & Rewards Platform</title>
-        <meta name="description" content="Elevate customer relationships with Keeva, your all-in-one platform for digital loyalty programs, personalized rewards, and insightful analytics." />
+        <title>ATRA | Digital Loyalty & Rewards Platform</title>
+        <meta name="description" content="Elevate customer relationships with ATRA, your all-in-one platform for digital loyalty programs, personalized rewards, and insightful analytics." />
         <link rel="icon" href="/favicon.ico" sizes="any" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
