@@ -67,9 +67,9 @@ export default function HomePage() {
                 With ATRA, managing your rewards across all your favorite enrolled businesses is effortless. Track points, redeem exciting rewards, and receive tailored offers, all in one place.
               </p>
               <ul className="space-y-3 text-lg">
-                <li className="flex items-start gap-3"><CheckCircle className="h-6 w-6 text-accent flex-shrink-0 mt-1" /><span>Single account point collection.</span></li>
-                <li className="flex items-start gap-3"><CheckCircle className="h-6 w-6 text-accent flex-shrink-0 mt-1" /><span>Unified tracking & redemptions.</span></li>
-                <li className="flex items-start gap-3"><CheckCircle className="h-6 w-6 text-accent flex-shrink-0 mt-1" /><span>Personalized offers and deals.</span></li>
+                <li className="flex items-start gap-3"><CheckCircle className="h-6 w-6 text-green-600 flex-shrink-0 mt-1" /><span>Single account point collection.</span></li>
+                <li className="flex items-start gap-3"><CheckCircle className="h-6 w-6 text-green-600 flex-shrink-0 mt-1" /><span>Unified tracking & redemptions.</span></li>
+                <li className="flex items-start gap-3"><CheckCircle className="h-6 w-6 text-green-600 flex-shrink-0 mt-1" /><span>Personalized offers and deals.</span></li>
               </ul>
               <Button variant="secondary" size="lg" asChild className="mt-4 text-base">
                   <Link href="/loyalty">Explore Your Loyalty Hub <ArrowRight className="ml-2 h-5 w-5" /></Link>
@@ -115,9 +115,9 @@ export default function HomePage() {
                 ATRA provides businesses with intuitive tools to create digital loyalty programs, manage customer activity, and gain valuable insights to tailor offers and boost retention.
               </p>
                <ul className="space-y-3 text-lg">
-                <li className="flex items-start gap-3"><CheckCircle className="h-6 w-6 text-primary flex-shrink-0 mt-1" /><span>Effortless loyalty program creation.</span></li>
-                <li className="flex items-start gap-3"><CheckCircle className="h-6 w-6 text-primary flex-shrink-0 mt-1" /><span>Track purchases & award points easily.</span></li>
-                <li className="flex items-start gap-3"><CheckCircle className="h-6 w-6 text-primary flex-shrink-0 mt-1" /><span>Comprehensive admin dashboard.</span></li>
+                <li className="flex items-start gap-3"><CheckCircle className="h-6 w-6 text-green-600 flex-shrink-0 mt-1" /><span>Effortless loyalty program creation.</span></li>
+                <li className="flex items-start gap-3"><CheckCircle className="h-6 w-6 text-green-600 flex-shrink-0 mt-1" /><span>Track purchases & award points easily.</span></li>
+                <li className="flex items-start gap-3"><CheckCircle className="h-6 w-6 text-green-600 flex-shrink-0 mt-1" /><span>Comprehensive admin dashboard.</span></li>
               </ul>
               <Button variant="secondary" size="lg" asChild className="mt-4 text-base">
                   <Link href="/login">Access Business Portal <ArrowRight className="ml-2 h-5 w-5" /></Link>
