@@ -9,76 +9,77 @@ body {
 
 @layer base {
   :root {
-    /* Light Mode - PRD Aligned */
-    --background-hsl: 206 27% 95%; /* #F0F4F7 Light Gray */
-    --foreground-hsl: 215 25% 27%; /* Dark Gray for text */
+    /* Modern Light Mode - Clean & Professional */
+    --background-hsl: 210 60% 98%; /* Very light, almost white cool gray */
+    --foreground-hsl: 220 10% 20%; /* Dark, readable slate gray for text */
 
-    --card-hsl: 0 0% 100%; /* White */
-    --card-foreground-hsl: 215 25% 27%;
+    --card-hsl: 0 0% 100%; /* Pure white for cards for crispness */
+    --card-foreground-hsl: 220 10% 20%;
 
-    --popover-hsl: 0 0% 100%; /* White */
-    --popover-foreground-hsl: 215 25% 27%;
+    --popover-hsl: 0 0% 100%;
+    --popover-foreground-hsl: 220 10% 20%;
 
-    --primary-hsl: 217 89% 61%; /* #4285F4 Saturated Blue */
-    --primary-foreground-hsl: 0 0% 100%; /* White */
+    --primary-hsl: 217 91% 60%; /* Vibrant, modern blue */
+    --primary-foreground-hsl: 0 0% 100%; /* White text on primary */
 
-    --secondary-hsl: 210 20% 88%; /* Lighter gray for secondary elements */
-    --secondary-foreground-hsl: 215 25% 35%;
+    --secondary-hsl: 210 30% 94%; /* Light gray for secondary elements */
+    --secondary-foreground-hsl: 220 10% 30%; /* Slightly lighter slate for secondary text */
 
-    --muted-hsl: 210 20% 92%; /* Even lighter gray */
-    --muted-foreground-hsl: 215 18% 45%;
+    --muted-hsl: 210 30% 96%; /* Even lighter gray for muted backgrounds */
+    --muted-foreground-hsl: 210 20% 45%; /* Softer gray for muted text */
 
-    --accent-hsl: 145 53% 46%; /* #34A853 Green */
-    --accent-foreground-hsl: 0 0% 100%; /* White */
+    --accent-hsl: 158 70% 45%; /* Modern teal/green accent */
+    --accent-foreground-hsl: 0 0% 100%;
 
-    --destructive-hsl: 0 72% 51%; /* Standard Red */
-    --destructive-foreground-hsl: 0 0% 100%; /* White */
+    --destructive-hsl: 0 72% 51%; /* Standard, clear red */
+    --destructive-foreground-hsl: 0 0% 100%;
 
-    --border-hsl: 210 20% 80%; /* Light gray border */
-    --input-hsl: 210 20% 85%; /* Light gray input background */
-    --ring-hsl: 217 89% 61%; /* Ring matches primary */
+    --border-hsl: 210 20% 88%; /* Subtle light gray border */
+    --input-hsl: 210 30% 92%; /* Slightly darker input background for definition */
+    --ring-hsl: 217 91% 65%; /* Ring matches primary, slightly lighter for visibility */
 
-    --radius: 0.75rem; /* Modern rounded corners */
+    --radius: 0.75rem; /* Consistent modern rounded corners */
 
-    --chart-1: 217 89% 61%;
-    --chart-2: 145 53% 46%;
-    --chart-3: 35 92% 60%;
-    --chart-4: 265 89% 70%;
-    --chart-5: 195 89% 60%;
+    --chart-1: 217 91% 60%; /* primary */
+    --chart-2: 158 70% 45%; /* accent */
+    --chart-3: 35 92% 60%; /* orange */
+    --chart-4: 265 89% 70%; /* purple */
+    --chart-5: 195 89% 60%; /* cyan */
   }
 
   .dark {
-    /* Dark Mode - Sleek & Modern */
-    --background-hsl: 220 13% 10%; /* Very dark gray/navy */
-    --foreground-hsl: 210 20% 88%; /* Light gray for text */
+    /* Modern Dark Mode - Sophisticated & High Contrast */
+    --background-hsl: 220 18% 11%; /* Very dark desaturated blue/gray */
+    --foreground-hsl: 210 30% 90%; /* Light gray for text */
 
-    --card-hsl: 220 13% 14%; /* Slightly lighter than background */
-    --card-foreground-hsl: 210 20% 88%;
+    --card-hsl: 220 15% 16%; /* Slightly lighter than background for cards */
+    --card-foreground-hsl: 210 30% 90%;
 
-    --popover-hsl: 220 13% 12%; /* Consistent with card or slightly darker */
-    --popover-foreground-hsl: 210 20% 88%;
+    --popover-hsl: 220 15% 14%; /* Consistent with card or slightly darker */
+    --popover-foreground-hsl: 210 30% 90%;
 
-    --primary-hsl: 217 80% 65%; /* Slightly adjusted blue for dark mode */
+    --primary-hsl: 217 85% 65%; /* Readable blue on dark */
     --primary-foreground-hsl: 0 0% 100%;
 
-    --secondary-hsl: 220 13% 20%; /* Darker gray for secondary elements */
-    --secondary-foreground-hsl: 210 20% 75%;
+    --secondary-hsl: 220 15% 22%; /* Darker gray for secondary elements */
+    --secondary-foreground-hsl: 210 30% 75%;
 
-    --muted-hsl: 220 13% 18%;
-    --muted-foreground-hsl: 210 15% 55%;
+    --muted-hsl: 220 15% 20%;
+    --muted-foreground-hsl: 210 25% 55%;
 
-    --accent-hsl: 145 48% 50%; /* Adjusted green for dark mode */
-    --accent-foreground-hsl: 0 0% 100%;
+    --accent-hsl: 158 60% 55%; /* Brighter teal/green on dark */
+    --accent-foreground-hsl: 220 10% 10%; /* Dark text on accent for contrast */
 
-    --destructive-hsl: 0 60% 50%; /* Adjusted red for dark mode */
+    --destructive-hsl: 0 70% 55%; /* Clear red on dark */
     --destructive-foreground-hsl: 0 0% 100%;
 
-    --border-hsl: 220 13% 25%; /* Subtle dark border */
-    --input-hsl: 220 13% 22%; /* Dark input background */
-    --ring-hsl: 217 80% 65%; /* Ring matches dark primary */
+    --border-hsl: 220 15% 25%; /* Subtle dark border */
+    --input-hsl: 220 15% 20%; /* Dark input background */
+    --ring-hsl: 217 85% 70%; /* Ring matches dark primary, slightly lighter */
 
-    --chart-1: 217 80% 65%;
-    --chart-2: 145 48% 50%;
+    /* Chart colors for dark mode */
+    --chart-1: 217 85% 65%;
+    --chart-2: 158 60% 55%;
     --chart-3: 35 80% 65%;
     --chart-4: 265 80% 70%;
     --chart-5: 195 80% 65%;
@@ -110,49 +111,77 @@ body {
   }
 
   .dark {
-    --background: hsl(var(--background-hsl)); /* This should be background-hsl-dark */
-    --foreground: hsl(var(--foreground-hsl)); /* This should be foreground-hsl-dark */
-    --card: hsl(var(--card-hsl)); /* This should be card-hsl-dark */
-    --card-foreground: hsl(var(--card-foreground-hsl)); /* card-foreground-hsl-dark */
-    --popover: hsl(var(--popover-hsl)); /* popover-hsl-dark */
-    --popover-foreground: hsl(var(--popover-foreground-hsl)); /* popover-foreground-hsl-dark */
-    --primary: hsl(var(--primary-hsl)); /* primary-hsl-dark */
-    --primary-foreground: hsl(var(--primary-foreground-hsl)); /* primary-foreground-hsl-dark */
-    --secondary: hsl(var(--secondary-hsl)); /* secondary-hsl-dark */
-    --secondary-foreground: hsl(var(--secondary-foreground-hsl)); /* secondary-foreground-hsl-dark */
-    --muted: hsl(var(--muted-hsl)); /* muted-hsl-dark */
-    --muted-foreground: hsl(var(--muted-foreground-hsl)); /* muted-foreground-hsl-dark */
-    --accent: hsl(var(--accent-hsl)); /* accent-hsl-dark */
-    --accent-foreground: hsl(var(--accent-foreground-hsl)); /* accent-foreground-hsl-dark */
-    --destructive: hsl(var(--destructive-hsl)); /* destructive-hsl-dark */
-    --destructive-foreground: hsl(var(--destructive-foreground-hsl)); /* destructive-foreground-hsl-dark */
-    --border: hsl(var(--border-hsl)); /* border-hsl-dark */
-    --input: hsl(var(--input-hsl)); /* input-hsl-dark */
-    --ring: hsl(var(--ring-hsl)); /* ring-hsl-dark */
+    --background: hsl(var(--background-hsl));
+    --foreground: hsl(var(--foreground-hsl));
+    --card: hsl(var(--card-hsl));
+    --card-foreground: hsl(var(--card-foreground-hsl));
+    --popover: hsl(var(--popover-hsl));
+    --popover-foreground: hsl(var(--popover-foreground-hsl));
+    --primary: hsl(var(--primary-hsl));
+    --primary-foreground: hsl(var(--primary-foreground-hsl));
+    --secondary: hsl(var(--secondary-hsl));
+    --secondary-foreground: hsl(var(--secondary-foreground-hsl));
+    --muted: hsl(var(--muted-hsl));
+    --muted-foreground: hsl(var(--muted-foreground-hsl));
+    --accent: hsl(var(--accent-hsl));
+    --accent-foreground: hsl(var(--accent-foreground-hsl));
+    --destructive: hsl(var(--destructive-hsl));
+    --destructive-foreground: hsl(var(--destructive-foreground-hsl));
+    --border: hsl(var(--border-hsl));
+    --input: hsl(var(--input-hsl));
+    --ring: hsl(var(--ring-hsl));
+    
+    /* Ensure dark mode specific HSL variables are used for color properties */
+    --background: hsl(var(--background-hsl, 210 60% 98%)); /* Fallback to light if needed */
+    --foreground: hsl(var(--foreground-hsl, 220 10% 20%));
 
-    /* Corrected Dark Mode Color Property Overrides */
-    --background: hsl(var(--background-hsl-dark, 220 13% 10%));
-    --foreground: hsl(var(--foreground-hsl-dark, 210 20% 88%));
-    --card: hsl(var(--card-hsl-dark, 220 13% 14%));
-    --card-foreground: hsl(var(--card-foreground-hsl-dark, 210 20% 88%));
-    --popover: hsl(var(--popover-hsl-dark, 220 13% 12%));
-    --popover-foreground: hsl(var(--popover-foreground-hsl-dark, 210 20% 88%));
-    --primary: hsl(var(--primary-hsl-dark, 217 80% 65%));
+    --card: hsl(var(--card-hsl, 0 0% 100%));
+    --card-foreground: hsl(var(--card-foreground-hsl, 220 10% 20%));
+
+    --popover: hsl(var(--popover-hsl, 0 0% 100%));
+    --popover-foreground: hsl(var(--popover-foreground-hsl, 220 10% 20%));
+
+    --primary: hsl(var(--primary-hsl, 217 91% 60%));
+    --primary-foreground: hsl(var(--primary-foreground-hsl, 0 0% 100%));
+
+    --secondary: hsl(var(--secondary-hsl, 210 30% 94%));
+    --secondary-foreground: hsl(var(--secondary-foreground-hsl, 220 10% 30%));
+
+    --muted: hsl(var(--muted-hsl, 210 30% 96%));
+    --muted-foreground: hsl(var(--muted-foreground-hsl, 210 20% 45%));
+
+    --accent: hsl(var(--accent-hsl, 158 70% 45%));
+    --accent-foreground: hsl(var(--accent-foreground-hsl, 0 0% 100%));
+
+    --destructive: hsl(var(--destructive-hsl, 0 72% 51%));
+    --destructive-foreground: hsl(var(--destructive-foreground-hsl, 0 0% 100%));
+
+    --border: hsl(var(--border-hsl, 210 20% 88%));
+    --input: hsl(var(--input-hsl, 210 30% 92%));
+    --ring: hsl(var(--ring-hsl, 217 91% 65%));
+
+    /* Explicitly override with dark mode variables */
+    --background: hsl(var(--background-hsl-dark, 220 18% 11%));
+    --foreground: hsl(var(--foreground-hsl-dark, 210 30% 90%));
+    --card: hsl(var(--card-hsl-dark, 220 15% 16%));
+    --card-foreground: hsl(var(--card-foreground-hsl-dark, 210 30% 90%));
+    --popover: hsl(var(--popover-hsl-dark, 220 15% 14%));
+    --popover-foreground: hsl(var(--popover-foreground-hsl-dark, 210 30% 90%));
+    --primary: hsl(var(--primary-hsl-dark, 217 85% 65%));
     --primary-foreground: hsl(var(--primary-foreground-hsl-dark, 0 0% 100%));
-    --secondary: hsl(var(--secondary-hsl-dark, 220 13% 20%));
-    --secondary-foreground: hsl(var(--secondary-foreground-hsl-dark, 210 20% 75%));
-    --muted: hsl(var(--muted-hsl-dark, 220 13% 18%));
-    --muted-foreground: hsl(var(--muted-foreground-hsl-dark, 210 15% 55%));
-    --accent: hsl(var(--accent-hsl-dark, 145 48% 50%));
-    --accent-foreground: hsl(var(--accent-foreground-hsl-dark, 0 0% 100%));
-    --destructive: hsl(var(--destructive-hsl-dark, 0 60% 50%));
+    --secondary: hsl(var(--secondary-hsl-dark, 220 15% 22%));
+    --secondary-foreground: hsl(var(--secondary-foreground-hsl-dark, 210 30% 75%));
+    --muted: hsl(var(--muted-hsl-dark, 220 15% 20%));
+    --muted-foreground: hsl(var(--muted-foreground-hsl-dark, 210 25% 55%));
+    --accent: hsl(var(--accent-hsl-dark, 158 60% 55%));
+    --accent-foreground: hsl(var(--accent-foreground-hsl-dark, 220 10% 10%));
+    --destructive: hsl(var(--destructive-hsl-dark, 0 70% 55%));
     --destructive-foreground: hsl(var(--destructive-foreground-hsl-dark, 0 0% 100%));
-    --border: hsl(var(--border-hsl-dark, 220 13% 25%));
-    --input: hsl(var(--input-hsl-dark, 220 13% 22%));
-    --ring: hsl(var(--ring-hsl-dark, 217 80% 65%));
+    --border: hsl(var(--border-hsl-dark, 220 15% 25%));
+    --input: hsl(var(--input-hsl-dark, 220 15% 20%));
+    --ring: hsl(var(--ring-hsl-dark, 217 85% 70%));
   }
 }
-
 
 @layer base {
   * {

@@ -22,32 +22,32 @@ export default function RootLayout({
     setHasMounted(true);
   }, []);
 
-  // Default to false or a server-friendly value until mounted
   const isAdminRoute = hasMounted ? pathname.startsWith('/admin') : false;
+  // Auth pages (login/signup) will use the default background gradient
   const isAuthRoute = hasMounted ? (pathname === '/login' || pathname === '/signup') : false;
 
-
-  let mainBgClass = 'bg-background';
+  let mainBgClass = 'bg-background'; // Default for most customer-facing pages
   if (isAdminRoute) {
     mainBgClass = 'bg-muted/40'; // Slightly different background for admin section
   } else if (isAuthRoute) {
-    mainBgClass = 'bg-gradient-to-br from-slate-50 to-gray-100 dark:from-slate-900 dark:to-gray-800'; // Auth pages background
+     // Gradient for login/signup pages, consistent in light/dark
+    mainBgClass = 'bg-gradient-to-br from-slate-50 via-gray-100 to-indigo-100 dark:from-slate-900 dark:via-gray-800 dark:to-indigo-950';
   }
 
-
-  const mainClassName = `flex-grow w-full max-w-7xl mx-auto py-6 sm:py-8 px-4 sm:px-6 lg:px-8 ${mainBgClass}`;
+  // Main content padding adjusted for a slightly more spacious feel
+  const mainClassName = `flex-grow w-full max-w-7xl mx-auto py-8 sm:py-10 px-4 sm:px-6 lg:px-8 ${mainBgClass}`;
   
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        <title>ATRA - Loyalty Platform</title>
-        <meta name="description" content="Your Digital Loyalty Platform" />
+        <title>Loyalty Leap - Your Digital Loyalty Platform</title> {/* Updated Title */}
+        <meta name="description" content="Elevate customer relationships with Loyalty Leap, your all-in-one platform for digital loyalty programs." />
         <link rel="icon" href="/favicon.ico" sizes="any" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
       </head>
-      <body className="font-body antialiased flex flex-col min-h-screen bg-background text-foreground selection:bg-primary/20 selection:text-primary">
+      <body className="font-body antialiased flex flex-col min-h-screen bg-background text-foreground selection:bg-primary/25 selection:text-primary-foreground"> {/* Primary foreground for selection text for better contrast */}
         <ThemeProvider
             attribute="class"
             defaultTheme="system"

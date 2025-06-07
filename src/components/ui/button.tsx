@@ -6,25 +6,25 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center whitespace-nowrap rounded-lg text-sm font-semibold ring-offset-background transition-all duration-150 ease-in-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 active:scale-[0.97] active:shadow-inner", // Tactile: rounded-lg, font-semibold, active state
+  "inline-flex items-center justify-center whitespace-nowrap rounded-lg text-sm font-semibold ring-offset-background transition-all duration-200 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-60 active:scale-[0.96] active:shadow-inner-lg",
   {
     variants: {
       variant: {
         default:
-          "bg-primary text-primary-foreground shadow-md hover:bg-primary/90 hover:shadow-lg hover:-translate-y-px", // Tactile: shadow, hover lift & shadow
+          "bg-primary text-primary-foreground shadow-md-strong hover:bg-primary/90 hover:shadow-lg-strong hover:-translate-y-0.5",
         destructive:
-          "bg-destructive text-destructive-foreground shadow-md hover:bg-destructive/90 hover:shadow-lg hover:-translate-y-px",
+          "bg-destructive text-destructive-foreground shadow-md-strong hover:bg-destructive/90 hover:shadow-lg-strong hover:-translate-y-0.5",
         outline:
-          "border border-input bg-background shadow-md hover:bg-accent hover:text-accent-foreground hover:shadow-lg hover:-translate-y-px",
+          "border border-input bg-background shadow-subtle hover:bg-accent hover:text-accent-foreground hover:shadow-md-strong hover:-translate-y-0.5",
         secondary:
-          "bg-secondary text-secondary-foreground shadow-md hover:bg-secondary/80 hover:shadow-lg hover:-translate-y-px",
-        ghost: "hover:bg-accent hover:text-accent-foreground", // Ghost has less shadow emphasis
-        link: "text-primary underline-offset-4 hover:underline",
+          "bg-secondary text-secondary-foreground shadow-subtle hover:bg-secondary/80 hover:shadow-md-strong hover:-translate-y-0.5",
+        ghost: "hover:bg-accent hover:text-accent-foreground active:bg-accent/90", // Softer active state for ghost
+        link: "text-primary underline-offset-4 hover:underline active:text-primary/80",
       },
       size: {
-        default: "h-11 px-5 py-2.5", // Slightly larger default
-        sm: "h-10 rounded-lg px-4", // Larger sm
-        lg: "h-12 rounded-lg px-8 text-base", // Larger lg
+        default: "h-11 px-6 py-2.5", // Slightly more padding
+        sm: "h-10 rounded-lg px-4 text-xs", // Defined sm size
+        lg: "h-12 rounded-lg px-8 text-base",
         icon: "h-10 w-10",
       },
     },

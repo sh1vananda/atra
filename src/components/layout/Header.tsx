@@ -24,7 +24,7 @@ export function Header() {
 
   const combinedLoading = customerLoading || adminLoading;
   
-  const titleText = "Loyalty Leap"; // Updated App Name
+  const titleText = "Loyalty Leap"; 
   let titleHref = "/"; 
 
   if (mounted) {
@@ -37,7 +37,7 @@ export function Header() {
   
   const displayIcon = <Award className="h-7 w-7 sm:h-8 sm:w-8 text-primary" />;
   
-  if (!mounted) {
+  if (!mounted) { // Skeleton for initial load to prevent layout shift
     return (
       <header className="bg-card border-b border-border shadow-sm sticky top-0 z-50">
         <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-4 flex items-center justify-between">
@@ -61,19 +61,19 @@ export function Header() {
 
   return (
     <header className={cn(
-      "sticky top-0 z-50 border-b shadow-md", // Clean: shadow-md for better depth
+      "sticky top-0 z-50 border-b shadow-subtle",
       "bg-card text-card-foreground" 
     )}>
-      <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 sm:py-4 flex items-center justify-between"> {/* Slightly more padding */}
+      <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between">
         <Link href={titleHref} className="flex items-center gap-2.5 hover:opacity-80 transition-opacity" aria-label={`Go to ${isAdminAuthenticated ? 'Admin Dashboard' : isCustomerAuth ? 'My Loyalty Page' : 'Homepage'}`}>
           {displayIcon}
-          <h1 className="text-xl sm:text-2xl font-headline font-bold text-primary hover:text-primary/80 transition-colors duration-300">{titleText}</h1> {/* Bolder title */}
+          <h1 className="text-xl sm:text-2xl font-headline font-bold text-primary hover:text-primary/80 transition-colors duration-300">{titleText}</h1>
         </Link>
         
-        <nav className="flex items-center gap-1.5 sm:gap-2"> {/* Slightly increased gap */}
+        <nav className="flex items-center gap-1.5 sm:gap-2">
           {combinedLoading ? (
             <>
-              <Skeleton className="h-10 w-10 rounded-lg sm:w-24" /> {/* Match button size */}
+              <Skeleton className="h-10 w-10 rounded-lg sm:w-24" />
               <Skeleton className="h-10 w-20 rounded-lg hidden sm:block" />
             </>
           ) : currentAdminRoute ? (
@@ -100,19 +100,19 @@ export function Header() {
           ) : (
             isCustomerAuth ? (
               <>
-                <Button variant="ghost" size="sm" asChild className={cn("font-medium", pathname === "/loyalty" ? "bg-primary/10 text-primary" : "")}>
+                <Button variant="ghost" size="sm" asChild className={cn("font-medium", pathname === "/loyalty" ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-foreground")}>
                   <Link href="/loyalty"><ShoppingBag className="h-4 w-4 mr-1.5"/>Loyalty</Link>
                 </Button>
-                <Button variant="ghost" size="sm" asChild className={cn("font-medium", pathname === "/rewards" ? "bg-primary/10 text-primary" : "")}>
+                <Button variant="ghost" size="sm" asChild className={cn("font-medium", pathname === "/rewards" ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-foreground")}>
                   <Link href="/rewards"><Star className="h-4 w-4 mr-1.5"/>Rewards</Link>
                 </Button>
-                <Button variant="ghost" size="sm" asChild className={cn("font-medium", pathname === "/history" ? "bg-primary/10 text-primary" : "")}>
+                <Button variant="ghost" size="sm" asChild className={cn("font-medium", pathname === "/history" ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-foreground")}>
                   <Link href="/history"><HistoryIcon className="h-4 w-4 mr-1.5"/>History</Link>
                 </Button>
-                <Button variant="ghost" size="sm" asChild className={cn("font-medium", pathname === "/offers" ? "bg-primary/10 text-primary" : "")}>
+                <Button variant="ghost" size="sm" asChild className={cn("font-medium", pathname === "/offers" ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-foreground")}>
                   <Link href="/offers"><OffersIcon className="h-4 w-4 mr-1.5"/>Offers</Link>
                 </Button>
-                <Button variant="ghost" size="icon" asChild className={cn("rounded-full", pathname === "/profile" ? "bg-primary/10 ring-2 ring-primary/30" : "")}>
+                <Button variant="ghost" size="icon" asChild className={cn("rounded-full text-muted-foreground hover:text-foreground", pathname === "/profile" ? "bg-primary/10 ring-2 ring-primary/30 !text-primary" : "")}>
                   <Link href="/profile" aria-label="View your profile">
                     <UserCircle className="h-5 w-5" />
                   </Link>
@@ -142,7 +142,7 @@ export function Header() {
             size="icon"
             onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
             aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
-            className="ml-1 sm:ml-2 rounded-full"
+            className="ml-1 sm:ml-2 rounded-full text-muted-foreground hover:text-foreground"
           >
             <Sun className="h-5 w-5 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
             <Moon className="absolute h-5 w-5 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
