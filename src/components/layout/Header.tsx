@@ -3,7 +3,7 @@
 
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Award, LogIn, LogOut, UserCircle, UserPlus, LayoutDashboard, Sun, Moon, ShoppingBag, Star, History as HistoryIcon, Sparkles as OffersIcon } from 'lucide-react';
+import { LogIn, LogOut, UserCircle, UserPlus, LayoutDashboard, Sun, Moon, ShoppingBag, Star, History as HistoryIcon, Sparkles as OffersIcon } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -11,6 +11,7 @@ import { usePathname } from 'next/navigation';
 import { useTheme } from "next-themes";
 import { useEffect, useState } from 'react';
 import { cn } from '@/lib/utils';
+import Image from 'next/image';
 
 export function Header() {
   const pathname = usePathname();
@@ -35,14 +36,22 @@ export function Header() {
     }
   }
   
-  const displayIcon = <Award className="h-6 w-6 text-primary" />;
+  const displayIcon = (
+    <Image 
+      src="/logo.png" // Assuming your logo is named logo.png and in /public
+      alt="ATRA Logo" 
+      width={32} // Adjust width as needed
+      height={32} // Adjust height as needed
+      className="h-8 w-8" // You can adjust styling here
+    />
+  );
   
   if (!mounted) { 
     return (
       <header className="bg-card border-b border-border shadow-sm sticky top-0 z-50 h-16">
         <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex items-center justify-between">
           <div className="flex items-center gap-2 text-primary">
-            {displayIcon}
+            <Skeleton className="h-8 w-8 rounded-full" /> {/* Skeleton for logo */}
             <h1 className="text-xl font-bold font-headline">{titleText}</h1>
           </div>
           <nav className="flex items-center gap-2">

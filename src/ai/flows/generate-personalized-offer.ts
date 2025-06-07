@@ -55,6 +55,11 @@ const generatePersonalizedOfferFlow = ai.defineFlow(
   },
   async input => {
     const {output} = await personalizedOfferPrompt(input);
-    return output!;
+    if (!output) {
+      // Log the input for debugging if the model fails to produce output
+      console.error('Personalized offer generation failed for input:', input);
+      throw new Error('Failed to generate personalized offer. The AI model did not return valid output.');
+    }
+    return output;
   }
 );

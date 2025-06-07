@@ -77,12 +77,11 @@ export default function HomePage() {
             </div>
             <div className="rounded-xl overflow-hidden shadow-2xl transform hover:scale-105 transition-transform duration-300">
               <Image
-                src="https://placehold.co/600x450.png"
+                src="/2.png"
                 alt="Customer using ATRA app on phone"
                 width={600}
                 height={450}
                 className="object-cover w-full h-full"
-                data-ai-hint="customer interaction"
               />
             </div>
           </div>
@@ -99,12 +98,11 @@ export default function HomePage() {
           <div className="grid md:grid-cols-2 gap-10 sm:gap-12 items-center">
             <div className="rounded-xl overflow-hidden shadow-2xl md:order-last transform hover:scale-105 transition-transform duration-300">
               <Image
-                src="https://placehold.co/600x450.png"
+                src="/1.png"
                 alt="Business dashboard analytics on ATRA"
                 width={600}
                 height={450}
                 className="object-cover w-full h-full"
-                data-ai-hint="business analytics"
               />
             </div>
             <div className="space-y-6 md:order-first">
