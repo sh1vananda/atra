@@ -2,81 +2,88 @@
 "use client";
 
 import { useState, useTransition } from 'react';
-import { useForm, type SubmitHandler, Controller } from 'react-hook-form'; // Added Controller here
+import { useForm, type SubmitHandler, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose, DialogDescription } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2, Receipt } from 'lucide-react';
+import { Loader2, FileText } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { User, UserMembership } from '@/types/user';
 import { useAuth } from '@/contexts/AuthContext';
 
-const purchaseSchema = z.object({
+const appealSchema = z.object({
   businessId: z.string().min(1, "Please select a business."),
   item: z.string().min(1, "Item name is required (e.g., Coffee, Sandwich)."),
   amount: z.coerce.number().min(0.01, "Amount must be a positive value."),
-  pointsEarned: z.coerce.number().int("Points must be a whole number.").min(0, "Points cannot be negative."),
+  pointsExpected: z.coerce.number().int("Points must be a whole number.").min(1, "Points expected must be at least 1."),
+  appealReason: z.string().min(10, "Please provide a brief reason for this appeal (min 10 characters).").max(300, "Reason too long (max 300 characters)."),
 });
 
-type PurchaseFormData = z.infer<typeof purchaseSchema>;
+type AppealFormData = z.infer<typeof appealSchema>;
 
 interface AddPastPurchaseDialogProps {
   user: User;
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
-  onPurchaseAdded: () => void;
+  // onPurchaseAdded is no longer needed as this submits an appeal, not an immediate purchase
 }
 
-export function AddPastPurchaseDialog({ user, isOpen, onOpenChange, onPurchaseAdded }: AddPastPurchaseDialogProps) {
+export function AddPastPurchaseDialog({ user, isOpen, onOpenChange }: AddPastPurchaseDialogProps) {
   const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
-  const { addMockPurchaseToUser } = useAuth();
+  const { submitPurchaseAppeal } = useAuth();
 
-  const { register, handleSubmit, reset, control, formState: { errors } } = useForm<PurchaseFormData>({
-    resolver: zodResolver(purchaseSchema),
+  const { register, handleSubmit, reset, control, formState: { errors } } = useForm<AppealFormData>({
+    resolver: zodResolver(appealSchema),
     defaultValues: {
       businessId: user.memberships && user.memberships.length > 0 ? user.memberships[0].businessId : '',
       item: '',
-      amount: undefined, // Use undefined for react-hook-form with zod numbers
-      pointsEarned: undefined,
+      amount: undefined,
+      pointsExpected: undefined,
+      appealReason: '',
     }
   });
 
-  const onSubmit: SubmitHandler<PurchaseFormData> = async (data) => {
+  const onSubmit: SubmitHandler<AppealFormData> = async (data) => {
     startTransition(async () => {
+      const selectedMembership = user.memberships?.find(m => m.businessId === data.businessId);
+      if (!selectedMembership) {
+        toast({ title: "Error", description: "Selected business membership not found.", variant: "destructive" });
+        return;
+      }
+
       try {
-        const success = await addMockPurchaseToUser(user.id, data.businessId, {
-          item: data.item,
-          amount: data.amount,
-          pointsEarned: data.pointsEarned,
+        const success = await submitPurchaseAppeal({
+          ...data,
+          businessName: selectedMembership.businessName, // Pass business name
         });
 
         if (success) {
           toast({
-            title: "Past Purchase Logged",
-            description: `Successfully logged purchase for ${data.item}.`,
+            title: "Appeal Submitted",
+            description: `Your request for ${data.item} has been submitted for review.`,
             variant: 'default',
           });
-          reset({ 
-            businessId: user.memberships && user.memberships.length > 0 ? user.memberships[0].businessId : '', 
-            item: '', 
-            amount: undefined, 
-            pointsEarned: undefined 
+          reset({
+            businessId: user.memberships && user.memberships.length > 0 ? user.memberships[0].businessId : '',
+            item: '',
+            amount: undefined,
+            pointsExpected: undefined,
+            appealReason: '',
           });
-          onPurchaseAdded();
           onOpenChange(false);
         } else {
-          throw new Error("Failed to log purchase. Please try again.");
+          // submitPurchaseAppeal should handle its own error toasts if it returns false
         }
       } catch (e) {
-        
         toast({
-          title: "Error",
-          description: e instanceof Error ? e.message : "Could not log purchase.",
+          title: "Submission Error",
+          description: e instanceof Error ? e.message : "Could not submit appeal.",
           variant: "destructive",
         });
       }
@@ -92,7 +99,8 @@ export function AddPastPurchaseDialog({ user, isOpen, onOpenChange, onPurchaseAd
             businessId: userMemberships.length > 0 ? userMemberships[0].businessId : '', 
             item: '', 
             amount: undefined, 
-            pointsEarned: undefined 
+            pointsExpected: undefined,
+            appealReason: '',
           });
       }
       onOpenChange(open);
@@ -100,11 +108,11 @@ export function AddPastPurchaseDialog({ user, isOpen, onOpenChange, onPurchaseAd
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center">
-            <Receipt className="mr-2 h-5 w-5 text-primary" />
-            Log a Past Purchase
+            <FileText className="mr-2 h-5 w-5 text-primary" />
+            Submit Purchase Appeal
           </DialogTitle>
           <DialogDescription>
-            Enter details from a past purchase for one of your enrolled businesses.
+            Enter details of a past purchase to request points. This will be reviewed by the business.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 py-4">
@@ -148,24 +156,36 @@ export function AddPastPurchaseDialog({ user, isOpen, onOpenChange, onPurchaseAd
               {errors.amount && <p className="text-sm text-destructive mt-1">{errors.amount.message}</p>}
             </div>
             <div>
-              <Label htmlFor="pointsEarned">Points Claimed</Label>
-              <Input id="pointsEarned" type="number" step="1" {...register("pointsEarned")} placeholder="e.g., 10" className="mt-1" />
-              {errors.pointsEarned && <p className="text-sm text-destructive mt-1">{errors.pointsEarned.message}</p>}
+              <Label htmlFor="pointsExpected">Points Expected</Label>
+              <Input id="pointsExpected" type="number" step="1" {...register("pointsExpected")} placeholder="e.g., 10" className="mt-1" />
+              {errors.pointsExpected && <p className="text-sm text-destructive mt-1">{errors.pointsExpected.message}</p>}
             </div>
+          </div>
+          
+          <div>
+            <Label htmlFor="appealReason">Reason for Appeal</Label>
+            <Textarea 
+              id="appealReason" 
+              {...register("appealReason")} 
+              placeholder="e.g., Forgot to scan my QR code during checkout." 
+              className="mt-1"
+              rows={3}
+            />
+            {errors.appealReason && <p className="text-sm text-destructive mt-1">{errors.appealReason.message}</p>}
           </div>
           
           <DialogFooter className="pt-4">
             <DialogClose asChild>
-              <Button type="button" variant="outline">Cancel</Button>
+              <Button type="button" variant="outline" disabled={isPending}>Cancel</Button>
             </DialogClose>
             <Button type="submit" disabled={isPending || userMemberships.length === 0} className="bg-primary hover:bg-primary/90">
               {isPending ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Logging...
+                  Submitting...
                 </>
               ) : (
-                "Log Purchase"
+                "Submit Appeal"
               )}
             </Button>
           </DialogFooter>

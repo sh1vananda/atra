@@ -3,11 +3,13 @@
 
 import type { AdminUser } from '@/types/admin';
 import type { Business, Reward } from '@/types/business';
+import type { PurchaseAppeal } from '@/types/appeal';
+import type { User, UserMembership, MockPurchase } from '@/types/user';
 import type { ReactNode } from 'react';
 import React, { createContext, useContext, useEffect, useState, useCallback, useMemo } from 'react';
 import { auth, db } from '@/lib/firebase';
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut, type User as FirebaseAuthUser, deleteUser as deleteFirebaseAuthUser } from 'firebase/auth';
-import { doc, setDoc, getDoc, collection, addDoc, serverTimestamp, query, where, getDocs, updateDoc, deleteDoc } from 'firebase/firestore';
+import { doc, setDoc, getDoc, collection, addDoc, serverTimestamp, query, where, getDocs, updateDoc, deleteDoc, writeBatch, orderBy } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 
 const generateJoinCode = (length = 6): string => {
@@ -30,6 +32,9 @@ interface AdminAuthContextType {
   addRewardToBusiness: (businessId: string, rewardData: Omit<Reward, 'id'>) => Promise<boolean>;
   updateRewardInBusiness: (businessId: string, updatedReward: Reward) => Promise<boolean>;
   deleteRewardFromBusiness: (businessId: string, rewardId: string) => Promise<boolean>;
+  getPendingPurchaseAppeals: (businessId: string) => Promise<PurchaseAppeal[]>;
+  approvePurchaseAppeal: (appealId: string, pointsToAward: number, itemDetails: {item: string, amount: number, userId: string, businessId: string}) => Promise<boolean>;
+  rejectPurchaseAppeal: (appealId: string, rejectionReason: string, itemDetails: {item: string, amount: number, userId: string, businessId: string}) => Promise<boolean>;
 }
 
 const AdminAuthContext = createContext<AdminAuthContextType | undefined>(undefined);
@@ -57,12 +62,10 @@ export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
               });
               setIsAdminAuthenticated(true);
             } else {
-              // Admin profile exists but is incomplete (missing businessId)
               setAdminUser(null);
               setIsAdminAuthenticated(false);
             }
           } else {
-            // This Firebase user is not an admin
             setAdminUser(null);
             setIsAdminAuthenticated(false);
           }
@@ -74,20 +77,18 @@ export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
           setLoading(false);
         }
       } else {
-        // No Firebase user (signed out)
         setAdminUser(null);
         setIsAdminAuthenticated(false);
         setLoading(false);
       }
     });
     return () => unsubscribe();
-  }, [toast]); // toast is stable
+  }, [toast]);
 
   const login = useCallback(async (email: string, pass: string) => {
     setLoading(true);
     try {
       await signInWithEmailAndPassword(auth, email, pass);
-      // onAuthStateChanged will handle setting admin state and primary loading=false.
     } catch (error: any) {
       let errorMessage = "Invalid admin email or password.";
        if (error.code) {
@@ -102,6 +103,7 @@ export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
         }
       }
       toast({ title: "Login Failed", description: errorMessage, variant: "destructive" });
+    } finally {
       setLoading(false);
     }
   }, [toast]);
@@ -167,8 +169,9 @@ export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
         try { await deleteFirebaseAuthUser(fbAdminAuthUser); } 
         catch (e) { /* empty */ }
       }
-      setLoading(false);
       return { success: false, message: errorMessage };
+    } finally {
+        setLoading(false);
     }
   }, [toast]);
 
@@ -289,6 +292,140 @@ export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [toast]);
 
+  const getPendingPurchaseAppeals = useCallback(async (businessId: string): Promise<PurchaseAppeal[]> => {
+    if (!businessId) return [];
+    try {
+      const appealsRef = collection(db, 'purchaseAppeals');
+      const q = query(appealsRef, where("businessId", "==", businessId), where("status", "==", "pending"), orderBy("submittedAt", "desc"));
+      const querySnapshot = await getDocs(q);
+      const appeals: PurchaseAppeal[] = [];
+      querySnapshot.forEach((docSnap) => {
+        appeals.push({ id: docSnap.id, ...docSnap.data() } as PurchaseAppeal);
+      });
+      return appeals;
+    } catch (error: any) {
+      toast({ title: "Error Fetching Appeals", description: error.message || "Could not load purchase appeals.", variant: "destructive" });
+      return [];
+    }
+  }, [toast]);
+
+  const approvePurchaseAppeal = useCallback(async (appealId: string, pointsToAward: number, itemDetails: {item: string, amount: number, userId: string, businessId: string}): Promise<boolean> => {
+    if (!adminUser?.uid) {
+        toast({title: "Authentication Error", description: "Admin not authenticated.", variant: "destructive"});
+        return false;
+    }
+    const batch = writeBatch(db);
+    const appealDocRef = doc(db, 'purchaseAppeals', appealId);
+    const userDocRef = doc(db, 'users', itemDetails.userId);
+
+    try {
+        const userDocSnap = await getDoc(userDocRef);
+        if (!userDocSnap.exists()) {
+            toast({title: "Error", description: "User profile not found.", variant: "destructive"});
+            return false;
+        }
+        const userData = userDocSnap.data() as User;
+        const membershipIndex = userData.memberships?.findIndex(m => m.businessId === itemDetails.businessId);
+
+        if (membershipIndex === undefined || membershipIndex === -1 || !userData.memberships) {
+            toast({title: "Error", description: "User membership with this business not found.", variant: "destructive"});
+            return false;
+        }
+
+        const updatedMembership = { ...userData.memberships[membershipIndex] };
+        updatedMembership.pointsBalance = (updatedMembership.pointsBalance || 0) + pointsToAward;
+        
+        const newPurchaseEntry: MockPurchase = {
+            id: `appeal-${appealId}`,
+            item: itemDetails.item,
+            amount: itemDetails.amount,
+            date: new Date().toISOString(),
+            pointsEarned: pointsToAward,
+            status: 'approved',
+            appealId: appealId,
+        };
+        updatedMembership.purchases = [newPurchaseEntry, ...(updatedMembership.purchases || [])].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+        
+        const updatedMemberships = [...userData.memberships];
+        updatedMemberships[membershipIndex] = updatedMembership;
+
+        batch.update(appealDocRef, { 
+            status: 'approved', 
+            reviewedAt: serverTimestamp(),
+            adminReviewedBy: adminUser.uid 
+        });
+        batch.update(userDocRef, { memberships: updatedMemberships });
+        
+        await batch.commit();
+        toast({title: "Appeal Approved", description: `${pointsToAward} points awarded to the user.`, variant: "default"});
+        return true;
+    } catch (error: any) {
+        toast({title: "Error Approving Appeal", description: error.message || "Could not approve appeal.", variant: "destructive"});
+        return false;
+    }
+  }, [toast, adminUser?.uid]);
+
+  const rejectPurchaseAppeal = useCallback(async (appealId: string, rejectionReason: string, itemDetails: {item: string, amount: number, userId: string, businessId: string}): Promise<boolean> => {
+    if (!adminUser?.uid) {
+        toast({title: "Authentication Error", description: "Admin not authenticated.", variant: "destructive"});
+        return false;
+    }
+    const batch = writeBatch(db);
+    const appealDocRef = doc(db, 'purchaseAppeals', appealId);
+    const userDocRef = doc(db, 'users', itemDetails.userId);
+
+    try {
+        const userDocSnap = await getDoc(userDocRef);
+        if (!userDocSnap.exists()) {
+            // If user doesn't exist, just update appeal status.
+            batch.update(appealDocRef, {
+              status: 'rejected',
+              rejectionReason: rejectionReason,
+              reviewedAt: serverTimestamp(),
+              adminReviewedBy: adminUser.uid,
+            });
+            await batch.commit();
+            toast({title: "Appeal Rejected", description: "User profile not found, appeal marked as rejected.", variant: "default"});
+            return true;
+        }
+
+        const userData = userDocSnap.data() as User;
+        const membershipIndex = userData.memberships?.findIndex(m => m.businessId === itemDetails.businessId);
+
+        if (membershipIndex !== undefined && membershipIndex !== -1 && userData.memberships) {
+            // Add a record of the rejected appeal to user's history for transparency
+            const updatedMembership = { ...userData.memberships[membershipIndex] };
+            const rejectedPurchaseEntry: MockPurchase = {
+                id: `appeal-${appealId}-rejected`,
+                item: `Appeal Rejected: ${itemDetails.item}`,
+                amount: itemDetails.amount,
+                date: new Date().toISOString(),
+                pointsEarned: 0,
+                status: 'rejected',
+                appealId: appealId,
+            };
+            updatedMembership.purchases = [rejectedPurchaseEntry, ...(updatedMembership.purchases || [])].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+            const updatedMemberships = [...userData.memberships];
+            updatedMemberships[membershipIndex] = updatedMembership;
+            batch.update(userDocRef, { memberships: updatedMemberships });
+        }
+        
+        batch.update(appealDocRef, { 
+            status: 'rejected', 
+            rejectionReason: rejectionReason,
+            reviewedAt: serverTimestamp(),
+            adminReviewedBy: adminUser.uid 
+        });
+        
+        await batch.commit();
+        toast({title: "Appeal Rejected", description: "The purchase appeal has been rejected.", variant: "default"});
+        return true;
+    } catch (error: any) {
+        toast({title: "Error Rejecting Appeal", description: error.message || "Could not reject appeal.", variant: "destructive"});
+        return false;
+    }
+  }, [toast, adminUser?.uid]);
+
 
   const contextValue = useMemo(() => ({
     adminUser,
@@ -301,7 +438,10 @@ export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
     addRewardToBusiness,
     updateRewardInBusiness,
     deleteRewardFromBusiness,
-  }), [adminUser, isAdminAuthenticated, loading, login, logout, signupBusiness, getManagedBusiness, addRewardToBusiness, updateRewardInBusiness, deleteRewardFromBusiness]);
+    getPendingPurchaseAppeals,
+    approvePurchaseAppeal,
+    rejectPurchaseAppeal,
+  }), [adminUser, isAdminAuthenticated, loading, login, logout, signupBusiness, getManagedBusiness, addRewardToBusiness, updateRewardInBusiness, deleteRewardFromBusiness, getPendingPurchaseAppeals, approvePurchaseAppeal, rejectPurchaseAppeal]);
 
   return <AdminAuthContext.Provider value={contextValue}>{children}</AdminAuthContext.Provider>;
 };

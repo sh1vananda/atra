@@ -5,6 +5,8 @@ export interface MockPurchase {
   amount: number;
   date: string; // ISO string date
   pointsEarned: number;
+  status?: 'pending' | 'approved' | 'rejected'; // For appeals, once processed
+  appealId?: string; // Link to the original appeal document if this purchase resulted from an appeal
 }
 
 export interface UserMembership {

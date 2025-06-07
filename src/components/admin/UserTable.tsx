@@ -9,31 +9,20 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 import { Button } from '@/components/ui/button';
 import { format } from 'date-fns';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { PlusCircle } from 'lucide-react';
-import { AddPurchaseDialog } from './AddPurchaseDialog';
+import { PlusCircle, AlertTriangle, Clock, CheckCircle } from 'lucide-react';
+// AddPurchaseDialog is no longer used here; admins approve/reject appeals.
 
 interface UserTableProps {
   users: User[];
-  onUserUpdate: () => void;
-  businessId: string; // ID of the business this admin is managing
+  onUserUpdate: () => void; // To refresh data if needed, e.g., after an appeal affects points
+  businessId: string; 
 }
 
 export function UserTable({ users, onUserUpdate, businessId }: UserTableProps) {
-  const [selectedUser, setSelectedUser] = useState<User | null>(null);
-  const [isAddPurchaseDialogOpen, setIsAddPurchaseDialogOpen] = useState(false);
-
+  
   if (!users || users.length === 0) {
     return <p className="text-muted-foreground text-center py-8">No users enrolled in this business found.</p>;
   }
-
-  const handleOpenAddPurchaseDialog = (user: User) => {
-    setSelectedUser(user);
-    setIsAddPurchaseDialogOpen(true);
-  };
-
-  const handlePurchaseAdded = () => {
-    onUserUpdate();
-  };
 
   return (
     <>
@@ -45,8 +34,8 @@ export function UserTable({ users, onUserUpdate, businessId }: UserTableProps) {
               <TableHead className="w-[100px]">User ID</TableHead>
               <TableHead>Name</TableHead>
               <TableHead>Email</TableHead>
-              <TableHead className="text-right">Points (in this Business)</TableHead>
-              <TableHead className="text-center">Actions</TableHead>
+              <TableHead className="text-right">Points Balance</TableHead>
+              {/* Actions column might be used for other things later, like view user details */}
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -57,52 +46,58 @@ export function UserTable({ users, onUserUpdate, businessId }: UserTableProps) {
               return (
                 <React.Fragment key={user.id}>
                   <TableRow>
-                    <TableCell className="font-medium">{user.id}</TableCell>
+                    <TableCell className="font-medium">{user.id.slice(0,8)}...</TableCell>
                     <TableCell>{user.name}</TableCell>
                     <TableCell>{user.email}</TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="text-right font-semibold text-primary">
                       {membership?.pointsBalance || 0}
-                    </TableCell>
-                    <TableCell className="text-center">
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        onClick={() => handleOpenAddPurchaseDialog(user)}
-                        className="text-primary border-primary hover:bg-primary/10 hover:text-primary"
-                        disabled={!membership} // Disable if user isn't technically a member (should not happen with current filtering)
-                      >
-                        <PlusCircle className="mr-1 h-4 w-4" /> Add Purchase
-                      </Button>
                     </TableCell>
                   </TableRow>
                   {purchasesInBusiness.length > 0 && (
                     <TableRow>
-                      <TableCell colSpan={5}>
+                      <TableCell colSpan={4}> {/* Adjusted colSpan */}
                         <Accordion type="single" collapsible className="w-full">
                           <AccordionItem value={`item-${user.id}-${businessId}`}>
                             <AccordionTrigger className="text-sm py-2 hover:no-underline text-muted-foreground hover:text-primary">
-                              View Purchases ({purchasesInBusiness.length}) for this Business
+                              View Purchases & Activity ({purchasesInBusiness.length}) for this Business
                             </AccordionTrigger>
                             <AccordionContent>
                               <Table>
                                 <TableHeader>
                                   <TableRow>
                                     <TableHead>Date</TableHead>
-                                    <TableHead>Item</TableHead>
+                                    <TableHead>Item/Activity</TableHead>
                                     <TableHead className="text-right">Amount</TableHead>
-                                    <TableHead className="text-right">Points Earned</TableHead>
+                                    <TableHead className="text-right">Points</TableHead>
+                                    <TableHead>Status</TableHead>
                                   </TableRow>
                                 </TableHeader>
                                 <TableBody>
                                   {purchasesInBusiness.sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()).map((purchase) => (
                                     <TableRow key={purchase.id}>
-                                      <TableCell>{format(new Date(purchase.date), 'PPpp')}</TableCell>
+                                      <TableCell>{format(new Date(purchase.date), 'PPp')}</TableCell>
                                       <TableCell>{purchase.item}</TableCell>
                                       <TableCell className="text-right">${purchase.amount.toFixed(2)}</TableCell>
                                       <TableCell className="text-right">
-                                        <Badge variant={purchase.pointsEarned >= 0 ? "default" : "destructive"} className={purchase.pointsEarned > 0 ? "bg-green-500 hover:bg-green-600" : purchase.pointsEarned < 0 ? "bg-red-500 hover:bg-red-600" : ""}>
+                                        <Badge variant={purchase.pointsEarned >= 0 ? "default" : "destructive"} className={purchase.pointsEarned > 0 ? "bg-green-100 text-green-700 border-green-300" : purchase.pointsEarned < 0 ? "bg-red-100 text-red-700 border-red-300" : "bg-muted"}>
                                           {purchase.pointsEarned > 0 ? `+${purchase.pointsEarned}` : purchase.pointsEarned}
                                         </Badge>
+                                      </TableCell>
+                                      <TableCell>
+                                        {purchase.status ? (
+                                          <Badge variant="outline" className={
+                                            purchase.status === 'approved' ? 'border-green-500 text-green-600' :
+                                            purchase.status === 'rejected' ? 'border-red-500 text-red-600' :
+                                            purchase.status === 'pending' ? 'border-yellow-500 text-yellow-600' : ''
+                                          }>
+                                            {purchase.status === 'approved' && <CheckCircle className="mr-1 h-3 w-3" />}
+                                            {purchase.status === 'rejected' && <AlertTriangle className="mr-1 h-3 w-3" />}
+                                            {purchase.status === 'pending' && <Clock className="mr-1 h-3 w-3" />}
+                                            {purchase.status.charAt(0).toUpperCase() + purchase.status.slice(1)}
+                                          </Badge>
+                                        ) : (
+                                          <Badge variant="outline">N/A</Badge>
+                                        )}
                                       </TableCell>
                                     </TableRow>
                                   ))}
@@ -114,21 +109,20 @@ export function UserTable({ users, onUserUpdate, businessId }: UserTableProps) {
                       </TableCell>
                     </TableRow>
                   )}
+                   {purchasesInBusiness.length === 0 && (
+                     <TableRow>
+                        <TableCell colSpan={4} className="text-center text-sm text-muted-foreground py-3">
+                            No purchase history for this user with your business yet.
+                        </TableCell>
+                     </TableRow>
+                   )}
                 </React.Fragment>
               )
             })}
           </TableBody>
         </Table>
       </ScrollArea>
-      {selectedUser && businessId && (
-        <AddPurchaseDialog
-          user={selectedUser}
-          businessId={businessId} // Pass the current business ID
-          isOpen={isAddPurchaseDialogOpen}
-          onOpenChange={setIsAddPurchaseDialogOpen}
-          onPurchaseAdded={handlePurchaseAdded}
-        />
-      )}
+      {/* AddPurchaseDialog is removed as admins now handle appeals, not direct purchase additions here */}
     </>
   );
 }

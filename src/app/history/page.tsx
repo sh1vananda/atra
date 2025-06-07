@@ -1,12 +1,12 @@
 
 "use client";
 
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import { HistoryListItem, type HistoryEntry } from '@/components/history/HistoryListItem';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { ScrollText, Info, ShoppingBag } from 'lucide-react';
+import { ScrollText, Info, ShoppingBag, AlertTriangle } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { MockPurchase, UserMembership } from '@/types/user';
 import { Button } from '@/components/ui/button';
@@ -18,8 +18,10 @@ function mapPurchaseToHistoryEntry(purchase: MockPurchase, businessName: string)
     date: new Date(purchase.date),
     description: purchase.item,
     pointsChange: purchase.pointsEarned,
-    type: purchase.pointsEarned >= 0 ? 'earn' : 'redeem',
+    type: purchase.pointsEarned >= 0 ? 'earn' : 'redeem', // 'redeem' implies negative pointsEarned
     businessName: businessName,
+    status: purchase.status, // Pass status
+    appealId: purchase.appealId,
   };
 }
 
@@ -32,6 +34,17 @@ export default function HistoryPage() {
       router.push('/login?redirect=/history');
     }
   }, [loading, isAuthenticated, router]);
+
+  const allHistoryEntries = useMemo(() => {
+    if (!user || !user.memberships) return [];
+    const entries: HistoryEntry[] = [];
+    user.memberships.forEach((membership: UserMembership) => {
+      membership.purchases?.forEach(purchase => {
+        entries.push(mapPurchaseToHistoryEntry(purchase, membership.businessName));
+      });
+    });
+    return entries.sort((a, b) => b.date.getTime() - a.date.getTime());
+  }, [user]);
 
   if (loading || !isAuthenticated || !user) {
     return (
@@ -69,34 +82,25 @@ export default function HistoryPage() {
     );
   }
 
-  const allHistoryEntries: HistoryEntry[] = [];
-  user.memberships?.forEach((membership: UserMembership) => {
-    membership.purchases?.forEach(purchase => {
-      allHistoryEntries.push(mapPurchaseToHistoryEntry(purchase, membership.businessName));
-    });
-  });
-
-  const sortedHistory = allHistoryEntries.sort((a, b) => b.date.getTime() - a.date.getTime());
-
   return (
     <div className="w-full space-y-10 sm:space-y-12">
        <div className="text-center border-b border-border pb-6 mb-8">
         <h1 className="text-3xl sm:text-4xl font-headline font-bold text-primary mb-2">Your Activity</h1>
-        <p className="text-lg text-muted-foreground max-w-2xl mx-auto">A record of your points earned and rewards redeemed across all programs.</p>
+        <p className="text-lg text-muted-foreground max-w-2xl mx-auto">A record of your points activity across all programs.</p>
       </div>
       <Card className="shadow-xl bg-card">
         <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <div>
             <CardTitle className="font-headline text-2xl sm:text-3xl">Transaction History</CardTitle>
-            <CardDescription>View your recent activity below.</CardDescription>
+            <CardDescription>View your recent activity below. Some items may be pending review.</CardDescription>
           </div>
           <ScrollText className="h-8 w-8 text-primary self-start sm:self-center"/>
         </CardHeader>
         <CardContent>
-          {sortedHistory.length > 0 ? (
+          {allHistoryEntries.length > 0 ? (
             <ul className="space-y-4">
-              {sortedHistory.map((entry) => (
-                <HistoryListItem key={entry.id + entry.businessName} entry={entry} />
+              {allHistoryEntries.map((entry) => (
+                <HistoryListItem key={entry.id + (entry.businessName || '')} entry={entry} />
               ))}
             </ul>
           ) : (
