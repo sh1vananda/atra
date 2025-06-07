@@ -24,7 +24,7 @@ export function Header() {
 
   const combinedLoading = customerLoading || adminLoading;
   
-  const titleText = "ATRA";
+  const titleText = "Loyalty Leap"; // Updated App Name
   let titleHref = "/"; 
 
   if (mounted) {
@@ -61,38 +61,38 @@ export function Header() {
 
   return (
     <header className={cn(
-      "sticky top-0 z-50 border-b shadow-sm", 
+      "sticky top-0 z-50 border-b shadow-md", // Clean: shadow-md for better depth
       "bg-card text-card-foreground" 
     )}>
-      <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-4 flex items-center justify-between">
-        <Link href={titleHref} className="flex items-center gap-2 hover:opacity-80 transition-opacity" aria-label={`Go to ${isAdminAuthenticated ? 'Admin Dashboard' : isCustomerAuth ? 'My Loyalty Page' : 'Homepage'}`}>
+      <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 sm:py-4 flex items-center justify-between"> {/* Slightly more padding */}
+        <Link href={titleHref} className="flex items-center gap-2.5 hover:opacity-80 transition-opacity" aria-label={`Go to ${isAdminAuthenticated ? 'Admin Dashboard' : isCustomerAuth ? 'My Loyalty Page' : 'Homepage'}`}>
           {displayIcon}
-          <h1 className="text-xl sm:text-2xl font-headline font-semibold text-primary hover:text-primary/80 transition-colors duration-300">{titleText}</h1>
+          <h1 className="text-xl sm:text-2xl font-headline font-bold text-primary hover:text-primary/80 transition-colors duration-300">{titleText}</h1> {/* Bolder title */}
         </Link>
         
-        <nav className="flex items-center gap-1 sm:gap-2">
+        <nav className="flex items-center gap-1.5 sm:gap-2"> {/* Slightly increased gap */}
           {combinedLoading ? (
             <>
-              <Skeleton className="h-9 w-9 rounded-full sm:w-24 sm:rounded-md" />
-              <Skeleton className="h-9 w-20 rounded-md hidden sm:block" />
+              <Skeleton className="h-10 w-10 rounded-lg sm:w-24" /> {/* Match button size */}
+              <Skeleton className="h-10 w-20 rounded-lg hidden sm:block" />
             </>
           ) : currentAdminRoute ? (
             isAdminAuthenticated ? (
               <>
-                <Button variant="ghost" size="sm" asChild className={cn("font-medium", pathname === "/admin/dashboard" && "bg-primary/10 text-primary")}>
+                <Button variant="ghost" size="default" asChild className={cn("font-semibold", pathname === "/admin/dashboard" && "bg-primary/10 text-primary")}>
                   <Link href="/admin/dashboard" aria-label="Admin Dashboard">
-                    <LayoutDashboard className="h-5 w-5 sm:mr-1.5" />
+                    <LayoutDashboard className="h-5 w-5 sm:mr-2" />
                     <span className="hidden sm:inline">Dashboard</span>
                   </Link>
                 </Button>
-                <Button variant="outline" size="sm" onClick={adminLogout} aria-label="Logout from admin account">
-                  <LogOut className="h-5 w-5 sm:mr-1.5" />
+                <Button variant="outline" size="default" onClick={adminLogout} aria-label="Logout from admin account">
+                  <LogOut className="h-5 w-5 sm:mr-2" />
                   <span className="hidden sm:inline">Logout</span>
                 </Button>
               </>
             ) : (
               !isLoginPage && !isSignupPage && ( 
-                 <Button variant="ghost" size="sm" asChild className="font-medium">
+                 <Button variant="ghost" size="default" asChild className="font-semibold">
                    <Link href="/">Customer Site</Link>
                  </Button>
               )
@@ -101,16 +101,16 @@ export function Header() {
             isCustomerAuth ? (
               <>
                 <Button variant="ghost" size="sm" asChild className={cn("font-medium", pathname === "/loyalty" ? "bg-primary/10 text-primary" : "")}>
-                  <Link href="/loyalty"><ShoppingBag className="h-4 w-4 mr-1 sm:mr-1.5"/>Loyalty</Link>
+                  <Link href="/loyalty"><ShoppingBag className="h-4 w-4 mr-1.5"/>Loyalty</Link>
                 </Button>
                 <Button variant="ghost" size="sm" asChild className={cn("font-medium", pathname === "/rewards" ? "bg-primary/10 text-primary" : "")}>
-                  <Link href="/rewards"><Star className="h-4 w-4 mr-1 sm:mr-1.5"/>Rewards</Link>
+                  <Link href="/rewards"><Star className="h-4 w-4 mr-1.5"/>Rewards</Link>
                 </Button>
                 <Button variant="ghost" size="sm" asChild className={cn("font-medium", pathname === "/history" ? "bg-primary/10 text-primary" : "")}>
-                  <Link href="/history"><HistoryIcon className="h-4 w-4 mr-1 sm:mr-1.5"/>History</Link>
+                  <Link href="/history"><HistoryIcon className="h-4 w-4 mr-1.5"/>History</Link>
                 </Button>
                 <Button variant="ghost" size="sm" asChild className={cn("font-medium", pathname === "/offers" ? "bg-primary/10 text-primary" : "")}>
-                  <Link href="/offers"><OffersIcon className="h-4 w-4 mr-1 sm:mr-1.5"/>Offers</Link>
+                  <Link href="/offers"><OffersIcon className="h-4 w-4 mr-1.5"/>Offers</Link>
                 </Button>
                 <Button variant="ghost" size="icon" asChild className={cn("rounded-full", pathname === "/profile" ? "bg-primary/10 ring-2 ring-primary/30" : "")}>
                   <Link href="/profile" aria-label="View your profile">
@@ -121,15 +121,15 @@ export function Header() {
             ) : (
              !isLoginPage && !isSignupPage && (
               <>
-                <Button variant="ghost" size="sm" asChild className="font-medium">
+                <Button variant="ghost" size="default" asChild className="font-semibold">
                   <Link href="/login" aria-label="Login page">
-                    <LogIn className="h-5 w-5 sm:mr-1.5" />
+                    <LogIn className="h-5 w-5 sm:mr-2" />
                     <span className="hidden sm:inline">Login</span>
                   </Link>
                 </Button>
-                <Button variant="default" size="sm" asChild className="font-medium">
+                <Button variant="default" size="default" asChild className="font-semibold">
                   <Link href="/signup" aria-label="Signup page">
-                    <UserPlus className="h-5 w-5 sm:mr-1.5" />
+                    <UserPlus className="h-5 w-5 sm:mr-2" />
                     <span className="hidden sm:inline">Sign Up</span>
                   </Link>
                 </Button>

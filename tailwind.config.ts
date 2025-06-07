@@ -9,11 +9,19 @@ export default {
     './src/app/**/*.{js,ts,jsx,tsx,mdx}',
   ],
   theme: {
+    container: { // Added container defaults
+      center: true,
+      padding: "2rem",
+      screens: {
+        "2xl": "1400px",
+      },
+    },
     extend: {
       borderRadius: {
-        lg: "var(--radius)",
-        md: "calc(var(--radius) - 2px)", // ShadCN default calculation
-        sm: "calc(var(--radius) - 4px)", // ShadCN default calculation
+        xl: "calc(var(--radius) + 4px)", // ShadCN default calc for xl
+        lg: "var(--radius)", // Default is 0.75rem
+        md: "calc(var(--radius) - 4px)", // ShadCN default calc for md
+        sm: "calc(var(--radius) - 8px)", // ShadCN default calc for sm
       },
       fontFamily: {
         body: ['Inter', 'sans-serif'],
