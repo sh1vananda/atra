@@ -93,7 +93,7 @@ export default function HomePage() {
       <section className="py-10 bg-card rounded-lg shadow-lg">
         <div className="container mx-auto px-4">
           <div className="text-center mb-12 sm:mb-16">
-            <h2 className="text-3xl sm:text-4xl font-headline font-semibold text-foreground mb-3">Empowering <span className="text-accent">Businesses</span></h2>
+            <h2 className="text-3xl sm:text-4xl font-headline font-semibold text-foreground mb-3">Empowering <span className="text-primary">Businesses</span></h2>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">Build stronger customer relationships and drive growth with our powerful platform.</p>
           </div>
           <div className="grid md:grid-cols-2 gap-10 sm:gap-12 items-center">
@@ -108,7 +108,7 @@ export default function HomePage() {
               />
             </div>
             <div className="space-y-6 md:order-first">
-              <h3 className="text-2xl sm:text-3xl font-headline font-semibold text-accent flex items-center gap-3">
+              <h3 className="text-2xl sm:text-3xl font-headline font-semibold text-primary flex items-center gap-3">
                 <Briefcase className="h-8 w-8" /> Tools for Growth & Engagement
               </h3>
               <p className="text-muted-foreground leading-relaxed text-lg">

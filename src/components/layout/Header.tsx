@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from 'next/link';
@@ -60,11 +61,11 @@ export function Header() {
 
   return (
     <header className={cn(
-      "sticky top-0 z-50 border-b shadow-sm h-16", // Standard header styling
+      "sticky top-0 z-50 border-b shadow-sm h-16", 
       "bg-card text-card-foreground" 
     )}>
       <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex items-center justify-between">
-        <Link href={titleHref} className="flex items-center gap-2 hover:opacity-80 transition-opacity" aria-label={`Go to ${isAdminAuthenticated ? 'Admin Dashboard' : isCustomerAuth ? 'My Loyalty Page' : 'Homepage'}`}>
+        <Link href={titleHref} className="flex items-center gap-2 hover:opacity-80 transition-opacity duration-150" aria-label={`Go to ${isAdminAuthenticated ? 'Admin Dashboard' : isCustomerAuth ? 'My Loyalty Page' : 'Homepage'}`}>
           {displayIcon}
           <h1 className="text-xl font-bold font-headline text-primary">{titleText}</h1>
         </Link>
@@ -78,7 +79,7 @@ export function Header() {
           ) : currentAdminRoute ? (
             isAdminAuthenticated ? (
               <>
-                <Button variant="ghost" size="sm" asChild className={cn(pathname === "/admin/dashboard" && "bg-accent text-accent-foreground")}>
+                <Button variant="ghost" size="sm" asChild className={cn("transition-colors duration-150", pathname === "/admin/dashboard" && "bg-accent text-accent-foreground")}>
                   <Link href="/admin/dashboard" aria-label="Admin Dashboard">
                     <LayoutDashboard className="h-4 w-4 sm:mr-1.5" />
                     <span className="hidden sm:inline">Dashboard</span>
@@ -91,7 +92,7 @@ export function Header() {
               </>
             ) : (
               !isLoginPage && !isSignupPage && ( 
-                 <Button variant="ghost" size="sm" asChild className="text-muted-foreground hover:text-foreground">
+                 <Button variant="ghost" size="sm" asChild className="text-muted-foreground hover:text-foreground transition-colors duration-150">
                    <Link href="/">Customer Site</Link>
                  </Button>
               )
@@ -99,19 +100,19 @@ export function Header() {
           ) : (
             isCustomerAuth ? (
               <>
-                <Button variant="ghost" size="sm" asChild className={cn(pathname === "/loyalty" ? "bg-accent text-accent-foreground" : "text-muted-foreground hover:text-foreground")}>
+                <Button variant="ghost" size="sm" asChild className={cn("transition-colors duration-150", pathname === "/loyalty" ? "bg-accent text-accent-foreground" : "text-muted-foreground hover:text-foreground")}>
                   <Link href="/loyalty"><ShoppingBag className="h-4 w-4 mr-1"/>Loyalty</Link>
                 </Button>
-                <Button variant="ghost" size="sm" asChild className={cn(pathname === "/rewards" ? "bg-accent text-accent-foreground" : "text-muted-foreground hover:text-foreground")}>
+                <Button variant="ghost" size="sm" asChild className={cn("transition-colors duration-150", pathname === "/rewards" ? "bg-accent text-accent-foreground" : "text-muted-foreground hover:text-foreground")}>
                   <Link href="/rewards"><Star className="h-4 w-4 mr-1"/>Rewards</Link>
                 </Button>
-                <Button variant="ghost" size="sm" asChild className={cn(pathname === "/history" ? "bg-accent text-accent-foreground" : "text-muted-foreground hover:text-foreground")}>
+                <Button variant="ghost" size="sm" asChild className={cn("transition-colors duration-150", pathname === "/history" ? "bg-accent text-accent-foreground" : "text-muted-foreground hover:text-foreground")}>
                   <Link href="/history"><HistoryIcon className="h-4 w-4 mr-1"/>History</Link>
                 </Button>
-                <Button variant="ghost" size="sm" asChild className={cn(pathname === "/offers" ? "bg-accent text-accent-foreground" : "text-muted-foreground hover:text-foreground")}>
+                <Button variant="ghost" size="sm" asChild className={cn("transition-colors duration-150", pathname === "/offers" ? "bg-accent text-accent-foreground" : "text-muted-foreground hover:text-foreground")}>
                   <Link href="/offers"><OffersIcon className="h-4 w-4 mr-1"/>Offers</Link>
                 </Button>
-                <Button variant="ghost" size="icon" asChild className={cn("rounded-full text-muted-foreground hover:text-foreground", pathname === "/profile" ? "bg-accent text-accent-foreground" : "")}>
+                <Button variant="ghost" size="icon" asChild className={cn("rounded-full text-muted-foreground hover:text-foreground transition-colors duration-150", pathname === "/profile" ? "bg-accent text-accent-foreground" : "")}>
                   <Link href="/profile" aria-label="View your profile">
                     <UserCircle className="h-5 w-5" />
                   </Link>
@@ -120,7 +121,7 @@ export function Header() {
             ) : (
              !isLoginPage && !isSignupPage && (
               <>
-                <Button variant="ghost" size="sm" asChild className="text-muted-foreground hover:text-foreground">
+                <Button variant="ghost" size="sm" asChild className="text-muted-foreground hover:text-foreground transition-colors duration-150">
                   <Link href="/login" aria-label="Login page">
                     <LogIn className="h-4 w-4 sm:mr-1.5" />
                     <span className="hidden sm:inline">Login</span>
@@ -141,7 +142,7 @@ export function Header() {
             size="icon"
             onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
             aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
-            className="ml-1 rounded-full text-muted-foreground hover:text-foreground"
+            className="ml-1 rounded-full text-muted-foreground hover:text-foreground transition-colors duration-150"
           >
             <Sun className="h-5 w-5 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
             <Moon className="absolute h-5 w-5 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />

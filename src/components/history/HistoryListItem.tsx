@@ -3,6 +3,7 @@ import { ArrowDownCircle, ArrowUpCircle, CalendarDays, Briefcase, AlertCircle, C
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
+import React from 'react'; // Import React for React.cloneElement
 
 export interface HistoryEntry {
   id: string;
@@ -49,7 +50,7 @@ export function HistoryListItem({ entry }: HistoryListItemProps) {
 
 
   return (
-    <li className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 border rounded-lg hover:bg-secondary/20 transition-colors duration-200 gap-3 sm:gap-0">
+    <li className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors duration-200 gap-3 sm:gap-0">
       <div className="flex items-center gap-4 flex-grow">
         {isRedemption ? (
           <ArrowDownCircle className="h-8 w-8 text-red-500 flex-shrink-0" />
@@ -77,9 +78,9 @@ export function HistoryListItem({ entry }: HistoryListItemProps) {
         )}>
           {isRedemption || entry.pointsChange <=0 ? '' : '+'}{entry.pointsChange} Points
         </p>
-        {statusText && (
+        {statusText && statusIcon && ( // Ensure statusIcon is not null before cloning
             <Badge variant="outline" className={cn("text-xs font-normal py-0.5 px-1.5", statusColorClass)}>
-                {statusIcon && React.cloneElement(statusIcon, {className: "h-3 w-3 mr-1"})}
+                {React.cloneElement(statusIcon, {className: "h-3 w-3 mr-1"})}
                 {statusText}
             </Badge>
         )}
