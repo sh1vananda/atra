@@ -89,7 +89,6 @@ function LoginCore() {
   };
 
   return (
-    <div className="flex flex-grow flex-col items-center justify-center py-8 sm:py-12 mt-8 sm:mt-0">
       <Card className="w-full max-w-md shadow-xl">
         <CardHeader className="text-center">
           <LogIn className="mx-auto h-10 w-10 text-primary mb-2" />
@@ -203,7 +202,6 @@ function LoginCore() {
           </Tabs>
         </CardContent>
       </Card>
-    </div>
   );
 }
 
