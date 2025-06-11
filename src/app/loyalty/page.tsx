@@ -2,6 +2,7 @@
 "use client";
 
 import { useEffect, useState, useTransition, useCallback } from 'react';
+import dynamic from 'next/dynamic';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
@@ -13,7 +14,11 @@ import Image from 'next/image';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { UserMembership } from '@/types/user';
 import { useToast } from '@/hooks/use-toast';
-import { AddPastPurchaseDialog } from '@/components/loyalty/AddPastPurchaseDialog'; // Now for appeals
+// Dynamically import AddPastPurchaseDialog
+const AddPastPurchaseDialog = dynamic(() =>
+  import('@/components/loyalty/AddPastPurchaseDialog').then((mod) => mod.AddPastPurchaseDialog)
+);
+
 
 function LoyaltyBusinessCard({ membership, userId }: { membership: UserMembership, userId: string }) {
   const pointsToNextReward = 500; // This can be dynamic per business later
@@ -37,7 +42,7 @@ function LoyaltyBusinessCard({ membership, userId }: { membership: UserMembershi
           <p className="text-4xl sm:text-5xl font-bold text-primary">{membership.pointsBalance}</p>
           <p className="text-muted-foreground">Points</p>
         </div>
-        
+
         <div>
           <div className="flex justify-between text-sm text-muted-foreground mb-1">
             <span>Progress to next reward</span>
@@ -103,7 +108,7 @@ export default function LoyaltyPage() {
           description: result.message,
           variant: "default",
         });
-        setBusinessCode(''); 
+        setBusinessCode('');
       } else {
         toast({
           title: "Join Failed",
@@ -113,7 +118,7 @@ export default function LoyaltyPage() {
       }
     });
   }, [businessCode, joinBusinessByCode, toast]);
-  
+
 
   if (loading || !isAuthenticated || !user) {
     return (
@@ -171,7 +176,7 @@ export default function LoyaltyPage() {
     <div className="w-full space-y-10 sm:space-y-12">
       <div className="text-left pb-4 border-b border-border">
         <h1 className="text-3xl sm:text-4xl font-headline font-bold text-primary mb-1 flex items-center">
-          <User className="inline-block h-8 w-8 mr-3 align-text-bottom" /> 
+          <User className="inline-block h-8 w-8 mr-3 align-text-bottom" />
           Welcome back, {user.name}!
         </h1>
         <p className="text-lg text-muted-foreground">Here are your loyalty cards. Track your points and progress.</p>
@@ -209,12 +214,12 @@ export default function LoyaltyPage() {
         <CardContent className="space-y-4">
           <div>
             <Label htmlFor="business-code" className="text-base">Business Code</Label>
-            <Input 
-              id="business-code" 
+            <Input
+              id="business-code"
               aria-label="Business Code Input"
-              placeholder="e.g., CAFE123" 
+              placeholder="e.g., CAFE123"
               value={businessCode}
-              onChange={(e) => setBusinessCode(e.target.value.toUpperCase())} 
+              onChange={(e) => setBusinessCode(e.target.value.toUpperCase())}
               className="mt-1 text-base py-3 px-4"
             />
           </div>
@@ -252,7 +257,7 @@ export default function LoyaltyPage() {
             <FileText className="h-16 w-16 mx-auto text-primary mb-4" />
             <h3 className="text-xl font-semibold text-center">Submit Purchase Appeal</h3>
             <p className="text-muted-foreground text-sm text-center mb-3">Forgot to scan? Add details for an enrolled business to request points.</p>
-            <Button 
+            <Button
                 onClick={() => {
                     if (memberships.length > 0) {
                         setIsAddAppealDialogOpen(true);

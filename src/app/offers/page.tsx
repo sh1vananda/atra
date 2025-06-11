@@ -2,13 +2,17 @@
 "use client";
 
 import { useEffect } from 'react';
+import dynamic from 'next/dynamic';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Sparkles, TestTube2 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
-import { PersonalizedOfferForm } from '@/components/offers/PersonalizedOfferForm';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+
+const PersonalizedOfferForm = dynamic(() =>
+  import('@/components/offers/PersonalizedOfferForm').then((mod) => mod.PersonalizedOfferForm)
+);
 
 export default function OffersPage() {
   const { user, isAuthenticated, loading } = useAuth();
@@ -55,7 +59,7 @@ export default function OffersPage() {
           Discover offers and recommendations potentially curated for you using AI!
         </p>
       </div>
-      
+
       <Alert className="bg-blue-50 border-blue-300 text-blue-700 dark:bg-blue-900/30 dark:border-blue-700 dark:text-blue-300">
         <TestTube2 className="h-5 w-5 text-blue-500 dark:text-blue-400" />
         <AlertTitle className="font-semibold">Experimental AI Feature</AlertTitle>

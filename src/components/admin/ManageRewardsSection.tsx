@@ -3,11 +3,10 @@
 
 import type { Business, Reward } from '@/types/business';
 import { useState } from 'react';
+import dynamic from 'next/dynamic';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
-import { PlusCircle, Edit3, Trash2, Gift, AlertTriangle, Settings } from 'lucide-react'; // Added Settings
-import { AddRewardDialog } from './AddRewardDialog';
-import { EditRewardDialog } from './EditRewardDialog';
+import { PlusCircle, Edit3, Trash2, Gift, AlertTriangle, Settings } from 'lucide-react';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import {
   AlertDialog,
@@ -21,22 +20,28 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useToast } from '@/hooks/use-toast';
-import * as LucideIcons from 'lucide-react'; // Import all lucide-react icons
+import * as LucideIcons from 'lucide-react';
 
-// Helper to render Lucide icon by name
+const AddRewardDialog = dynamic(() =>
+  import('./AddRewardDialog').then((mod) => mod.AddRewardDialog)
+);
+const EditRewardDialog = dynamic(() =>
+  import('./EditRewardDialog').then((mod) => mod.EditRewardDialog)
+);
+
 const renderIcon = (iconName?: string) => {
-  if (!iconName) return <Gift className="h-8 w-8 text-muted-foreground" />; // Default icon
+  if (!iconName) return <Gift className="h-8 w-8 text-muted-foreground" />;
   const IconComponent = (LucideIcons as any)[iconName];
   if (IconComponent) {
     return <IconComponent className="h-8 w-8 text-primary" />;
   }
-  return <Gift className="h-8 w-8 text-muted-foreground" />; // Fallback if icon name is invalid
+  return <Gift className="h-8 w-8 text-muted-foreground" />;
 };
 
 
 interface ManageRewardsSectionProps {
   business: Business | null;
-  onRewardChange: () => void; 
+  onRewardChange: () => void;
 }
 
 export function ManageRewardsSection({ business, onRewardChange }: ManageRewardsSectionProps) {
@@ -56,12 +61,12 @@ export function ManageRewardsSection({ business, onRewardChange }: ManageRewards
     if (!business || !rewardToDelete) return;
     const success = await deleteRewardFromBusiness(business.id, rewardToDelete.id);
     if (success) {
-      onRewardChange(); 
+      onRewardChange();
       toast({ title: "Reward Deleted", description: `Successfully deleted "${rewardToDelete.title}".` });
     } else {
       toast({ title: "Deletion Failed", description: `Could not delete "${rewardToDelete.title}".`, variant: "destructive" });
     }
-    setRewardToDelete(null); 
+    setRewardToDelete(null);
   };
 
   if (!business) {
@@ -125,7 +130,6 @@ export function ManageRewardsSection({ business, onRewardChange }: ManageRewards
                           <Trash2 className="mr-1.5 h-4 w-4" /> Delete
                         </Button>
                       </AlertDialogTrigger>
-                      {/* Ensure AlertDialogContent is only rendered when the specific reward is targeted */}
                       {rewardToDelete?.id === reward.id && (
                         <AlertDialogContent>
                           <AlertDialogHeader>
@@ -163,7 +167,7 @@ export function ManageRewardsSection({ business, onRewardChange }: ManageRewards
           onOpenChange={setIsAddDialogOpen}
           businessId={business.id}
           onRewardAdded={() => {
-            setIsAddDialogOpen(false); // Ensure dialog closes on successful add
+            setIsAddDialogOpen(false);
             onRewardChange();
           }}
         />
@@ -177,7 +181,7 @@ export function ManageRewardsSection({ business, onRewardChange }: ManageRewards
             onRewardUpdated={() => {
                 setIsEditDialogOpen(false);
                 setRewardToEdit(null);
-                onRewardChange(); 
+                onRewardChange();
             }}
         />
       )}

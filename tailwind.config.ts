@@ -1,3 +1,4 @@
+
 import type {Config} from 'tailwindcss';
 
 export default {
@@ -64,8 +65,8 @@ export default {
         sm: 'calc(var(--radius) - 0.3rem)', /* 0.35rem */
       },
       fontFamily: {
-        body: ['Inter', 'sans-serif'],
-        headline: ['Inter', 'sans-serif'],
+        body: ['var(--font-inter)', 'sans-serif'], // Updated to use CSS variable from next/font
+        headline: ['var(--font-inter)', 'sans-serif'], // Updated to use CSS variable from next/font
         code: ['monospace'],
       },
       keyframes: {

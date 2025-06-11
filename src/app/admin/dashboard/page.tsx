@@ -2,19 +2,27 @@
 "use client";
 
 import { useEffect, useState, useCallback, useMemo } from 'react';
+import dynamic from 'next/dynamic';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { UserTable } from '@/components/admin/UserTable';
 import { useAuth as useCustomerAuth } from '@/contexts/AuthContext';
 import type { User } from '@/types/user';
 import { Users, ShoppingCart, BarChart3, Building, KeyRound, Copy, Loader2, Gift, ListChecks } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import type { Business } from '@/types/business';
-import { ManageRewardsSection } from '@/components/admin/ManageRewardsSection';
-import { PurchaseAppealsSection } from '@/components/admin/PurchaseAppealsSection'; 
+
+const UserTable = dynamic(() =>
+  import('@/components/admin/UserTable').then((mod) => mod.UserTable)
+);
+const ManageRewardsSection = dynamic(() =>
+  import('@/components/admin/ManageRewardsSection').then((mod) => mod.ManageRewardsSection)
+);
+const PurchaseAppealsSection = dynamic(() =>
+  import('@/components/admin/PurchaseAppealsSection').then((mod) => mod.PurchaseAppealsSection)
+);
 
 type AdminDashboardView = "userManagement" | "rewardManagement" | "purchaseAppeals";
 
@@ -79,7 +87,7 @@ export default function AdminDashboardPage() {
   }, [adminAuthLoading, isAdminAuthenticated, adminUser, router, fetchAdminPageData, hasFetchedInitialData]);
 
   const handleDataRefreshNeeded = useCallback(() => {
-    setHasFetchedInitialData(false); // This will trigger fetchAdminPageData in the useEffect
+    setHasFetchedInitialData(false);
   }, []);
 
   const totalPointsInBusiness = useMemo(() => users.reduce((total, user) => {
@@ -89,7 +97,6 @@ export default function AdminDashboardPage() {
 
   const totalTransactionsInBusiness = useMemo(() => users.reduce((total, user) => {
     const membership = user.memberships?.find(m => m.businessId === managedBusiness?.id);
-    // Count only 'approved' purchases or redemptions for transaction count
     const approvedPurchases = membership?.purchases?.filter(p => p.status === 'approved' || p.pointsEarned < 0).length || 0;
     return total + approvedPurchases;
   }, 0), [users, managedBusiness?.id]);
@@ -163,7 +170,7 @@ export default function AdminDashboardPage() {
   if (hasFetchedInitialData && !pageDataLoading && !managedBusiness) {
      return (
         <div className="w-full space-y-8 text-center py-10">
-            <Building className="h-20 w-20 mx-auto text-destructive mb-4" /> {/* Changed Icon */}
+            <Building className="h-20 w-20 mx-auto text-destructive mb-4" />
             <h2 className="text-2xl font-semibold text-destructive">Business Data Not Found</h2>
             <p className="text-muted-foreground">We could not load the details for your managed business (ID: {adminUser?.businessId || "Unknown"}).</p>
             <p className="text-muted-foreground">Ensure your admin account is correctly linked to a business.</p>
@@ -192,8 +199,8 @@ export default function AdminDashboardPage() {
                 <CardTitle className="font-headline text-xl sm:text-2xl flex items-center">
                   <KeyRound className="h-7 w-7 mr-3" /> Your Business Join Code
                 </CardTitle>
-                <Copy 
-                  className="h-7 w-7 cursor-pointer hover:text-primary-foreground/80 transition-colors active:scale-90" 
+                <Copy
+                  className="h-7 w-7 cursor-pointer hover:text-primary-foreground/80 transition-colors active:scale-90"
                   onClick={handleCopyJoinCode}
                   aria-label="Copy join code"
                   tabIndex={0}

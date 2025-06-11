@@ -24,9 +24,9 @@ export function Header() {
   useEffect(() => setMounted(true), []);
 
   const combinedLoading = customerLoading || adminLoading;
-  
-  const titleText = "ATRA"; 
-  let titleHref = "/"; 
+
+  let titleText = "ATRA";
+  let titleHref = "/";
 
   if (mounted) {
     if (isAdminAuthenticated) {
@@ -35,27 +35,29 @@ export function Header() {
       titleHref = "/loyalty";
     }
   }
-  
+
   const displayIcon = (
-    <Image 
-      src="/logo.png" // Assuming your logo is named logo.png and in /public
-      alt="ATRA Logo" 
-      width={32} // Adjust width as needed
-      height={32} // Adjust height as needed
-      className="h-8 w-8" // You can adjust styling here
+    <Image
+      src="/logo.png"
+      alt="ATRA Logo"
+      width={32}
+      height={32}
+      className="h-8 w-8"
+      unoptimized={true} // Already globally unoptimized, but good for clarity
+      priority // Hint for preloading
     />
   );
-  
-  if (!mounted) { 
+
+  if (!mounted) {
     return (
       <header className="bg-card border-b border-border shadow-sm sticky top-0 z-50 h-16">
         <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex items-center justify-between">
           <div className="flex items-center gap-2 text-primary">
-            <Skeleton className="h-8 w-8 rounded-full" /> {/* Skeleton for logo */}
+            <Skeleton className="h-8 w-8 rounded-full" />
             <h1 className="text-xl font-bold font-headline">{titleText}</h1>
           </div>
           <nav className="flex items-center gap-2">
-            <Skeleton className="h-9 w-9 rounded-md" /> 
+            <Skeleton className="h-9 w-9 rounded-md" />
             <Skeleton className="h-9 w-20 rounded-md hidden sm:block" />
             <Skeleton className="h-9 w-20 rounded-md hidden sm:block" />
           </nav>
@@ -63,22 +65,22 @@ export function Header() {
       </header>
     );
   }
-  
+
   const currentAdminRoute = pathname.startsWith('/admin');
   const isLoginPage = pathname === '/login';
   const isSignupPage = pathname === '/signup';
 
   return (
     <header className={cn(
-      "sticky top-0 z-50 border-b shadow-subtle h-16", 
-      "bg-card text-card-foreground" 
+      "sticky top-0 z-50 border-b shadow-subtle h-16",
+      "bg-card text-card-foreground"
     )}>
       <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex items-center justify-between">
         <Link href={titleHref} className="flex items-center gap-2 hover:opacity-80 transition-opacity duration-150" aria-label={`Go to ${isAdminAuthenticated ? 'Admin Dashboard' : isCustomerAuth ? 'My Loyalty Page' : 'Homepage'}`}>
           {displayIcon}
           <h1 className="text-xl font-bold font-headline text-primary">{titleText}</h1>
         </Link>
-        
+
         <nav className="flex items-center gap-1 sm:gap-1.5">
           {combinedLoading ? (
             <>
@@ -100,7 +102,7 @@ export function Header() {
                 </Button>
               </>
             ) : (
-              !isLoginPage && !isSignupPage && ( 
+              !isLoginPage && !isSignupPage && (
                  <Button variant="ghost" size="sm" asChild className="text-muted-foreground hover:text-foreground transition-colors duration-150">
                    <Link href="/">Customer Site</Link>
                  </Button>
