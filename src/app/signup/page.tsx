@@ -49,10 +49,10 @@ export default function SignupPage() {
         <CardContent>
           <Tabs defaultValue="customer" className="w-full">
             <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="customer" className="text-sm sm:text-base">
+              <TabsTrigger value="customer" aria-label="Sign up as Customer">
                 <UserPlus className="mr-2 h-4 w-4" /> Customer
               </TabsTrigger>
-              <TabsTrigger value="business" className="text-sm sm:text-base">
+              <TabsTrigger value="business" aria-label="Sign up as Business">
                 <Briefcase className="mr-2 h-4 w-4" /> Business
               </TabsTrigger>
             </TabsList>
