@@ -2,7 +2,7 @@
 import type {NextConfig} from 'next';
 
 const nextConfig: NextConfig = {
-  // output: 'export', // REMOVED for SSR
+  output: 'export', // ADDED for static export
   typescript: {
     ignoreBuildErrors: true,
   },
@@ -18,7 +18,7 @@ const nextConfig: NextConfig = {
         pathname: '/**',
       },
     ],
-    // unoptimized: true, // REMOVED to enable image optimization in SSR
+    unoptimized: true, // ENSURED for static export
   },
 };
 
