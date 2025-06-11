@@ -2,17 +2,17 @@
 "use client";
 
 import { useEffect } from 'react';
-import dynamic from 'next/dynamic';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Sparkles, TestTube2 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-
-const PersonalizedOfferForm = dynamic(() =>
-  import('@/components/offers/PersonalizedOfferForm').then((mod) => mod.PersonalizedOfferForm)
-);
+// PersonalizedOfferForm is no longer directly used here for now
+// import dynamic from 'next/dynamic';
+// const PersonalizedOfferForm = dynamic(() =>
+//   import('@/components/offers/PersonalizedOfferForm').then((mod) => mod.PersonalizedOfferForm)
+// );
 
 export default function OffersPage() {
   const { user, isAuthenticated, loading } = useAuth();
@@ -64,7 +64,7 @@ export default function OffersPage() {
         <TestTube2 className="h-5 w-5 text-blue-500 dark:text-blue-400" />
         <AlertTitle className="font-semibold">Experimental AI Feature</AlertTitle>
         <AlertDescription>
-          This personalized offer generator uses AI. The user ID, purchase history, and preferences fields below are currently mocked for demonstration. In a real application, this data would be securely fetched for the logged-in user.
+          The AI-powered personalized offer generator is currently under development. Check back soon for exciting new features!
         </AlertDescription>
       </Alert>
 
@@ -72,14 +72,15 @@ export default function OffersPage() {
         <CardHeader>
             <CardTitle className="font-headline text-2xl sm:text-3xl flex items-center gap-2">
                 <Sparkles className="h-7 w-7 text-primary" />
-                Generate an Offer
+                Coming Soon!
             </CardTitle>
             <CardDescription>
-              Fill in the (mock) details below to see how our AI can generate a personalized offer.
+              Our AI is working hard to bring you tailored offers. This section will be updated shortly.
             </CardDescription>
         </CardHeader>
-        <CardContent>
-          <PersonalizedOfferForm />
+        <CardContent className="text-center py-12">
+          <Sparkles className="h-16 w-16 text-primary mx-auto animate-pulse" />
+           <p className="text-muted-foreground mt-4">Personalized offers are on their way!</p>
         </CardContent>
       </Card>
     </div>

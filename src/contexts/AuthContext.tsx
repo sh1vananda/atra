@@ -30,9 +30,10 @@ interface AuthContextType {
   signup: (name: string, email: string, pass: string) => Promise<void>;
   submitPurchaseAppeal: (appealData: SubmitAppealData) => Promise<boolean>;
   joinBusinessByCode: (businessCode: string) => Promise<{ success: boolean; message: string }>;
-  getAllMockUsers: () => Promise<User[]>;
+  getAllMockUsers: () => Promise<User[]>; // This might be better placed in AdminAuthContext if only admin uses it
   getBusinessById: (businessId: string) => Promise<Business | null>;
   redeemReward: (userId: string, businessId: string, reward: Reward, currentUserPointsForBusiness: number) => Promise<boolean>;
+  // addMockPurchaseToUser is removed as it was for admin use, now handled by appeal approval
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -53,7 +54,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           if (adminProfileSnap.exists()) {
             setUser(null);
             setIsAuthenticated(false);
-            setLoading(false); // Admin user, not a customer
           } else {
             const userDocRef = doc(db, 'users', firebaseAuthUser.uid);
             const userDocSnap = await getDoc(userDocRef);
@@ -61,17 +61,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
               setUser({ id: firebaseAuthUser.uid, ...userDocSnap.data() } as User);
               setIsAuthenticated(true);
             } else {
-              // User exists in Firebase Auth but not in 'users' collection (edge case, e.g., partial signup)
               setUser(null);
               setIsAuthenticated(false);
             }
-            setLoading(false);
           }
         } catch (error) {
+          console.error("AuthContext onAuthStateChanged error:", error);
           setUser(null);
           setIsAuthenticated(false);
+          toast({ title: "Profile Check Error", description: "Could not verify user type.", variant: "destructive" });
+        } finally {
           setLoading(false);
-          toast({ title: "Profile Check Error", description: "Could not verify user type during auth state change.", variant: "destructive" });
         }
       } else {
         setUser(null);
@@ -80,13 +80,45 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     });
     return () => unsubscribe();
-  }, [toast]); // toast is stable
+  }, [toast]);
 
   const login = useCallback(async (email: string, pass: string) => {
     setLoading(true);
     try {
-      await signInWithEmailAndPassword(auth, email, pass);
-      // onAuthStateChanged will handle setting user and loading states
+      const userCredential = await signInWithEmailAndPassword(auth, email, pass);
+      const fbUser = userCredential.user;
+
+      const adminDocRef = doc(db, 'admins', fbUser.uid);
+      const adminDocSnap = await getDoc(adminDocRef);
+      if (adminDocSnap.exists()) {
+        await signOut(auth);
+        toast({
+          title: "Login Mismatch",
+          description: "Business account detected. Please use the Business login tab.",
+          variant: "destructive",
+        });
+        setUser(null);
+        setIsAuthenticated(false);
+        setLoading(false);
+        return;
+      }
+
+      const userDocRef = doc(db, 'users', fbUser.uid);
+      const userDocSnap = await getDoc(userDocRef);
+      if (!userDocSnap.exists()) {
+          await signOut(auth);
+          toast({
+              title: "Login Failed",
+              description: "Customer account not found. Please sign up or check credentials.",
+              variant: "destructive",
+          });
+          setUser(null);
+          setIsAuthenticated(false);
+          setLoading(false);
+          return;
+      }
+      // If successful and it's a customer, onAuthStateChanged will set user & isAuthenticated.
+      // setLoading(false) will be handled by onAuthStateChanged.
     } catch (error: any) {
       let errorMessage = "Invalid email or password.";
        if (error.code) {
@@ -101,9 +133,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
       }
       toast({ title: "Login Failed", description: errorMessage, variant: "destructive" });
-      setLoading(false); // Ensure loading is false on login failure
+      setUser(null);
+      setIsAuthenticated(false);
+      setLoading(false);
     }
-    // No setLoading(false) here on success, onAuthStateChanged handles it
   }, [toast]);
 
   const signup = useCallback(async (name: string, email: string, pass: string) => {
@@ -121,7 +154,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       await setDoc(doc(db, 'users', fbAuthUser.uid), newUserProfile);
       toast({ title: "Signup Successful!", description: "Welcome to ATRA!", variant: "default" });
       // onAuthStateChanged will set user and loading state
-    } catch (error: any) {
+    } catch (error: any)
+    {
       let errorMessage = "Could not create account.";
        if (error.code) {
         switch (error.code) {
@@ -138,16 +172,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         try { await deleteFirebaseAuthUser(fbAuthUser); }
         catch (deleteError: any) { /* Silently ignore delete error */ }
       }
-      setLoading(false); // Ensure loading is false on signup failure
+      setLoading(false);
     }
-    // No setLoading(false) here on success, onAuthStateChanged handles it
   }, [toast]);
 
   const logout = useCallback(async () => {
     const currentCustomerEmail = user?.email;
     try {
       await signOut(auth);
-      // onAuthStateChanged will set user to null and loading to false
       toast({ title: "Logged Out", description: `Customer ${currentCustomerEmail || ''} logged out.` });
     } catch (error: any) {
       toast({ title: "Logout Failed", description: error.message || "Could not log out.", variant: "destructive" });
@@ -213,7 +245,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const businessToJoin = { id: businessToJoinDoc.id, ...businessToJoinDoc.data() } as Business;
 
       const userDocRef = doc(db, 'users', user.id);
-      const userDocSnap = await getDoc(userDocRef); // Re-fetch user fresh to avoid race conditions
+      const userDocSnap = await getDoc(userDocRef);
       if (!userDocSnap.exists()) return { success: false, message: "User profile not found."};
       const currentUserData = userDocSnap.data() as User;
 
@@ -250,6 +282,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [user, toast]);
 
+
   const redeemReward = useCallback(async (userId: string, businessId: string, reward: Reward, currentUserPointsForBusiness: number): Promise<boolean> => {
     if (currentUserPointsForBusiness < reward.pointsCost) {
         toast({ title: "Insufficient Points", description: `You need ${reward.pointsCost} points, but only have ${currentUserPointsForBusiness}.`, variant: "destructive" });
@@ -258,7 +291,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     const userDocRef = doc(db, 'users', userId);
     try {
-        const userDocSnap = await getDoc(userDocRef); // Fetch fresh user data
+        const userDocSnap = await getDoc(userDocRef);
         if (!userDocSnap.exists()) {
             toast({ title: "Error", description: "User not found.", variant: "destructive" });
             return false;
@@ -335,3 +368,4 @@ export const useAuth = () => {
   if (context === undefined) throw new Error('useAuth must be used within an AuthProvider');
   return context;
 };
+

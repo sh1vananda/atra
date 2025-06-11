@@ -62,21 +62,20 @@ export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
               });
               setIsAdminAuthenticated(true);
             } else {
-              // Exists in 'admins' but no businessId or invalid type, treat as not a valid admin setup
               setAdminUser(null);
               setIsAdminAuthenticated(false);
             }
           } else {
-            // Not in 'admins' collection, so not an admin user for this context
             setAdminUser(null);
             setIsAdminAuthenticated(false);
           }
         } catch (error) {
+          console.error("AdminAuthContext onAuthStateChanged error:", error);
           setAdminUser(null);
           setIsAdminAuthenticated(false);
-          toast({ title: "Profile Error", description: "Could not fetch admin profile data.", variant: "destructive" });
+          toast({ title: "Profile Error", description: "Could not fetch admin profile.", variant: "destructive" });
         } finally {
-          setLoading(false); // Critical: set loading false after all checks
+          setLoading(false);
         }
       } else {
         setAdminUser(null);
@@ -85,13 +84,30 @@ export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
       }
     });
     return () => unsubscribe();
-  }, [toast]); // toast is stable
+  }, [toast]);
 
   const login = useCallback(async (email: string, pass: string) => {
     setLoading(true);
     try {
-      await signInWithEmailAndPassword(auth, email, pass);
-      // onAuthStateChanged will handle setting adminUser and loading state
+      const userCredential = await signInWithEmailAndPassword(auth, email, pass);
+      const fbUser = userCredential.user;
+
+      const adminDocRef = doc(db, 'admins', fbUser.uid);
+      const adminDocSnap = await getDoc(adminDocRef);
+      if (!adminDocSnap.exists()) {
+        await signOut(auth);
+        toast({
+          title: "Login Mismatch",
+          description: "This account is not registered as a business admin. Please use the Customer login or register your business.",
+          variant: "destructive",
+        });
+        setAdminUser(null);
+        setIsAdminAuthenticated(false);
+        setLoading(false);
+        return;
+      }
+      // If successful and it's an admin, onAuthStateChanged will set adminUser & isAdminAuthenticated.
+      // setLoading(false) will be handled by onAuthStateChanged.
     } catch (error: any) {
       let errorMessage = "Invalid admin email or password.";
        if (error.code) {
@@ -106,9 +122,10 @@ export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
         }
       }
       toast({ title: "Login Failed", description: errorMessage, variant: "destructive" });
-      setLoading(false); // Ensure loading is false on login failure
+      setAdminUser(null);
+      setIsAdminAuthenticated(false);
+      setLoading(false);
     }
-    // No setLoading(false) here on success, onAuthStateChanged handles it
   }, [toast]);
 
   const signupBusiness = useCallback(async (businessName: string, email: string, pass: string): Promise<{success: boolean; message?: string}> => {
@@ -173,17 +190,15 @@ export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
         try { await deleteFirebaseAuthUser(fbAdminAuthUser); }
         catch (e) { /* Silently ignore */ }
       }
-      setLoading(false); // Ensure loading is false on signup failure
+      setLoading(false);
       return { success: false, message: errorMessage };
     }
-    // No setLoading(false) here on success, onAuthStateChanged handles it
   }, [toast]);
 
   const logout = useCallback(async () => {
     const currentAdminEmail = adminUser?.email;
     try {
       await signOut(auth);
-      // onAuthStateChanged will set adminUser to null and loading to false
       toast({ title: "Logged Out", description: `Admin ${currentAdminEmail || ''} logged out successfully.`});
     } catch (error: any) {
       toast({ title: "Logout Failed", description: error.message || "Could not log out.", variant: "destructive"});
@@ -228,7 +243,7 @@ export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
             description: rewardData.description,
             pointsCost: rewardData.pointsCost,
             category: rewardData.category,
-            icon: rewardData.icon || '', // Ensure icon is not undefined
+            icon: rewardData.icon || '',
         };
         const updatedRewards = [...(businessData.rewards || []), newReward];
         await updateDoc(businessDocRef, { rewards: updatedRewards });
@@ -261,7 +276,7 @@ export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
         const updatedRewardsList = [...(businessData.rewards || [])];
         updatedRewardsList[rewardIndex] = {
             ...updatedReward,
-            icon: updatedReward.icon || '', // Ensure icon is not undefined
+            icon: updatedReward.icon || '',
         };
 
         await updateDoc(businessDocRef, { rewards: updatedRewardsList });
@@ -301,7 +316,6 @@ export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
     if (!businessId) return [];
     try {
       const appealsRef = collection(db, 'purchaseAppeals');
-      // Ensure Firestore indexes are set up for this query: businessId ASC, status ASC, submittedAt DESC
       const q = query(appealsRef, where("businessId", "==", businessId), where("status", "==", "pending"), orderBy("submittedAt", "desc"));
       const querySnapshot = await getDocs(q);
       const appeals: PurchaseAppeal[] = [];
@@ -327,24 +341,21 @@ export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
     try {
         const userDocSnap = await getDoc(userDocRef);
         if (!userDocSnap.exists()) {
-            toast({title: "Error", description: "User profile not found.", variant: "destructive"});
-            // Still mark appeal as approved even if user doc not found, to clear it from queue
              batch.update(appealDocRef, {
                 status: 'approved',
                 reviewedAt: serverTimestamp(),
                 adminReviewedBy: adminUser.uid,
-                pointsAwarded: pointsToAward // Log how many points were intended
+                pointsAwarded: pointsToAward,
+                notes: `User ${itemDetails.userId} profile missing. No points awarded.`
             });
             await batch.commit();
-            toast({title: "Appeal Approved (User Not Found)", description: `Appeal marked as approved, but user ${itemDetails.userId} profile missing. No points awarded.`, variant: "default"});
+            toast({title: "Appeal Approved (User Not Found)", description: `Appeal marked as approved. User profile missing.`, variant: "default"});
             return true;
         }
         const userData = userDocSnap.data() as User;
         const membershipIndex = userData.memberships?.findIndex(m => m.businessId === itemDetails.businessId);
 
         if (membershipIndex === undefined || membershipIndex === -1 || !userData.memberships) {
-            toast({title: "Error", description: "User membership with this business not found.", variant: "destructive"});
-            // Mark appeal as approved but note no points action
              batch.update(appealDocRef, {
                 status: 'approved',
                 reviewedAt: serverTimestamp(),
@@ -413,17 +424,17 @@ export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
                     item: `Appeal Rejected: ${itemDetails.item}`,
                     amount: itemDetails.amount,
                     date: new Date().toISOString(),
-                    pointsEarned: 0,
+                    pointsEarned: 0, // No points earned or deducted for rejected appeal itself
                     status: 'rejected',
                     appealId: appealId,
                 };
+                // Add a record of the rejection to the user's purchase history for transparency
                 updatedMembership.purchases = [rejectedPurchaseEntry, ...(updatedMembership.purchases || [])].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
                 const updatedMemberships = [...userData.memberships];
                 updatedMemberships[membershipIndex] = updatedMembership;
                 batch.update(userDocRef, { memberships: updatedMemberships });
             }
         }
-        // If user or membership doesn't exist, still mark appeal as rejected.
 
         batch.update(appealDocRef, {
             status: 'rejected',
@@ -466,3 +477,4 @@ export const useAdminAuth = () => {
   if (context === undefined) throw new Error('useAdminAuth must be used within an AdminAuthProvider');
   return context;
 };
+
