@@ -5,11 +5,13 @@ import { useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
-import { Settings, Sparkles } from 'lucide-react'; 
+import { Sparkles, TestTube2 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { PersonalizedOfferForm } from '@/components/offers/PersonalizedOfferForm';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 export default function OffersPage() {
-  const { isAuthenticated, loading } = useAuth();
+  const { user, isAuthenticated, loading } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
@@ -18,7 +20,7 @@ export default function OffersPage() {
     }
   }, [loading, isAuthenticated, router]);
 
-  if (loading || !isAuthenticated) {
+  if (loading || !isAuthenticated || !user) {
     return (
       <div className="w-full space-y-8">
         <div className="text-center border-b border-border pb-6 mb-8">
@@ -46,32 +48,34 @@ export default function OffersPage() {
   }
 
   return (
-    <div className="w-full space-y-8">
+    <div className="w-full space-y-10 sm:space-y-12">
       <div className="text-center border-b border-border pb-6 mb-8">
-        <h1 className="text-4xl font-headline font-bold text-primary mb-2">Personalized Offers</h1>
-        <p className="text-lg text-muted-foreground">Discover offers and recommendations curated just for you!</p>
+        <h1 className="text-3xl sm:text-4xl font-headline font-bold text-primary mb-2">Personalized Offers</h1>
+        <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+          Discover offers and recommendations potentially curated for you using AI!
+        </p>
       </div>
-      <Card className="shadow-lg bg-card">
-        <CardHeader> {/* Removed flex and justify-between as the second icon is gone */}
-          <div>
-            <CardTitle className="font-headline text-2xl flex items-center">
-                <Sparkles className="h-6 w-6 mr-2 text-primary/70" />
-                Feature Under Construction
+      
+      <Alert className="bg-blue-50 border-blue-300 text-blue-700 dark:bg-blue-900/30 dark:border-blue-700 dark:text-blue-300">
+        <TestTube2 className="h-5 w-5 text-blue-500 dark:text-blue-400" />
+        <AlertTitle className="font-semibold">Experimental AI Feature</AlertTitle>
+        <AlertDescription>
+          This personalized offer generator uses AI. The user ID, purchase history, and preferences fields below are currently mocked for demonstration. In a real application, this data would be securely fetched for the logged-in user.
+        </AlertDescription>
+      </Alert>
+
+      <Card className="shadow-xl bg-card max-w-2xl mx-auto">
+        <CardHeader>
+            <CardTitle className="font-headline text-2xl sm:text-3xl flex items-center gap-2">
+                <Sparkles className="h-7 w-7 text-primary" />
+                Generate an Offer
             </CardTitle>
             <CardDescription>
-              We're working hard to bring you exciting personalized offers.
+              Fill in the (mock) details below to see how our AI can generate a personalized offer.
             </CardDescription>
-          </div>
-          {/* Removed the small Settings icon from here */}
         </CardHeader>
         <CardContent>
-          <div className="flex flex-col items-center justify-center py-16 text-center bg-muted/50 rounded-lg">
-            <Settings className="h-24 w-24 text-primary/60 mb-6 animate-spin-slow" /> {/* Added animate-spin-slow */}
-            <p className="text-xl font-semibold text-foreground mb-2">This feature is currently unavailable.</p>
-            <p className="text-muted-foreground max-w-md">
-              Our team is making some improvements to the personalized offers engine. Please check back soon!
-            </p>
-          </div>
+          <PersonalizedOfferForm />
         </CardContent>
       </Card>
     </div>

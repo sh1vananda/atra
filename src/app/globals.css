@@ -4,60 +4,89 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
+    /* PRD Theme: Light Mode */
+    /* Background: Light Gray (#F0F4F7) */
+    --background: 210 25% 96%;
+    /* Foreground: Dark Gray for text on light background */
     --foreground: 240 10% 3.9%;
-    --card: 0 0% 100%;
+
+    --card: 0 0% 100%; /* Card background can remain white for contrast */
     --card-foreground: 240 10% 3.9%;
+
     --popover: 0 0% 100%;
     --popover-foreground: 240 10% 3.9%;
-    --primary: 240 5.9% 10%;
+
+    /* Primary: Saturated Blue (#4285F4) */
+    --primary: 217 89% 61%;
+    /* Primary Foreground: White for text on blue */
     --primary-foreground: 0 0% 98%;
-    --secondary: 240 4.8% 95.9%;
-    --secondary-foreground: 240 5.9% 10%;
-    --muted: 240 4.8% 95.9%;
-    --muted-foreground: 240 3.8% 46.1%;
-    --accent: 240 4.8% 95.9%;
-    --accent-foreground: 240 5.9% 10%;
+
+    --secondary: 210 20% 88%; /* Lighter shade of background for secondary elements */
+    --secondary-foreground: 240 5.9% 10%; /* Dark text for secondary */
+
+    --muted: 210 20% 88%;
+    --muted-foreground: 240 3.8% 46.1%; /* Slightly lighter gray for muted text */
+
+    /* Accent: Green (#34A853) */
+    --accent: 141 53% 47%;
+    /* Accent Foreground: White for text on green */
+    --accent-foreground: 0 0% 98%;
+
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
-    --border: 240 5.9% 90%;
-    --input: 240 5.9% 90%;
-    --ring: 240 5.9% 10%;
-    --radius: 0.65rem; /* Increased from 0.5rem */
 
-    --chart-1: var(--primary);
-    --chart-2: var(--secondary);
-    --chart-3: 35 92% 55%;
-    --chart-4: 195 92% 55%;
-    --chart-5: 265 92% 55%;
+    --border: 210 15% 80%; /* Border color adapted to light gray theme */
+    --input: 210 15% 85%;  /* Input background slightly lighter than border */
+    --ring: 217 89% 61%; /* Ring color to match primary */
+
+    --radius: 0.65rem;
+
+    /* Chart colors adapted, ensuring primary is used */
+    --chart-1: var(--primary); /* Blue */
+    --chart-2: 141 53% 60%;   /* Lighter Green */
+    --chart-3: 35 92% 55%;    /* Orange */
+    --chart-4: 195 92% 55%;   /* Cyan */
+    --chart-5: 265 92% 55%;   /* Purple */
   }
 
   .dark {
-    --background: 240 10% 3.9%;
-    --foreground: 0 0% 98%;
-    --card: 240 10% 3.9%;
+    /* Dark Mode Theme - Complementary to Light PRD */
+    --background: 240 10% 3.9%; /* Very Dark Blue/Black */
+    --foreground: 0 0% 98%;     /* Light Gray/White text */
+
+    --card: 240 8% 10%;       /* Slightly lighter dark for cards */
     --card-foreground: 0 0% 98%;
+
     --popover: 240 10% 3.9%;
     --popover-foreground: 0 0% 98%;
-    --primary: 0 0% 98%;
-    --primary-foreground: 240 5.9% 10%;
-    --secondary: 240 3.7% 15.9%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 240 3.7% 15.9%;
-    --muted-foreground: 240 5% 64.9%;
-    --accent: 240 3.7% 15.9%;
-    --accent-foreground: 0 0% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 240 3.7% 15.9%;
-    --input: 240 3.7% 15.9%;
-    --ring: 0 0% 98%;
 
+    /* Primary: Keep PRD Blue, but ensure foreground is light */
+    --primary: 217 89% 61%;
+    --primary-foreground: 0 0% 98%;
+
+    --secondary: 240 5% 15.9%;   /* Darker Gray for secondary elements */
+    --secondary-foreground: 0 0% 98%;
+
+    --muted: 240 5% 15.9%;
+    --muted-foreground: 240 5% 64.9%; /* Lighter gray for muted text in dark mode */
+
+    /* Accent: Keep PRD Green, ensure foreground is light */
+    --accent: 141 53% 47%;
+    --accent-foreground: 0 0% 98%;
+
+    --destructive: 0 70% 50%; /* Adjusted destructive for dark mode */
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 240 5% 20%;      /* Darker border */
+    --input: 240 5% 20%;       /* Darker input */
+    --ring: 217 89% 61%;       /* Ring color to match primary */
+
+    /* Chart colors adapted for dark mode */
     --chart-1: var(--primary);
-    --chart-2: var(--secondary);
-    --chart-3: 35 80% 65%;
-    --chart-4: 195 80% 65%;
-    --chart-5: 265 80% 65%;
+    --chart-2: 141 53% 35%;   /* Darker Green */
+    --chart-3: 35 80% 45%;    /* Darker Orange */
+    --chart-4: 195 80% 45%;   /* Darker Cyan */
+    --chart-5: 265 80% 45%;   /* Darker Purple */
   }
 }
 
